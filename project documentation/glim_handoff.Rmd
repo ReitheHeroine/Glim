@@ -482,7 +482,10 @@ When creating, moving, or deleting files:
 
 ## 6.4 Repository Configuration
 
-**Status:** `.gitignore` created, but `git init` not yet run. GitHub repo not yet created.
+**Status:** Repo initialized and pushed. GitHub Pages source must be set to "GitHub Actions" in repo settings to activate deployment.
+
+**Repo:** `git@github.com:ReitheHeroine/Glim.git` (branch: `main`)
+**Live URL (once Pages is enabled):** `https://reitheheroine.github.io/Glim/`
 
 **`.gitignore` contents (at repo root):**
 ```
