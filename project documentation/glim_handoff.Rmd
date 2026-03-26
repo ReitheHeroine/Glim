@@ -216,6 +216,17 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - Cataloged ~25 features across 7 categories. Rewrote Project Docs Section 8 as comprehensive feature roadmap with data model notes.
 - Outputs: updated `glim_project_documentation.Rmd`/`.docx` (Section 1.1, Section 8 rewrite, 4 new Decision Register entries, 1 new Project Log entry), updated `glim_handoff.Rmd`/`.docx`
 
+### 2026-03-25 (Claude Code) - Netlify hosting and PWA setup
+- Set up Netlify hosting: connected to `ReitheHeroine/Glim` repo, build dir `client/`, publish dir `client/dist/`, command `npm run build`. Auto-deploys on every push to `main`.
+- Added `client/public/_redirects` to fix Netlify "Page not found" routing issue
+- Removed `base: '/Glim/'` from `vite.config.js` (was for GitHub Pages, Netlify serves from root)
+- Created `client/public/glim-icon.svg` - custom Glim icon (dark background, purple/teal creature with eyes, wings, antennae, beak)
+- Generated PNG icons from SVG using `sips`: `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png` (180px)
+- Created `client/public/manifest.json` - PWA manifest (standalone display, dark theme, both icon sizes)
+- Updated `client/index.html` with PWA meta tags: `apple-touch-icon`, manifest link, `apple-mobile-web-app-capable`, status bar style, theme-color
+- Checks: `npm run build` clean; Netlify deploy successful; Glim confirmed working in browser
+- Install path for iPhone: open Netlify URL in Safari → Share → Add to Home Screen
+
 ### 2026-03-25 (Claude Code) - Vite migration
 - Initialized Vite + React project scaffold in `client/` directory (React 19, Vite 8)
 - Installed Tailwind CSS v4 with `@tailwindcss/vite` plugin (already configured in vite.config.js)
@@ -295,16 +306,23 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - **Context/References:** [See Project Docs Section 4.3: Behavior System]
 - **Acceptance criteria:** Glim visually drifts off-screen. Returns on mouse/touch activity after grace period. Return message displays.
 
-### Create PWA files
+### Add service worker for offline support
 - **Assigned to:** Claude Code
-- **Priority:** Low (blocked by GitHub repo)
-- **Description:** Create `manifest.json`, `sw.js` (service worker for offline caching), and generate app icons (192px, 512px) from Glim's SVG. Configure for standalone display mode with Glim's theme colors.
-- **Context/References:** [See Project Docs Section 6.2: GitHub Pages PWA]
-- **Acceptance criteria:** PWA passes Lighthouse installability audit. Glim installable via "Add to Home Screen" on iOS and Android. Works offline after first load.
+- **Priority:** Low
+- **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Currently Glim requires an internet connection on every load. A service worker would cache assets after first load so Glim works offline.
+- **Context/References:** [See Project Docs Section 6.2: Netlify PWA]
+- **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit.
 
 ## 3.2 Changes for Testing
 
 > Items that need browser verification. Include file paths, what to look for.
+
+### 2026-03-25 iPhone installation
+- **How to test:** Open Netlify URL in Safari on iPhone → Share → Add to Home Screen
+- **What to verify:**
+  - Glim icon appears on home screen (purple/teal creature, not a blank page screenshot)
+  - App opens full screen with no browser chrome
+  - Glim renders and all interactions work on touch (note: touch events not yet implemented - tap/long-press via mouse fallback may be limited)
 
 ### 2026-03-25 audit fixes
 - **File:** `glim.html` (from this session's outputs)
@@ -319,6 +337,9 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
+- PWA setup and iPhone installation - 2026-03-25 - `client/public/manifest.json`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `glim-icon.svg`, `_redirects`; `client/index.html` updated
+- Netlify hosting - 2026-03-25 - auto-deploys from `main`, live URL in Netlify dashboard
+- GitHub repository - 2026-03-25 - `git@github.com:ReitheHeroine/Glim.git`
 - Vite migration verified in production - 2026-03-25 - live on Netlify, all interactions confirmed working
 - Vite migration and project scaffolding - 2026-03-25 - `client/src/DesktopPet.jsx`, `client/src/messages.js`, `client/src/storage.js`, `client/src/App.jsx`, `client/src/index.css`, `client/index.html`, `.gitignore`
 - Codebase audit and bug fixes - 2026-03-25 - `glim.html`, `glim_project_documentation.Rmd`/.docx
@@ -393,17 +414,25 @@ glim/
     |   +-- messages.js                # All message pool arrays (10 exports, ~726 lines)
     |   +-- storage.js                 # window.storage polyfill (side-effect import)
     |   +-- index.css                  # Tailwind v4 import + base styles
+    +-- public/
+    |   +-- manifest.json              # PWA manifest
+    |   +-- glim-icon.svg              # Source icon (SVG)
+    |   +-- glim-icon-192.png          # PWA icon
+    |   +-- glim-icon-512.png          # PWA icon
+    |   +-- apple-touch-icon.png       # iOS home screen icon (180px)
+    |   +-- _redirects                 # Netlify routing rule
+    |   +-- favicon.svg                # Browser tab favicon (scaffold)
+    |   +-- icons.svg                  # Vite scaffold icons (unused)
     +-- dist/                          # Build output (gitignored)
     +-- node_modules/                  # (gitignored)
 ```
 
-**Planned additions (not yet created):**
+**Planned additions:**
 
 ```
 client/
 +-- public/
-|   +-- manifest.json                  # PWA manifest (blocked by vite-plugin-pwa task)
-|   +-- icons/                         # PWA icons (blocked by PWA task)
+    +-- sw.js                          # Service worker (blocked by vite-plugin-pwa task)
 ```
 
 ## 5.2 Scripts Reference

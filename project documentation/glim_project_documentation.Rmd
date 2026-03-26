@@ -455,26 +455,25 @@ Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main 
 
 **Requirements for legacy HTML:** Internet connection on first load (React/Tailwind CDN caching). Works offline after first load.
 
-## 6.2 GitHub Pages PWA (Mobile)
+## 6.2 Netlify PWA (Mobile)
 
-**Status:** Not yet implemented.
+**Status:** Partially implemented (2026-03-25). Installable on iPhone via Safari. Service worker (offline support) not yet added.
 
-**Planned setup:**
+**Current setup:**
 
-1. Create GitHub repo with `index.html`, `manifest.json`, `sw.js`, app icons
-2. Enable GitHub Pages in repo settings
-3. URL: `username.github.io/glim`
-4. On phone: visit URL in Safari/Chrome, "Add to Home Screen"
-5. Glim appears as installable app with own icon, full screen, no browser chrome
+- Hosted on Netlify, auto-deploys from `main` branch on push
+- `client/public/manifest.json` - PWA manifest (standalone display, dark theme `#0d0820`, both icon sizes)
+- `client/public/glim-icon-192.png`, `glim-icon-512.png` - PWA icons generated from custom SVG
+- `client/public/apple-touch-icon.png` (180px) - iOS home screen icon
+- `client/index.html` - includes `apple-touch-icon` link, manifest link, `apple-mobile-web-app-capable`, status bar style, theme-color meta tags
 
-**Files needed:**
+**To install on iPhone:**
 
-- `index.html` - the single Glim file (same as `glim.html` but served from HTTPS)
-- `manifest.json` - PWA configuration (name, icons, display mode, theme colors)
-- `sw.js` - Service worker for offline caching
-- `icon-192.png` and `icon-512.png` - App icons (could be generated from Glim SVG)
+1. Open Netlify URL in Safari
+2. Tap Share → Add to Home Screen → Add
+3. Glim appears on home screen with icon, opens full screen with no browser chrome
 
-**[FOLLOW-UP NEEDED]:** Create PWA files, set up GitHub repo, test on iOS and Android.
+**[FOLLOW-UP NEEDED]:** Add service worker via `vite-plugin-pwa` for offline support. Test touch interactions on real device (touch events not yet implemented in Glim codebase).
 
 ## 6.3 Update Workflow
 
@@ -483,7 +482,7 @@ Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main 
 1. Edit `client/src/DesktopPet.jsx` or `client/src/messages.js` (Claude Code or directly)
 2. Run `npm run dev` from `client/` for live preview at `localhost:5173`
 3. Run `npm run build` to verify production build
-4. Push to GitHub repo (once repo is set up) - GitHub Pages auto-deploys from `dist/`
+4. Push to GitHub repo - Netlify auto-deploys from `client/dist/`
 5. Journal entries and poke count persist (localStorage, not in source files)
 
 **Note on Claude.ai workflow:** Feature and message changes designed in the Claude.ai artifact environment should be transferred to `client/src/DesktopPet.jsx` (components/logic) and `client/src/messages.js` (message content) by Claude Code. The artifact is no longer the source of truth.
@@ -500,9 +499,9 @@ Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main 
 
 **localStorage origin for local files:** Browser behavior varies for `file://` origins. Chrome is permissive (same origin for all local files). Firefox and Safari may be stricter. Mitigated by recommending users always save to the same file path.
 
-**Tailwind dependency:** Tailwind CSS is loaded from CDN but barely used (a handful of utility classes, primarily in PersistentReminder). Could be replaced with inline styles to eliminate the dependency and the console warning.
+**Tailwind dependency:** Lightly used (a handful of utility classes, primarily in PersistentReminder). Post-migration, Tailwind v4 is build-integrated so there is no CDN warning, but removal is still planned for new code (inline styles preferred going forward).
 
-**Babel in-browser transpilation:** Adds a small load time on first open. The alternative (pre-compiling to `React.createElement` calls) would make the code unreadable and unmaintainable for a single-file project.
+**No service worker:** Glim requires an internet connection on every load. A service worker (via `vite-plugin-pwa`) would cache assets after first load. Planned but not yet implemented.
 
 **No data export for journal:** If localStorage is cleared or the browser changes, journal entries are lost. A JSON export/import feature has been discussed but not implemented.
 
@@ -884,6 +883,24 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Decisions made:** None new. Execution of the Vite migration decision from 2026-03-25 tech stack evaluation.
 
 **Next steps identified:** Browser verification of Vite build (see Handoff Changes for Testing). GitHub repo setup. Zustand state migration (Claude.ai). GitHub Pages deployment configuration.
+
+### 2026-03-25 - Netlify hosting and PWA setup
+
+**Work performed:** Set up Netlify hosting with auto-deploy from GitHub. Added PWA files for iPhone installation. Created custom Glim icon (SVG + PNG exports). Configured manifest and iOS meta tags.
+
+**Outputs:** `client/public/manifest.json`, `glim-icon.svg`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `_redirects`; updated `client/index.html`
+
+**Key findings:**
+- Netlify required a `_redirects` file (`/* /index.html 200`) to route correctly - standard for Vite SPA deployments.
+- GitHub Pages rejected because repo is private (requires paid plan). Netlify free tier supports private repos.
+- `base: '/Glim/'` in vite.config.js (added for GitHub Pages) had to be removed for Netlify - Netlify serves from root.
+- iOS Safari uses `apple-touch-icon` for home screen icon, not the PWA manifest icons. Both are needed.
+- Glim is installable on iPhone via Safari Share → Add to Home Screen. Opens full screen with no browser chrome.
+- Touch interactions not yet implemented - primary limitation for mobile usability.
+
+**Decisions made:** Netlify chosen over GitHub Pages (private repo support, free tier) and Cloudflare Pages (simpler first-time setup). See session discussion.
+
+**Next steps identified:** Implement touch event support (primary mobile usability blocker). Add service worker for offline support. Test installation on Android.
 
 ---
 
