@@ -306,16 +306,6 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 > Items that need browser verification. Include file paths, what to look for.
 
-### 2026-03-25 Vite migration
-- **File:** `client/` - run `npm run dev` from `client/` directory, open `http://localhost:5173`
-- **What to verify:**
-  - Glim renders (creature visible, sky background, stars)
-  - All interactions work: click, double-click, long press, drag, shake, rapid click
-  - Settings panel opens and sliders persist across page refresh
-  - Journal opens, entries can be saved and viewed
-  - Wellness reminders fire at expected intervals
-  - No console errors (note: StrictMode double-invokes effects in dev - this is normal)
-
 ### 2026-03-25 audit fixes
 - **File:** `glim.html` (from this session's outputs)
 - **What to verify:**
@@ -329,6 +319,7 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
+- Vite migration verified in production - 2026-03-25 - live on Netlify, all interactions confirmed working
 - Vite migration and project scaffolding - 2026-03-25 - `client/src/DesktopPet.jsx`, `client/src/messages.js`, `client/src/storage.js`, `client/src/App.jsx`, `client/src/index.css`, `client/index.html`, `.gitignore`
 - Codebase audit and bug fixes - 2026-03-25 - `glim.html`, `glim_project_documentation.Rmd`/.docx
 - Architecture review and feature planning - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Section 8 rewrite), `glim_handoff.Rmd`/.docx
@@ -485,7 +476,8 @@ When creating, moving, or deleting files:
 **Status:** Repo initialized and pushed. GitHub Pages source must be set to "GitHub Actions" in repo settings to activate deployment.
 
 **Repo:** `git@github.com:ReitheHeroine/Glim.git` (branch: `main`)
-**Live URL (once Pages is enabled):** `https://reitheheroine.github.io/Glim/`
+**Hosting:** Netlify - auto-deploys from `main` on every push. Build: `npm run build` in `client/`, publish: `client/dist/`.
+**Live URL:** Netlify subdomain (check Netlify dashboard for exact URL)
 
 **`.gitignore` contents (at repo root):**
 ```
