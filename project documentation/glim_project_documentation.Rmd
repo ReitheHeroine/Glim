@@ -71,6 +71,20 @@ The following values guide all design decisions for Glim:
 
 **Migration decision rationale:** See Decision Register entry 2026-03-25 "Adopt Vite build system." Alternatives evaluated: staying on CDN-only (rejected - doesn't scale to 25+ features), Svelte/SvelteKit (rejected - React's larger ecosystem and skill transferability outweigh Svelte's simpler model for this project).
 
+### System Architecture Overview
+
+The diagram below shows the four-layer architecture of future Glim and how the layers interact.
+
+![Glim system architecture](figures/glim_system_architecture.png)
+
+**Layer 1 - User-facing (top).** Two parallel systems the user interacts with directly. The **Creature World** (left) is everything visual and behavioral: the OwlMoth SVG, the twilight background, autonomous behaviors (sleep, fly, chase), and all interactions (click, drag, shake, purr). The **Feature Panels** (right) are the productivity and wellness tools: daily trackers (water, steps, mood, sleep), productivity tools (todos, pomodoro, quick captures), reflection tools (journal, habits, gratitude), and analysis views (trends, charts, streaks).
+
+**Layer 2 - Personality Engine (middle, amber).** The bridge between the creature and the trackers. This is what makes Glim feel alive rather than being a cute creature sitting next to a boring tracking app. It contains the **message pools** (775+ personalized messages across 29 categories), the **reaction system** (the centralized `glimReact()` handler that picks the right animation and message when any tracker event fires), and the **reminder timers** (wellness, move, eye break). The creature sends behavior states down to the personality engine; the personality engine sends animations and messages back up. The feature panels send events down (water logged, task completed); the personality engine sends nudges and celebrations back up.
+
+**Layer 3 - Data Layer (blue).** Stores everything and handles cross-device sync. **Zustand stores** hold the current state in memory (15 domains, fast reads/writes for the UI). **localStorage** persists data on-device (survives page refresh). **Firebase** syncs data to the cloud (shows up on your other devices). Data flows left to right: Zustand → localStorage → Firebase.
+
+**Layer 4 - Platform Foundation (bottom, gray).** The build tools and libraries everything runs on: Vite (build system), React (UI framework), Tailwind (CSS), Chart.js (data visualization), and PWA support (offline capability).
+
 ## 2.2 File Structure & Build Process
 
 **Active project files (post-migration, 2026-03-25):**
@@ -614,44 +628,706 @@ Features for sharing Glim with others.
 | Gifting workflow | Not started | **Low** | Package a customized Glim for someone. Needs Glim Builder + delivery mechanism (download, email, link) |
 | Editable message panel | Not started | **Low** | Let recipients of gifted Glims modify/add their own messages without touching code |
 
-## 8.8 Data Model Design Notes (pre-implementation)
+## 8.8 Data Model Specification (designed 2026-03-25)
 
-**Sync-safe data principle:** All tracker data should be stored as timestamped events, not running totals. This makes cross-device merging trivial - combine event lists and deduplicate by ID.
+### Foundational Design Decisions
 
-Example - water tracking:
-```
-BAD (sync conflicts):  { today: 5, goal: 8 }
-GOOD (merge-safe):     { goal: 8, logs: [{ id: "w_1711...", time: "2026-03-25T10:30:00Z", amount: 1, unit: "glass" }, ...] }
-```
+**Storage architecture: One key per domain.** Each tracker gets its own storage key (`glim-water`, `glim-todos`, etc.) rather than one monolithic object. Rationale: writes are smaller and faster, a failed write only affects one domain, maps cleanly to Firebase documents/subcollections, maps cleanly to Zustand stores, and loading the journal doesn't require loading months of nutrition data.
 
-**Planned unified storage structure:**
+**ID generation: UUIDs.** Every event uses `crypto.randomUUID()`. Guaranteed unique across devices, eliminates collision concerns during sync. Available in all modern browsers.
+
+**Date handling: Local dates derived from UTC timestamps.** Every event stores a full UTC timestamp in `createdAt` and a derived local-date string in `date` (format: `"2026-03-25"`). The timestamp is the truth; the date field is a convenience for grouping by day. Local date derived via `new Date().toLocaleDateString('en-CA')`.
+
+**Soft delete: All domains.** Deleting an entry sets `deletedAt` to a timestamp rather than removing it from the array. Required for sync (prevents deleted entries from being resurrected by an unsynced device). Enables undo for free. Entries with `deletedAt` older than 30 days can be permanently purged.
+
+**Sync-safe data principle:** All tracker data stored as timestamped event logs, not running totals. Derived values (daily totals, streaks, averages) are computed from events, never stored.
+
+### How Data Flows Through Glim
+
+The diagram below traces a concrete example - logging a glass of water - through all four layers of Glim's architecture. This same pattern applies to every tracker action (completing a task, logging a meal, checking off a habit, etc.).
+
+![Data flow example: logging water](figures/glim_data_flow_example.png)
+
+**The left column (teal/blue)** is the data path - what any tracking app does: save data, update the UI. **The right column (amber/purple)** is the personality path - what only Glim does: interpret every data event through the reaction system and make the creature respond. The two columns are wired together through `glimReact()`, which fires on every tracker event.
+
+The bottom section (steps 10-11) shows the cross-device sync payoff: you log water on your phone at lunch, Firebase pushes the event to your desktop in the background, and desktop Glim mentions your progress in its idle chatter. Both devices share the same Glim "brain."
+
+This flow pattern is universal. Only the specific message pool, animation, and event name change between trackers. That's why the reaction system is centralized: one system handles personality for all 15 domains.
+
+### Storage Key Map
+
+| Storage Key | Type | Sync Strategy | Grows? |
+|---|---|---|---|
+| `glim-settings` | Config object | Last-write-wins by `lastModified` | No |
+| `glim-pokes` | Counter with delta tracking | Additive deltas | No |
+| `glim-journal` | Event log (entries array) | Merge + dedupe by ID | Yes |
+| `glim-water` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-todos` | Event log (items array) | Merge + dedupe by ID | Yes |
+| `glim-steps` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-exercise` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-mood` | Event log (logs array) | Merge + dedupe by ID | Slowly |
+| `glim-sleep` | Event log (logs array) | Merge + dedupe by ID | Slowly |
+| `glim-nutrition` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-habits` | Definitions + event log | Merge both arrays by ID | Yes |
+| `glim-gratitude` | Event log (logs array) | Merge + dedupe by ID | Slowly |
+| `glim-captures` | Event log (entries array) | Merge + dedupe by ID | Yes |
+| `glim-countdowns` | Item list | Merge + dedupe by ID | Barely |
+| `glim-social` | Event log (logs array) | Merge + dedupe by ID | Slowly |
+
+### Domain Schemas
+
+#### Settings (`glim-settings`)
+
+No events, no history. Last-write-wins on sync.
+
 ```javascript
 {
-  journal: [{ id, text, prompt, date, tags? }],
-  todos: [{ id, text, created, completed?, deleted? }],
-  water: { goal: 8, unit: "glass", logs: [{ id, time, amount }] },
-  nutrition: { logs: [{ id, time, meal, items: [...], notes? }] },
-  steps: { goal: 10000, logs: [{ id, date, count, source? }] },
-  exercise: { logs: [{ id, time, type, duration, notes? }] },
-  sleep: { logs: [{ id, date, bedtime, waketime, notes? }] },
-  mood: { logs: [{ id, date, value, note? }] },
-  habits: { definitions: [...], logs: [{ id, habitId, date, done }] },
-  gratitude: { logs: [{ id, date, text }] },
-  goals: { active: [...], history: [...] },
-  settings: { wellnessInterval, moveInterval, eyesInterval, ... },
-  pokes: 847,
+  wellnessInterval: 20,                         // Minutes
+  moveInterval: 45,
+  eyesInterval: 20,
+  goals: {
+    water: { amount: 8, unit: "glass" },        // "glass" | "oz" | "ml"
+    steps: { amount: 10000 },
+    sleep: { targetHours: 8 },
+  },
+  dayBoundary: "midnight",                      // Future: configurable hour
+  lastModified: "2026-03-25T14:30:00.000Z",
 }
 ```
 
-This structure supports: per-tracker querying, cross-tracker correlation (mood vs. sleep vs. exercise), clean merge on sync, single JSON export/import, and incremental migration as features are added.
+**Migration from current format:** Current `glim-settings` stores `{ wellnessInterval, moveInterval, eyesInterval }`. On first load with new schema, wrap existing values and add `goals`, `dayBoundary`, `lastModified`.
 
-**Conflict resolution strategy:**
-- Journal/logs/todos: Merge by combining lists, deduplicate by ID
-- Settings: Last-write-wins (most recent timestamp)
-- Pokes: Additive (sum deltas from each device)
-- Goals/streaks: Recompute from underlying event logs after merge
+#### Pokes (`glim-pokes`)
 
-## 8.9 Creature Personality Ideas
+```javascript
+{
+  total: 847,
+  lastSyncedTotal: 840,
+  lastModified: "2026-03-25T14:30:00.000Z",
+}
+```
+
+**Sync strategy:** Compute delta per device: `delta = total - lastSyncedTotal`. Add both deltas to the synced total. Reset `lastSyncedTotal` on both devices.
+
+**Migration:** Current format is a plain string integer. On first load, parse to `{ total: parseInt(value), lastSyncedTotal: 0, lastModified: now }`.
+
+#### Journal (`glim-journal`)
+
+```javascript
+{
+  entries: [
+    {
+      id: "a1b2c3d4-...",                      // UUID
+      text: "today felt like a slow-motion nature documentary",
+      prompt: "describe your day as if narrating a nature documentary",
+      tags: [],                                 // Future: user-applied tags
+      createdAt: "2026-03-25T21:30:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+**Migration:** Current format is a plain array with `{ id: timestamp_int, text, prompt, date: ISO_string }`. Transform each: generate UUID, rename `date` to `createdAt`, derive `date` from `createdAt` in local time, add `deletedAt: null`, add `tags: []`.
+
+**Glim reactions:** `journal_saved`, `journal_streak` (3+ consecutive days).
+
+#### Water (`glim-water`)
+
+The model tracker that sets the pattern for all daily trackers.
+
+```javascript
+{
+  logs: [
+    {
+      id: "e5f6g7h8-...",
+      amount: 1,                                // Number of units
+      createdAt: "2026-03-25T10:30:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+Goal lives in `glim-settings.goals.water`, not duplicated here.
+
+**Derived values (computed, never stored):** Today's total (`logs.filter(date === today && !deletedAt).reduce(sum, amount)`), progress percentage, current streak (consecutive days meeting goal), best streak, weekly average.
+
+**Glim reactions:** `water_logged` ("nice! that's glass 5 of 8"), `water_goal_met`, `water_streak` (3/7/14/30 days), `water_nudge` (no water by configurable time).
+
+#### Todos (`glim-todos`)
+
+```javascript
+{
+  items: [
+    {
+      id: "m3n4o5p6-...",
+      text: "finish thesis methods section",
+      createdAt: "2026-03-25T09:00:00.000Z",
+      date: "2026-03-25",
+      completedAt: null,                        // Null = not done, timestamp = done
+      deletedAt: null,
+      sortOrder: 0,                             // For manual reordering
+    },
+  ],
+}
+```
+
+`completedAt` is a timestamp (not boolean) to record when the task was finished. Feeds into daily summaries, productivity trend analysis, and undo (clear timestamp to un-complete).
+
+**Derived values:** Active count, completed today, completion rate.
+
+**Glim reactions:** `task_completed` ("checked off! [n] down, [m] to go"), `all_tasks_done`, `task_created`.
+
+#### Steps (`glim-steps`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "u1v2w3x4-...",
+      count: 3200,
+      source: "manual",                         // "manual" | future: "healthkit" | "google_fit"
+      createdAt: "2026-03-25T18:00:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+`source` field future-proofs for automatic pedometer imports. Initial version is manual entry only.
+
+**Derived values:** Today's total, goal progress, streak, weekly/monthly averages.
+
+**Glim reactions:** `steps_logged`, `steps_goal_met`, `steps_streak`.
+
+#### Exercise (`glim-exercise`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "y5z6a7b8-...",
+      type: "walk",                             // Free text or from recentTypes
+      durationMinutes: 30,
+      notes: "walked around campus between classes",
+      createdAt: "2026-03-25T12:30:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+  recentTypes: ["walk", "yoga", "dance", "improv warm-up"],
+}
+```
+
+`recentTypes` auto-populated from past `type` values for quick-select UI buttons.
+
+**Derived values:** Workouts this week, total duration this week, most common type, streak (days with at least one exercise).
+
+**Glim reactions:** `exercise_logged` (resets move timer), `exercise_streak`, type-specific commentary ("improv warm-up counts as exercise and i will die on this hill").
+
+#### Mood (`glim-mood`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "c9d0e1f2-...",
+      value: 4,                                 // 1-5 scale (UI displays as emojis)
+      note: "good day, got a lot done",         // Optional
+      createdAt: "2026-03-25T21:00:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+Numeric 1-5 scale enables trend analysis and cross-tracker correlation. UI maps numbers to emojis. One entry per day convention: second entry for same date soft-deletes the first.
+
+**Derived values:** Today's mood, 7-day average, 30-day trend direction, correlation hints (mood vs sleep, mood vs exercise).
+
+**Glim reactions:** `mood_logged` (empathetic for low, celebratory for high), `mood_improving` (upward trend over a week).
+
+#### Sleep (`glim-sleep`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "g3h4i5j6-...",
+      bedtime: "2026-03-24T23:30:00.000Z",
+      waketime: "2026-03-25T07:15:00.000Z",
+      quality: null,                             // Optional 1-5, logged on wake
+      notes: null,
+      createdAt: "2026-03-25T07:20:00.000Z",
+      date: "2026-03-25",                        // Date you WOKE UP
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+`date` is the wake-up date (matches how people think: "I got 7 hours last night" refers to today).
+
+**Derived values:** Hours slept (from bedtime/waketime), 7-day average, trend, bedtime consistency (std dev of bedtimes).
+
+**Glim reactions:** `sleep_logged` (comments on duration), `sleep_improving`, late-night messages become data-aware ("you averaged 6 hours this week...").
+
+#### Nutrition (`glim-nutrition`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "k7l8m9n0-...",
+      meal: "lunch",                            // "breakfast" | "lunch" | "dinner" | "snack"
+      description: "leftover pasta, side salad", // Free text
+      createdAt: "2026-03-25T12:45:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+v1 is simple meal logging (what you ate, free text). No calorie/macro tracking initially. Schema can add optional `calories`, `protein`, `carbs`, `fat` fields later without breaking anything.
+
+**Derived values:** Meals logged today, meals this week, patterns (skipping breakfast?).
+
+**Glim reactions:** `meal_logged`, `meal_skipped` (no breakfast by 11 AM), pattern-aware ("you've logged breakfast every day this week").
+
+#### Habits (`glim-habits`)
+
+```javascript
+{
+  definitions: [
+    {
+      id: "o1p2q3r4-...",
+      name: "floss",
+      frequency: "daily",                       // "daily" | "weekdays" | "weekly"
+      createdAt: "2026-03-20T10:00:00.000Z",
+      archivedAt: null,                         // Soft archive (stop tracking without losing history)
+    },
+  ],
+  logs: [
+    {
+      id: "w9x0y1z2-...",
+      habitId: "o1p2q3r4-...",                  // References the definition
+      date: "2026-03-25",
+      createdAt: "2026-03-25T22:00:00.000Z",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+Definitions and logs are separate arrays. A definition is created once; logs are created each time the habit is checked off. Archiving a habit hides it from the UI without losing history.
+
+**Derived values:** Per-habit streak, best streak, completion rate (7/30 days), today's status. Overall: habits done today vs total active.
+
+**Glim reactions:** `habit_checked`, `habit_streak`, `habit_all_done` (all daily habits checked).
+
+#### Gratitude (`glim-gratitude`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "a3b4c5d6-...",
+      text: "Alex made me laugh so hard at dinner",
+      createdAt: "2026-03-25T21:30:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+Intentionally minimal. One field, low friction. Power is in consistency (streak) and Glim referencing past entries in idle chatter.
+
+**Glim reactions:** `gratitude_logged`, `gratitude_streak`, occasional idle reference to a random past entry.
+
+#### Quick Capture (`glim-captures`)
+
+```javascript
+{
+  entries: [
+    {
+      id: "e7f8g9h0-...",
+      text: "look into that BDNF paper Dr. B mentioned",
+      createdAt: "2026-03-25T14:22:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+Same structure as gratitude but different intent (utilitarian vs reflective) and different Glim personality.
+
+**Glim reactions:** `capture_saved` ("got it. stored."), occasional idle reference to old captures.
+
+#### Countdowns (`glim-countdowns`)
+
+```javascript
+{
+  items: [
+    {
+      id: "i1j2k3l4-...",
+      title: "Thesis defense",
+      targetDate: "2026-05-15",
+      createdAt: "2026-03-25T10:00:00.000Z",
+      completedAt: null,                        // Auto-set when date passes
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+**Derived values:** Days remaining (targetDate vs today). Past events auto-complete.
+
+**Glim reactions:** Idle chatter references ("thesis defense in 51 days"), milestone alerts at 30/14/7/3/1 days, celebration on the day.
+
+#### Social Check-ins (`glim-social`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "m5n6o7p8-...",
+      who: "Alex",                              // Free text
+      how: "in person",                         // "in person" | "text" | "call" | "video"
+      createdAt: "2026-03-25T19:00:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+  recentPeople: ["Alex", "Lados", "Anora"],     // Auto-populated for quick selection
+}
+```
+
+**Derived values:** Days since last check-in, unique people this week, most frequent contacts.
+
+**Glim reactions:** `social_logged`, `social_gap` (gentle nudge after 3+ days without a check-in).
+
+### Data Maintenance
+
+**Soft-delete cleanup:** Periodically purge entries where `deletedAt` is older than 30 days.
+
+**Archive strategy (future):** For high-frequency trackers (water, nutrition), raw logs older than 90 days could be archived to `glim-[domain]-archive`, keeping only computed daily summaries for trend display. Not needed at launch.
+
+**Export/import:** A single "Export All Data" function collects all 15 keys into one JSON object. "Import" writes each key back. Covers backup, device migration, and debugging.
+
+### Migration Path from Current Storage
+
+| Current Key | Current Format | Migration |
+|---|---|---|
+| `glim-journal` | Plain array `[{ id: int, text, prompt, date: ISO }]` | Wrap in `{ entries: [...] }`, generate UUIDs, rename `date` to `createdAt`, derive local `date`, add `deletedAt: null`, add `tags: []` |
+| `glim-pokes` | Plain string integer | Parse to `{ total: int, lastSyncedTotal: 0, lastModified: now }` |
+| `glim-settings` | `{ wellnessInterval, moveInterval, eyesInterval }` | Add `goals`, `dayBoundary`, `lastModified` |
+
+Migration runs automatically on first load with new schema. Detects old format by checking structure (e.g., if `glim-journal` parses to an array rather than an object with `entries` key).
+
+## 8.9 Reaction System Specification (designed 2026-03-25)
+
+### Purpose
+
+The reaction system is the centralized bridge between tracker events and creature personality. Trackers report what happened (`glimReact('water_logged', data)`). The reaction system decides how Glim responds: which message to show, which animation to trigger, and at what intensity. No tracker needs to know anything about creature animations, message pools, or streak calculations.
+
+### Interface
+
+From any tracker's perspective, the reaction system is one function call:
+
+```javascript
+glimReact('water_logged', { current: 7, goal: 8 });
+```
+
+The tracker doesn't know or care what Glim does. It might get a casual acknowledgment, a celebration, a streak callout, or nothing at all (if Glim is asleep). The tracker's job is to report what happened. The reaction system's job is to have a personality about it.
+
+### Pipeline stages
+
+Every `glimReact()` call runs through five stages in order:
+
+**Stage 1 - Event classification.** Look up the event type in the reaction registry. Run the tier function with the event data to determine response intensity. The tier function receives the event data so the same event type can produce different tiers depending on context (e.g., `water_logged` is `acknowledge` normally but `celebrate` when it hits the goal).
+
+**Stage 2 - Context evaluation.** Check conditions that might modify or suppress the response:
+
+- Is Glim asleep? Suppress `acknowledge` events. Allow `celebrate` and `milestone`. Always allow `comfort`.
+- Was there a recent reaction? If within the cooldown window (3-5 seconds), suppress `acknowledge` events only. `celebrate`, `milestone`, and `comfort` always fire.
+- What time of day is it? Carried forward from existing time-of-day awareness.
+- What was the last message shown? Track to avoid immediate repeats.
+
+**Stage 3 - Message selection.** Pick a message template from the pool matching the event type and tier. Filter out the last message shown from that pool. Pick randomly from what remains. Run template interpolation to fill in dynamic values from the event data.
+
+**Stage 4 - Animation selection.** Map the tier to a creature animation:
+
+| Tier | Animation | Visual effect | Energy |
+|---|---|---|---|
+| `comfort` | Gentle glow | Soft slow glow pulse (drop-shadow brightens over 2s, fades), slightly rounder eyes | Quiet, empathetic, "I'm here" |
+| `acknowledge` | Antenna perk | Existing antenna perk animation on speech bubble appearance | Lightweight, notices without demanding attention |
+| `celebrate` | Happy bounce | Existing `owlBounce` animation | Warm, cheerful, marks the moment |
+| `milestone` | Bounce + extended glow | Happy bounce plus brighter outer glow sustained for several seconds | Rare, special, the biggest reaction |
+
+**Stage 5 - Delivery.** Call `showMessage()` with the interpolated text. Set the appropriate animation state on the creature. Record the reaction timestamp and message for cooldown/dedup tracking.
+
+### Tier system
+
+Four tiers, ordered by intensity:
+
+**`comfort`** - Used when data indicates the user might be struggling. Low mood, broken streak, missed goal. Never suppressed by cooldown or sleep. Gentle animation. Empathetic message tone.
+
+**`acknowledge`** - Routine positive actions. Logging water, checking off a task, recording a meal. Suppressed by cooldown (prevents spam on rapid logging). Lightweight animation.
+
+**`celebrate`** - Meaningful achievements. Hitting a daily goal, clearing all tasks, journaling. Overrides cooldown. Warm animation.
+
+**`milestone`** - Rare, significant achievements. Streak milestones (7, 14, 30 days), first-ever goal completion, trend improvements. Overrides cooldown and sleep. Biggest animation.
+
+### Template interpolation
+
+Message pools contain templates with `{variable}` placeholders:
+
+```
+"nice! that's glass {current} of {goal}"
+"streak: {streak} days. your kidneys are throwing a party."
+"{current}/{goal} is still {current} more than zero."
+```
+
+The `fillTemplate()` function replaces placeholders with values from the event data. It also computes derived values:
+
+- `{remaining}` = `data.goal - data.current`
+- `{trackerName}` = human-readable name of the tracker that fired the event
+- All other `{keys}` map directly to `data[key]`
+
+This means one pool of templates works for any goal amount the user configures, and the Glim Builder doesn't need different message pools per user's settings.
+
+### Multi-event sequences
+
+Some user actions trigger multiple events in sequence:
+
+1. User logs glass of water #8
+2. Data layer saves the event
+3. `glimReact('water_logged', { current: 8, goal: 8 })` fires - tier function returns `celebrate` because current equals goal
+4. Data layer computes: this is the 7th consecutive day hitting the water goal
+5. `glimReact('water_streak', { streak: 7 })` fires after a short delay (3-4 seconds)
+
+The delay between events is important. Two messages simultaneously would be jarring. The second event fires a few seconds after the first, so they feel like two distinct thoughts: "you hit your goal!" followed by "wait... that's 7 DAYS IN A ROW."
+
+### Nudge events
+
+Some events aren't triggered by user actions but by the passage of time. These integrate with the existing idle chatter system:
+
+```javascript
+// During idle chatter cycle, with some probability:
+const daysSinceMoodLog = getDaysSinceLastLog('mood');
+if (daysSinceMoodLog >= 3) {
+  glimReact('mood_nudge', { days: daysSinceMoodLog });
+}
+```
+
+Nudge events can escalate based on how long since the last log. Example: mood nudge is a gentle `acknowledge` at 3-6 days ("haven't checked in on your mood in {days} days"), escalates to a more pointed `escalate` tier at 7+ days ("a week without a mood check-in. you doing okay?").
+
+### Example reaction registry entries
+
+**Water tracking:**
+
+```javascript
+water_logged: {
+  tier: (data) => data.current >= data.goal ? 'celebrate' : 'acknowledge',
+  pools: {
+    acknowledge: [
+      "glass #{current}! {remaining} to go",
+      "*sips vicariously* that's {current} of {goal}",
+      "your neurons thank you for glass #{current}",
+    ],
+    celebrate: [
+      "GOAL HIT!! {goal} glasses!! you did it!!",
+      "{goal}/{goal}!! your body is so hydrated rn",
+    ],
+  },
+},
+water_streak: {
+  tier: () => 'milestone',
+  pools: {
+    milestone: [
+      "{streak} days in a row hitting your water goal!",
+      "{streak}-day hydration streak! that's not luck, that's habit.",
+    ],
+  },
+},
+```
+
+**Mood tracking (demonstrates comfort tier and valence-aware responses):**
+
+```javascript
+mood_logged: {
+  tier: (data) => {
+    if (data.value <= 2) return 'comfort';
+    if (data.value === 3) return 'acknowledge';
+    return 'celebrate';
+  },
+  pools: {
+    comfort: [
+      "hey. rough one huh? that's okay.",
+      "i see you. {value}/5 days happen. they pass.",
+      "logging it is brave. even on hard days.",
+    ],
+    acknowledge: [
+      "middle-of-the-road day. those count too.",
+      "3/5. not every day has to be a highlight reel.",
+    ],
+    celebrate: [
+      "a {value}! that's a good day!",
+      "{value}/5! whatever you did today, it's working.",
+    ],
+  },
+},
+mood_improving: {
+  tier: () => 'milestone',
+  pools: {
+    milestone: [
+      "your mood has been trending up for {days} days. that's not nothing.",
+      "the trend line is going up. whatever you're doing, keep doing it.",
+    ],
+  },
+},
+mood_nudge: {
+  tier: (data) => data.days >= 7 ? 'escalate' : 'acknowledge',
+  pools: {
+    acknowledge: [
+      "haven't checked in on your mood in {days} days. how are you really?",
+    ],
+    escalate: [
+      "it's been {days} days since you logged how you're feeling. you doing okay?",
+    ],
+  },
+},
+```
+
+**Shared events (cross-tracker):**
+
+```javascript
+streak_broken: {
+  tier: () => 'comfort',
+  pools: {
+    comfort: [
+      "streak ended at {previous}. that's still {previous} days you showed up.",
+      "the streak broke. that's okay. start a new one tomorrow.",
+    ],
+  },
+},
+goal_missed: {
+  tier: () => 'comfort',
+  pools: {
+    comfort: [
+      "didn't hit the goal today. tomorrow's a new day.",
+      "{current}/{goal} is still {current} more than zero.",
+    ],
+  },
+},
+```
+
+### Migration from current pattern
+
+The existing journal save reaction (inline `showMessage` + `triggerHappy` in `saveJournalEntry`) will be refactored to use the reaction system as the first proof of concept. The existing message pools in `MESSAGES.clicked`, `MESSAGES.flyFail`, etc. remain separate from the reaction registry since those are creature-behavior messages, not tracker-event messages.
+
+## 8.10 UI Navigation System (designed 2026-03-25)
+
+### Two-mode hybrid
+
+Glim uses a hybrid navigation system with two modes, chosen per-feature based on interaction complexity.
+
+**Companion mode (home screen).** The creature is full-size with its complete world (sky, stars, landscape, bugs). Simple trackers appear as bottom panels that slide up, covering the lower ~40% of the screen. The creature and its reactions remain visible above the panel. This is where quick interactions happen: log water, check off a habit, record mood.
+
+**Focus mode.** For features that need full-screen real estate. The creature and background are replaced by a clean full-screen view dedicated to that feature. A mini-Glim (face only, ~40px on mobile, ~48px on desktop) sits in the top-right corner of the header, still animated, still showing speech bubbles via the reaction system.
+
+**Mockup reference files:** `figures/mockup_companion_mode.html` (water tracker panel open), `figures/mockup_focus_mode.html` (journal in focus mode with mini-Glim).
+
+### Feature-to-mode assignment
+
+| Feature | Mode | Reason |
+|---|---|---|
+| Water tracking | Companion | One-tap logging, small progress display |
+| Mood tracking | Companion | One-tap emoji, minimal display |
+| Habit check-offs | Companion | Tap to check, short list |
+| Gratitude log | Companion | One line of text, minimal display |
+| Step logging | Companion | One-tap or number entry |
+| Quick capture | Companion | One text field, tap to save |
+| Social check-in | Companion | Quick who + how entry |
+| Pomodoro timer | Companion | Timer display + start/stop |
+| Countdowns | Companion | Simple list, minimal interaction |
+| To-do lists | Focus | Scrollable list, reordering, multiple actions |
+| Journal writing | Focus | Text area needs keyboard space, past entries scroll |
+| Nutrition logging | Focus | Multiple fields per entry |
+| Exercise logging | Focus | Type, duration, notes fields |
+| Sleep logging | Focus | Bedtime/waketime entry, quality rating |
+| Trends/charts | Focus | Data-dense charts need full width |
+| Settings | Focus | Multiple sections, sliders, goal config |
+
+### Bottom navigation bar
+
+A persistent bottom nav bar appears in both modes, identical in position and behavior. Provides consistent navigation regardless of current mode.
+
+**Customizable slots.** The user picks 4 most-used features for quick access. A 5th "more" icon opens a grid/list of all remaining features grouped by category. The default 4 slots could be: water, tasks, journal, and mood (adjustable in settings).
+
+```
+| [slot 1]  [slot 2]  [slot 3]  [slot 4]  [more] |
+```
+
+Active feature is highlighted (teal). Inactive features are dimmed. Tapping any icon navigates to that feature. Tapping "home" (or the creature icon) returns to companion mode with no panel open.
+
+### Companion mode details
+
+**Panel behavior:**
+
+- Panels slide up from the bottom over 300ms (ease-out)
+- A drag handle at the top allows swipe-down to dismiss
+- Tapping outside the panel (on the creature area) dismisses it
+- Tapping a different feature icon while a panel is open smoothly transitions to the new panel (150ms crossfade)
+- Only one panel open at a time
+- Creature area compresses slightly (scale to ~90% vertically) when a panel is open
+
+**Panel sizing:** Approximately 40% of screen height. Enough for a progress display, a primary action button, and a footer row with secondary actions (undo, history link, streak count).
+
+### Focus mode details
+
+**Transition:** Creature and background fade/slide out over 300ms while the focus view fades in. Mini-Glim fades into position in the header. Not an instant swap - a smooth, intentional transition.
+
+**Header:** Back arrow (left), feature title (center), mini-Glim (right). Back arrow or swipe-right returns to companion mode.
+
+**Mini-Glim includes:** Face disc, eyes with pupil tracking, squish-to-line eye closing (blink, sleep), antenna bobbles with perk animation, blush marks. Small speech bubble (positioned left of face, max ~160px wide, short messages preferred - under 30 characters).
+
+**Mini-Glim excludes:** Body, wings, tail, feet, body dots, outer glow, all body-level animations (float, bounce, fly, chase, purr rock), background world.
+
+**Mini-Glim reaction adaptations:**
+
+| Tier | Full creature | Mini-Glim |
+|---|---|---|
+| comfort | Gentle glow pulse | Slightly rounder eyes (ry increase) |
+| acknowledge | Antenna perk | Antenna perk (same) |
+| celebrate | Happy bounce | Small scale pulse (1.0 to 1.08, 300ms) |
+| milestone | Bounce + extended glow | Scale pulse + brief brightness increase |
+
+**Sizing:** 40px on mobile, 48px on desktop. Small, attentive presence, not competing for attention.
+
+### Desktop adaptations
+
+On desktop (wider screen), companion mode panels could appear to the right of the creature instead of below, using available horizontal space. Focus mode could show the full creature at reduced size on the left with the feature panel on the right (no mini-Glim needed since both fit). These are refinements for later - starting with the same layout as mobile is fine for v1.
+
+### Transition animations
+
+| Transition | Duration | Effect |
+|---|---|---|
+| Companion to panel open | 300ms ease-out | Panel slides up, creature compresses to 90% |
+| Panel to panel switch | 150ms + 150ms | Current fades out, new fades in, creature stays compressed |
+| Panel dismiss | 250ms | Panel slides down, creature expands to 100% |
+| Companion to focus | 300ms | Creature/background fade out, focus view fades in, mini-Glim fades into header |
+| Focus to companion | 300ms | Reverse of above |
+
+## 8.11 Creature Personality Ideas
 
 Not features per se, but ideas for how Glim's personality layer extends as features are added.
 
@@ -662,6 +1338,8 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 - **Cross-tracker commentary:** Glim notices correlations in idle chatter: "you slept 8 hours and your mood was great today... coincidence? (it's not, it's science)"
 - **Achievement messages:** New message pools for each tracker milestone: first water goal hit, 7-day streak, 100 tasks completed, etc.
 - **Personalized nagging:** Glim escalates nudges if a tracker hasn't been updated: gentle day 1, pointed day 2, dramatic day 3
+
+---
 
 ---
 
@@ -786,6 +1464,20 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Alternatives considered:** (1) React Context - built-in but verbose and causes unnecessary re-renders in consuming components. (2) Redux - powerful but heavy boilerplate, overkill for this project. (3) Jotai/Recoil - atom-based, good but less intuitive than Zustand's single-store model.
 **Impact:** State will be organized into domain stores (creature state, tracker data, UI state, settings). Any component can access any store directly. Existing useState calls will be migrated incrementally as components are extracted.
 
+### 2026-03-25 - One storage key per domain
+
+**Decision:** Each tracker gets its own storage key (`glim-water`, `glim-todos`, etc.) rather than a single monolithic `glim-data` object.
+**Rationale:** (1) Smaller, faster writes (only the changed domain is written). (2) Failed writes only affect one domain. (3) Maps cleanly to Firebase documents/subcollections. (4) Maps cleanly to Zustand stores. (5) Loading one feature doesn't require loading all data into memory.
+**Alternatives considered:** Single `glim-data` key containing everything. Simpler for export/import (one blob) but every save writes the entire dataset, growing slower as data accumulates. Also, a partial write failure could corrupt everything.
+**Impact:** 15 storage keys defined. Export/import collects all keys into one JSON. Firebase sync maps each key to a Firestore document or subcollection.
+
+### 2026-03-25 - Soft delete for all domains
+
+**Decision:** Deleting any entry sets a `deletedAt` timestamp rather than removing it from storage. Items with `deletedAt` are filtered out of UI. Permanent purge after 30 days.
+**Rationale:** Hard delete breaks sync. If Device A deletes an entry and Device B hasn't synced, Device B pushes the entry back on next sync. Soft delete ensures both devices see the deletion. Also enables free undo.
+**Alternatives considered:** Hard delete with a separate "tombstone" log tracking deleted IDs. More complex, achieves the same result with more code.
+**Impact:** Every schema includes a `deletedAt` field. All UI queries must filter on `!deletedAt`. Periodic cleanup job removes entries where `deletedAt` > 30 days.
+
 ---
 
 # 10. Project Log
@@ -867,6 +1559,21 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Key architectural insight:** Glim is really two systems coexisting: (A) the creature and its world (timer-driven, animation-driven, fights React's model) and (B) the productivity/wellness tools (data-driven UI, React's strength). Both share Glim's personality layer, which should be a separate system that both call into.
 
 **Next steps identified:** Design sync-ready data model in detail. Build infrastructure items (touch events, responsive layout, build script, reaction system) before starting tracker features. Water tracking as first tracker (simplest data model, proves the pattern).
+
+### 2026-03-25 - Tech stack evaluation
+
+**Work performed:** Evaluated the full technology stack against the 25-feature roadmap. Assessed 7 layers: build system, framework, state management, styling, data visualization, backend/sync, and PWA generation. Conducted detailed comparison of React vs Svelte including code examples of the blink scheduler in both frameworks. Discussed vanilla DOM manipulation concepts and framework trade-offs from first principles.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Section 2.1 expanded with planned stack, Section 8.2 updated, Section 11 expanded, 3 new Decision Register entries), updated `glim_handoff.Rmd`
+**Key decisions:** Adopt Vite as build tool (eliminates Babel CDN, enables file separation). Stay on React over Svelte (ecosystem, skill transfer). Adopt Zustand for state management. Tailwind migrates from CDN to build version. Chart.js for visualization. vite-plugin-pwa for PWA generation.
+**Next steps identified:** Detailed data model design. Then Vite migration as first implementation task.
+
+### 2026-03-25 - Data model, reaction system, and UI navigation design
+
+**Work performed:** Designed the complete data model for all 15 storage domains. Established foundational decisions: one key per domain, UUIDs for IDs, local dates derived from UTC timestamps, soft delete for all domains. Specified full schemas with field definitions, migration paths, sync strategies, derived value computations, and Glim reaction event types. Designed the reaction system: 4-tier pipeline (comfort/acknowledge/celebrate/milestone), template interpolation, context evaluation, multi-event sequences, nudge events. Walked through water and mood tracking examples. Designed the UI navigation system: hybrid companion/focus modes, customizable 4-slot bottom nav bar, mini-Glim spec. Created HTML mockups of both modes.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Sections 8.8-8.10 fully specified, 2 new Decision Register entries), `mockup_companion_mode.html`, `mockup_focus_mode.html`
+**Key decisions:** One storage key per domain (maps to Firebase and Zustand). Soft delete everywhere. Hybrid companion/focus UI modes. Customizable nav bar.
+**Key findings:** The nutrition tracker's scope needs deliberate narrowing - full macro/calorie tracking requires a food database. Starting with simple meal logging provides awareness value without the overhead. AI-powered messages (hybrid static + Claude API) discussed and deferred to after Firebase.
+**Next steps identified:** Finalize water tracker detailed spec. Draft water tracker message pools.
 
 ### 2026-03-25 - Vite migration
 

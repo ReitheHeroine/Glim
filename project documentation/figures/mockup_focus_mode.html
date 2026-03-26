@@ -1,0 +1,70 @@
+<!-- Glim UI Mockup: Focus Mode with Journal Open and Mini-Glim in Header -->
+<!-- Mobile phone frame (320x640) showing full-screen journal view with mini-Glim face in the top-right corner -->
+<div style="display:flex;justify-content:center;padding:1.5rem;background:#f5f5f0;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;">
+<div style="width:320px;height:640px;border-radius:32px;border:3px solid #999;overflow:hidden;position:relative;background:#0f1028;">
+
+<!-- Header with back arrow, title, and mini-Glim -->
+<div style="position:absolute;top:0;left:0;right:0;height:48px;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;padding:0 16px;z-index:10;">
+<div style="font-family:monospace;font-size:14px;color:rgba(255,255,255,0.5);cursor:pointer;">&#8592;</div>
+<div style="flex:1;text-align:center;font-family:monospace;font-size:14px;color:rgba(255,255,255,0.85);letter-spacing:1px;">journal</div>
+
+<!-- Mini-Glim: just the face, 36px, with expressive eyes and antennae -->
+<div style="position:relative;">
+<svg viewBox="0 0 50 50" width="36" height="36" style="filter:drop-shadow(0 0 6px rgba(100,180,200,0.3));">
+<ellipse cx="25" cy="27" rx="11" ry="12" fill="rgba(100,200,200,0.3)"/>
+<ellipse cx="25" cy="23" rx="7" ry="6" fill="rgba(150,220,210,0.15)"/>
+<ellipse cx="22" cy="22" rx="2.8" ry="2.8" fill="rgba(255,255,255,0.9)"/>
+<circle cx="22.5" cy="22.3" r="1.6" fill="rgba(50,80,80,0.85)"/>
+<circle cx="23.2" cy="21.5" r="0.6" fill="rgba(255,255,255,0.8)"/>
+<ellipse cx="28" cy="22" rx="2.8" ry="2.8" fill="rgba(255,255,255,0.9)"/>
+<circle cx="28.5" cy="22.3" r="1.6" fill="rgba(50,80,80,0.85)"/>
+<circle cx="29.2" cy="21.5" r="0.6" fill="rgba(255,255,255,0.8)"/>
+<path d="M24,25.5 L25,27 L26,25.5" fill="rgba(130,170,160,0.6)"/>
+<path d="M22,16 Q20,10 18.5,8" stroke="rgba(100,200,200,0.4)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+<circle cx="18.5" cy="8" r="1.8" fill="rgba(130,210,200,0.6)"/>
+<path d="M28,16 Q30,10 31.5,8" stroke="rgba(100,200,200,0.4)" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+<circle cx="31.5" cy="8" r="1.8" fill="rgba(130,210,200,0.6)"/>
+</svg>
+</div>
+</div>
+
+<!-- Main content area -->
+<div style="position:absolute;top:48px;left:0;right:0;bottom:56px;background:rgba(10,10,25,0.95);overflow-y:auto;padding:16px 20px;">
+
+<!-- Write/Past tab bar -->
+<div style="display:flex;gap:8px;margin-bottom:16px;">
+<div style="flex:1;padding:8px 0;text-align:center;font-family:monospace;font-size:12px;letter-spacing:1px;border-radius:8px;background:rgba(100,200,200,0.15);border:1px solid rgba(100,200,200,0.25);color:rgba(255,255,255,0.85);">write</div>
+<div style="flex:1;padding:8px 0;text-align:center;font-family:monospace;font-size:12px;letter-spacing:1px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);">past (12)</div>
+</div>
+
+<!-- Journal prompt -->
+<div style="padding:10px 14px;border-radius:10px;margin-bottom:12px;background:rgba(100,200,200,0.08);border:1px solid rgba(100,200,200,0.12);font-family:monospace;font-size:12px;line-height:1.5;font-style:italic;color:rgba(150,210,200,0.7);">if today had a title, what would it be?</div>
+
+<div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:12px;cursor:pointer;">&#8635; different prompt</div>
+
+<!-- Text area with content -->
+<div style="border-radius:10px;border:1px solid rgba(100,200,200,0.25);background:rgba(255,255,255,0.04);padding:12px 14px;margin-bottom:12px;min-height:160px;">
+<div style="font-family:monospace;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.85);">"the one where the data finally made sense"<br><br>spent all morning staring at the volcano plot and something just clicked. the enrichment pathways lined up with what Dr. B predicted last week. called Alex on my walk home and couldn't stop talking about it. he pretended to understand. love that guy.</div>
+</div>
+
+<!-- Char count and save -->
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<span style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.25);">247 chars</span>
+<div style="padding:7px 20px;border-radius:10px;background:rgba(100,200,200,0.2);border:1px solid rgba(100,200,200,0.3);font-family:monospace;font-size:12px;color:rgba(255,255,255,0.85);cursor:pointer;">save</div>
+</div>
+
+<!-- Mini-Glim speech bubble (floats near the mini-Glim position) -->
+<div style="position:absolute;top:4px;right:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:5px 10px;font-family:monospace;font-size:10px;color:rgba(255,255,255,0.8);max-width:160px;text-align:center;">that title is perfect</div>
+</div>
+
+<!-- Bottom nav bar (identical to companion mode) -->
+<div style="position:absolute;bottom:0;left:0;right:0;height:56px;background:rgba(0,0,0,0.9);border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-around;padding:0 16px;">
+<div style="text-align:center;"><div style="font-size:16px;line-height:1;">&#9675;</div><div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">home</div></div>
+<div style="text-align:center;"><div style="font-size:16px;line-height:1;">&#9675;</div><div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">water</div></div>
+<div style="text-align:center;"><div style="font-size:16px;line-height:1;">&#9675;</div><div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">tasks</div></div>
+<div style="text-align:center;"><div style="font-size:16px;line-height:1;color:rgba(100,200,200,0.8);">&#9679;</div><div style="font-family:monospace;font-size:9px;color:rgba(100,200,200,0.7);margin-top:2px;">journal</div></div>
+<div style="text-align:center;"><div style="font-size:14px;line-height:1;">&#8943;</div><div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">more</div></div>
+</div>
+
+</div>
+</div>

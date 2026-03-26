@@ -1,21 +1,65 @@
-// title: App.jsx
-// project: Glim
-// author: Reina Hastings
-// contact: reinahastings13@gmail.com
-// date created: 2026-03-25
-// last modified: 2026-03-25
-//
-// purpose:
-//   Root application component. Renders DesktopPet as the full-page experience.
-//
-// inputs:
-//   - DesktopPet.jsx
-//
-// outputs:
-//   - Default export: App component
+// -----------------------------------------------------------------------------
+// Title:       App.jsx
+// Project:     Glim
+// Author:      Reina Hastings (reinahastings13@gmail.com)
+// Created:     2026-03-25
+// Last Modified: 2026-03-26
+// Purpose:     Root application component. Gates the app behind Firebase Auth.
+//              Listens for auth state changes and routes to SignIn or DesktopPet.
+//              Creates the Firestore user document on first sign-in.
+// Inputs:      Firebase auth, db from firebase.js
+// Outputs:     Renders SignIn (unauthenticated), DesktopPet (authenticated),
+//              or a blank loading screen while auth state resolves.
+// -----------------------------------------------------------------------------
 
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import DesktopPet from './DesktopPet.jsx';
+import SignIn from './SignIn.jsx';
+
+// --- Create user document on first sign-in ---
+// Uses getDoc check so createdAt is only written once, not overwritten on every login.
+
+async function ensureUserDocument(user) {
+  const userRef = doc(db, 'users', user.uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      name: user.displayName,
+      email: user.email,
+      createdAt: serverTimestamp(),
+    });
+  }
+}
+
+// --- Root component ---
 
 export default function App() {
+  // undefined = auth state not yet resolved (loading)
+  // null      = resolved, no user signed in
+  // object    = resolved, user is signed in
+  const [user, setUser] = useState(undefined);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        await ensureUserDocument(currentUser);
+      }
+      setUser(currentUser ?? null);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Loading: auth state not resolved yet - blank dark screen to avoid flash
+  if (user === undefined) {
+    return <div style={{ width: '100vw', height: '100vh', background: '#020108' }} />;
+  }
+
+  if (!user) {
+    return <SignIn />;
+  }
+
   return <DesktopPet />;
 }

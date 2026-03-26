@@ -251,17 +251,6 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - Updated Project Docs: Section 2.1 (current + planned stack), Section 8.2 (infrastructure items), Section 11 (tools/references), 3 new Decision Register entries
 - Updated Handoff: task queue (Vite migration replaces build script), computational environment, resolved questions
 
-### 2026-03-26 (Claude.ai) - Firestore schema design and sync architecture decisions
-- Reviewed three sync approaches from previous session. Confirmed Approach 2 (localStorage-primary with background Firebase sync) as the implementation path.
-- Decided: Google sign-in for authentication (one-tap, most users have Google accounts).
-- Decided: Require sign-in on first launch (eliminates local-to-cloud migration problem entirely). Every event written to Firestore from the start, localStorage is purely an offline cache.
-- Decided: Pattern A (subcollections per domain) for Firestore top-level structure. Each tracker domain gets its own subcollection under `users/{userId}/`. Scales naturally, avoids 1MB document limit, writes are small and fast.
-- Decided: Pokes stored as single counter document (not event log). Simpler, and losing a few pokes during offline conflicts is acceptable for a vanity counter.
-- Designed concrete Firestore schema for current 3 domains only (journal, pokes, settings). Future tracker schemas will be added incrementally as features are built, not speculatively.
-- Firestore path structure finalized: `users/{userId}/journal/{entryId}`, `users/{userId}/pokes/counters`, `users/{userId}/settings/current`
-- User metadata (name, email, createdAt) stored on the `users/{userId}` document itself.
-- Outputs: updated `glim_handoff.Rmd`
-
 ### 2026-03-25 (Claude.ai) - Data model, reaction system, and UI design
 - Designed complete data model spec: 15 storage domains with full schemas, sync strategies, migration paths. Foundational decisions: one key per domain, UUIDs, local dates from UTC, soft delete everywhere. Documented as Project Docs Section 8.8.
 - Designed reaction system: 4-tier pipeline (comfort/acknowledge/celebrate/milestone), template interpolation, context evaluation (sleep check, cooldown, dedup), multi-event sequences, nudge events. Walked through water and mood tracking examples. Documented as Project Docs Section 8.9.
@@ -275,40 +264,12 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 ## 3.1 Pending Tasks
 
-### Firebase project setup and SDK installation
-- **Assigned to:** Claude Code (with user doing Firebase Console steps)
-- **Priority:** High (prerequisite for auth and sync)
-- **Description:** Create Firebase project in Firebase Console. Enable Firestore database. Enable Google sign-in in Firebase Auth. Install Firebase SDK (`npm install firebase`). Create Firebase config file in the Vite project. Initialize Firebase app on startup.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Firestore schema design]
-- **Acceptance criteria:** Firebase project exists. `firebase` npm package installed. App initializes Firebase on load without errors. Firestore and Auth are enabled in the console.
-
-### Auth flow implementation (Google sign-in)
-- **Assigned to:** Claude Code + Claude.ai (UI design)
-- **Priority:** High (prerequisite for sync, blocks all Firestore reads/writes)
-- **Description:** Implement Google sign-in as the required auth method on first launch. Build sign-in screen UI. Handle auth state persistence (Firebase Auth remembers sessions by default). Gate all app functionality behind auth (user must be signed in to see Glim). Store basic user metadata (name, email, createdAt) on the `users/{userId}` Firestore document on first sign-in.
-- **Context/References:** [See Handoff Session Log 2026-03-26: decided Google sign-in, required on first launch]
-- **Acceptance criteria:** User sees a sign-in screen on first visit. Google sign-in completes and persists across page reloads. User document created in Firestore on first sign-in. App only renders Glim after successful auth.
-
-### Sync service implementation (background sync module)
-- **Assigned to:** Claude.ai (architecture) + Claude Code (implementation)
-- **Priority:** High (after auth flow works)
-- **Description:** Build the background sync service that pushes local events to Firestore and pulls remote events. Approach 2 architecture: localStorage remains primary read/write layer, sync service runs on a timer and on `visibilitychange` events. Implement for current 3 domains: journal (merge + dedupe by UUID), pokes (Firestore `increment()` when online), settings (last-write-wins by `lastModified`). Design the module so future trackers plug in by registering their domain and sync strategy.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Approach 2 confirmed], [See Project Docs Section 8.8: Storage Key Map for sync strategies]
-- **Acceptance criteria:** Events created on one device appear on the other after sync. Offline writes queue and push when connectivity returns. No data loss during normal usage. Adding a new tracker domain requires minimal sync service changes.
-
-### Firestore security rules
-- **Assigned to:** Claude Code
-- **Priority:** High (must be in place before any real data is written)
-- **Description:** Write Firestore security rules that restrict each user to reading/writing only their own data. Path pattern: `users/{userId}/**` where `{userId}` matches the authenticated user's UID.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Firestore schema uses `users/{userId}/` as root]
-- **Acceptance criteria:** Authenticated users can read/write their own subcollections. Users cannot access other users' data. Unauthenticated requests are rejected.
-
-### Expand Firestore schemas as trackers are built
+### Design sync-ready data model in detail
 - **Assigned to:** Claude.ai
-- **Priority:** Ongoing (as each new tracker is implemented)
-- **Description:** Current Firestore schema covers only journal, pokes, and settings. As each new tracker is built (water, todos, steps, etc.), design its Firestore subcollection schema following the established pattern: one document per event for log-type data, single document for config-type data. Register it with the sync service.
-- **Context/References:** [See Project Docs Section 8.8: Domain Schemas for localStorage specs], [See Handoff Session Log 2026-03-26: incremental schema approach]
-- **Acceptance criteria:** Each new tracker has a documented Firestore path and document schema before implementation. Schema follows Pattern A (subcollection per domain).
+- **Priority:** High (prerequisite for all tracker features)
+- **Description:** Finalize the unified storage schema from Project Docs Section 8.8. Define exact field names, types, and ID generation for each tracker. Design the migration path from current 3-key storage (`glim-journal`, `glim-pokes`, `glim-settings`) to the unified structure. Decide how derived values (daily totals, streaks) are computed and cached.
+- **Context/References:** [See Project Docs Section 8.8: Data Model Design Notes]
+- **Acceptance criteria:** Complete schema specification with examples for each tracker. Migration plan for existing journal/pokes/settings data. Documented conflict resolution rules per data type.
 
 ### Build Glim reaction system
 - **Assigned to:** Claude.ai
@@ -383,7 +344,6 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
-- Firestore schema design (current domains) - 2026-03-26 - Schema for journal, pokes, settings finalized. Pattern A (subcollections per domain). Auth model and pre-auth behavior decided. Documented in `glim_handoff.Rmd` (Session Log, Resolved Questions, Task Queue)
 - PWA setup and iPhone installation - 2026-03-25 - `client/public/manifest.json`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `glim-icon.svg`, `_redirects`; `client/index.html` updated
 - Netlify hosting - 2026-03-25 - auto-deploys from `main`, live URL in Netlify dashboard
 - GitHub repository - 2026-03-25 - `git@github.com:ReitheHeroine/Glim.git`
@@ -432,16 +392,6 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 **Q:** How should data be stored across 15 tracker domains? **A:** One storage key per domain (not monolithic). UUIDs for IDs. Soft delete everywhere. All derived values computed from event logs, never stored. See Project Docs Section 8.8. (2026-03-25)
 
 **Q:** How should the UI handle 15+ features on a phone screen? **A:** Hybrid two-mode system. Companion mode: creature visible, simple trackers as bottom panels. Focus mode: full-screen feature view with mini-Glim in header corner. Customizable 4-slot bottom nav bar. See Project Docs Section 8.10. (2026-03-25)
-
-**Q:** What authentication model should Glim use for sync? **A:** Google sign-in (one-tap, most users have Google accounts). Lowest friction option. Firebase Auth handles session persistence. (2026-03-26)
-
-**Q:** Should Glim work without an account? **A:** No. Require sign-in on first launch. Eliminates the local-to-cloud migration problem entirely. Every event written to Firestore from the start, localStorage is purely an offline cache. (2026-03-26)
-
-**Q:** What Firestore structure should Glim use? **A:** Pattern A (subcollections per domain). Each tracker domain gets its own subcollection under `users/{userId}/`. Scales naturally, avoids 1MB document limit, writes are small and fast. Pattern B (flat documents with arrays) rejected due to size limits and inefficient writes. (2026-03-26)
-
-**Q:** How should pokes be stored in Firestore? **A:** Single counter document at `users/{userId}/pokes/counters` with `total` and `lastPoke` fields. Not an event log. Use Firestore `increment()` when online. Losing a few pokes during offline conflicts is acceptable. (2026-03-26)
-
-**Q:** Should Firestore schemas be designed for all 15 planned trackers upfront? **A:** No. Design only for current domains (journal, pokes, settings). Add schemas incrementally as each tracker is built. Subcollection-per-domain pattern makes additions trivial. (2026-03-26)
 
 ---
 

@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tater</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦤</text></svg>" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+    #beach-canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+    #frond-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+    .frond-img { position: absolute; pointer-events: none; will-change: transform; }
+    .sway1 { animation: sway1 6s ease-in-out infinite; }
+    .sway2 { animation: sway2 7.5s ease-in-out infinite; }
+    .sway3 { animation: sway3 8s ease-in-out infinite; }
+    .sway4 { animation: sway4 5.5s ease-in-out infinite; }
+    .sway5 { animation: sway5 9s ease-in-out infinite; }
+    .sway6 { animation: sway6 7s ease-in-out infinite; }
+    @keyframes sway1 { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(1.5deg)} }
+    @keyframes sway2 { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-1.3deg)} }
+    @keyframes sway3 { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(1.8deg)} }
+    @keyframes sway4 { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-1deg)} }
+    @keyframes sway5 { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(1.5deg)} 70%{transform:rotate(-0.5deg)} }
+    @keyframes sway6 { 0%,100%{transform:rotate(0deg)} 40%{transform:rotate(-1.8deg)} 80%{transform:rotate(0.4deg)} }
+    .cloud { position: absolute; z-index: 2; pointer-events: none; }
+    .c1 { animation: drift1 50s linear infinite; }
+    .c2 { animation: drift2 60s linear infinite; }
+    .c3 { animation: drift3 65s linear infinite; }
+    @keyframes drift1 { 0%{transform:translateX(0)} 100%{transform:translateX(110vw)} }
+    @keyframes drift2 { 0%{transform:translateX(0)} 100%{transform:translateX(108vw)} }
+    @keyframes drift3 { 0%{transform:translateX(0)} 100%{transform:translateX(112vw)} }
+    .bird { position: absolute; z-index: 3; pointer-events: none; }
+    .b1 { animation: bf1 22s linear infinite; }
+    .b2 { animation: bf2 28s linear infinite; }
+    .b3 { animation: bf3 25s linear infinite; }
+    @keyframes bf1 { 0%{transform:translate(0,0)} 50%{transform:translate(50vw,-12px)} 100%{transform:translate(105vw,5px)} }
+    @keyframes bf2 { 0%{transform:translate(0,0)} 40%{transform:translate(42vw,8px)} 100%{transform:translate(105vw,-6px)} }
+    @keyframes bf3 { 0%{transform:translate(0,0)} 60%{transform:translate(58vw,-10px)} 100%{transform:translate(105vw,3px)} }
+    #root { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
+  </style>
+  <script>
+    window.storage = {
+      async get(key) { const v = localStorage.getItem(key); if (v === null) throw new Error('Key not found'); return { key, value: v, shared: false }; },
+      async set(key, value) { localStorage.setItem(key, value); return { key, value, shared: false }; },
+      async delete(key) { localStorage.removeItem(key); return { key, deleted: true, shared: false }; },
+      async list(prefix) { const keys = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!prefix || k.startsWith(prefix)) keys.push(k); } return { keys, shared: false }; }
+    };
+  </script>
+</head>
+<body>
+
+<canvas id="beach-canvas"></canvas>
+<div id="frond-container"></div>
+
+<svg class="cloud c1" style="left:-18vw;top:10%" width="130" height="55" viewBox="0 0 130 55"><ellipse cx="65" cy="30" rx="55" ry="17" fill="rgba(255,255,255,0.4)"/><ellipse cx="82" cy="22" rx="38" ry="14" fill="rgba(255,255,255,0.35)"/><ellipse cx="45" cy="24" rx="32" ry="12" fill="rgba(255,255,255,0.3)"/></svg>
+<svg class="cloud c2" style="left:-30vw;top:7%" width="105" height="42" viewBox="0 0 105 42"><ellipse cx="52" cy="24" rx="45" ry="15" fill="rgba(255,255,255,0.35)"/><ellipse cx="68" cy="17" rx="30" ry="11" fill="rgba(255,255,255,0.3)"/></svg>
+<svg class="cloud c3" style="left:-45vw;top:16%" width="85" height="36" viewBox="0 0 85 36"><ellipse cx="42" cy="20" rx="38" ry="13" fill="rgba(255,255,255,0.3)"/><ellipse cx="56" cy="14" rx="24" ry="9" fill="rgba(255,255,255,0.25)"/></svg>
+
+<svg class="bird b1" style="left:-8vw;top:16%" width="20" height="10" viewBox="0 0 20 10"><path d="M0 6Q5 2,10 6Q15 2,20 6" fill="none" stroke="rgba(90,120,140,0.3)" stroke-width="1.3" stroke-linecap="round"/></svg>
+<svg class="bird b2" style="left:-18vw;top:12%" width="16" height="8" viewBox="0 0 16 8"><path d="M0 5Q4 1,8 5Q12 1,16 5" fill="none" stroke="rgba(90,120,140,0.25)" stroke-width="1.2" stroke-linecap="round"/></svg>
+<svg class="bird b3" style="left:-24vw;top:20%" width="14" height="7" viewBox="0 0 14 7"><path d="M0 4.5Q3.5 1,7 4.5Q10.5 1,14 4.5" fill="none" stroke="rgba(90,120,140,0.22)" stroke-width="1.1" stroke-linecap="round"/></svg>
+
+<div id="root"></div>
+
+<script>
+// ============================================================
+//  BEACH RENDERING ENGINE (runs outside React)
+// ============================================================
+function seededRng(s){return()=>{s=(s*9301+49297)%233280;return s/233280}}
+function bPt(a,b,c,d,t){const u=1-t;return{x:u*u*u*a.x+3*u*u*t*b.x+3*u*t*t*c.x+t*t*t*d.x,y:u*u*u*a.y+3*u*u*t*b.y+3*u*t*t*c.y+t*t*t*d.y}}
+function bTn(a,b,c,d,t){const u=1-t;const dx=3*u*u*(b.x-a.x)+6*u*t*(c.x-b.x)+3*t*t*(d.x-c.x);const dy=3*u*u*(b.y-a.y)+6*u*t*(c.y-b.y)+3*t*t*(d.y-c.y);const l=Math.sqrt(dx*dx+dy*dy)||1;return{x:dx/l,y:dy/l}}
+
+function renderFeatherFrond(cfg){const{width=500,height=400,stemPoints,leaflets=20,maxLeafLen=90,minLeafLen=18,maxLeafWidth=12,minLeafWidth=4,leafCurve=0.3,stemWidth=5,seed=42}=cfg;const rand=seededRng(seed);const c=document.createElement('canvas');c.width=width*2;c.height=height*2;const ctx=c.getContext('2d');ctx.scale(2,2);const[p0,p1,p2,p3]=stemPoints;ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.bezierCurveTo(p1.x,p1.y,p2.x,p2.y,p3.x,p3.y);ctx.strokeStyle='#2A6820';ctx.lineWidth=stemWidth;ctx.lineCap='round';ctx.stroke();ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.bezierCurveTo(p1.x,p1.y,p2.x,p2.y,p3.x,p3.y);ctx.strokeStyle='#3A7830';ctx.lineWidth=stemWidth*0.45;ctx.stroke();for(let i=0;i<leaflets;i++){const t=(i+0.5)/leaflets;const pt=bPt(p0,p1,p2,p3,t);const tan=bTn(p0,p1,p2,p3,t);const pL={x:-tan.y,y:tan.x};const pR={x:tan.y,y:-tan.x};const taper=Math.sin(t*Math.PI)*0.8+0.2;const baseLen=minLeafLen+(maxLeafLen-minLeafLen)*taper;const baseWid=minLeafWidth+(maxLeafWidth-minLeafWidth)*taper;for(let side=-1;side<=1;side+=2){const perp=side<0?pL:pR;const v=0.82+rand()*0.36;const len=baseLen*v;const w=baseWid*(0.8+rand()*0.4);const ang=(rand()-0.5)*0.12;const tipX=pt.x+perp.x*len+tan.x*len*leafCurve;const tipY=pt.y+perp.y*len+tan.y*len*leafCurve;const midT=0.4;const midX=pt.x+perp.x*len*midT+tan.x*len*leafCurve*midT*0.5;const midY=pt.y+perp.y*len*midT+tan.y*len*leafCurve*midT*0.5;const ldx=tipX-pt.x,ldy=tipY-pt.y;const ll=Math.sqrt(ldx*ldx+ldy*ldy)||1;const lnx=-ldy/ll,lny=ldx/ll;const colors=['#3A8030','#408830','#358028','#3A7830','#449038','#388030'];ctx.fillStyle=colors[Math.floor(rand()*colors.length)];ctx.globalAlpha=0.85+rand()*0.15;ctx.beginPath();ctx.moveTo(pt.x,pt.y);ctx.quadraticCurveTo(midX+lnx*w*0.5+ang*side*8,midY+lny*w*0.5,tipX,tipY);ctx.quadraticCurveTo(midX-lnx*w*0.5+ang*side*8,midY-lny*w*0.5,pt.x,pt.y);ctx.fill();ctx.globalAlpha=0.4;ctx.beginPath();ctx.moveTo(pt.x,pt.y);ctx.quadraticCurveTo(midX+ang*side*4,midY,tipX,tipY);ctx.strokeStyle='#2A6020';ctx.lineWidth=Math.max(0.4,1.2-t*0.8);ctx.stroke();ctx.globalAlpha=1}}const img=document.createElement('img');img.src=c.toDataURL();img.style.width=width+'px';img.style.height=height+'px';return img}
+
+function renderFanFrond(cfg){const{width=400,height=400,originX=200,originY=380,blades=16,bladeLen=280,bladeWidth=14,spreadAngle=Math.PI*0.65,startAngle=-Math.PI/2,seed=42}=cfg;const rand=seededRng(seed);const c=document.createElement('canvas');c.width=width*2;c.height=height*2;const ctx=c.getContext('2d');ctx.scale(2,2);ctx.beginPath();ctx.moveTo(originX,originY);ctx.lineTo(originX,originY-20);ctx.strokeStyle='#3A7830';ctx.lineWidth=4;ctx.lineCap='round';ctx.stroke();for(let i=0;i<blades;i++){const frac=i/(blades-1);const angle=startAngle-spreadAngle/2+spreadAngle*frac;const lenVar=0.75+rand()*0.25;const len=bladeLen*lenVar;const wVar=0.7+rand()*0.6;const w=bladeWidth*wVar;const curveAmt=(rand()-0.5)*0.08;const cosA=Math.cos(angle+curveAmt);const sinA=Math.sin(angle+curveAmt);const tipX=originX+cosA*len;const tipY=originY+sinA*len;const pnx=-sinA,pny=cosA;const midF=0.45;const midX=originX+cosA*len*midF;const midY=originY+sinA*len*midF;const colors=['#3A8030','#408830','#358028','#3A7830','#449038','#2E7028'];ctx.fillStyle=colors[Math.floor(rand()*colors.length)];ctx.globalAlpha=0.8+rand()*0.2;ctx.beginPath();ctx.moveTo(originX,originY-15);ctx.quadraticCurveTo(midX+pnx*w,midY+pny*w,tipX,tipY);ctx.quadraticCurveTo(midX-pnx*w,midY-pny*w,originX,originY-15);ctx.fill();ctx.globalAlpha=0.35;ctx.beginPath();ctx.moveTo(originX,originY-15);ctx.lineTo(tipX,tipY);ctx.strokeStyle='#2A6020';ctx.lineWidth=Math.max(0.4,1-frac*0.3);ctx.stroke();ctx.globalAlpha=1}const img=document.createElement('img');img.src=c.toDataURL();img.style.width=width+'px';img.style.height=height+'px';return img}
+
+// ============================================================
+//  5-phase color palette
+// ============================================================
+function getBeachColors() {
+  const h = new Date().getHours();
+  if (h < 6) return { // late night
+    skyTop:'#0A1018', skyMid:'#101E28', skyBot:'#182830',
+    ocean1:'rgba(20,40,50,0.8)', ocean2:'rgba(15,30,40,0.85)',
+    wetSand:'#22201A', sand:'#1A1810', foam:'rgba(180,220,255,0.12)',
+    shimmer:'rgba(180,220,255,0.06)', isNight:true, sunX:0.85, sunY:0.12, sunR:22, sunColor:'rgba(235,240,230,0.75)', sunGlow:'rgba(235,240,230,0.3)',
+  };
+  if (h < 9) return { // early morning - golden dawn
+    skyTop:'#E8A878', skyMid:'#F0C8A0', skyBot:'#F8E0C0',
+    ocean1:'rgba(120,152,168,0.6)', ocean2:'rgba(100,140,156,0.65)',
+    wetSand:'#C8B898', sand:'#E8D8C0', foam:'rgba(255,220,180,0.45)',
+    shimmer:'rgba(255,220,180,0.2)', isNight:false, sunX:0.15, sunY:0.2, sunR:30, sunColor:'rgba(255,216,160,0.6)', sunGlow:'rgba(255,232,192,0.4)',
+  };
+  if (h < 12) return { // morning - M4 peach-into-blue
+    skyTop:'#D8B8A8', skyMid:'#C0C8CC', skyBot:'#A8D0D8',
+    ocean1:'rgba(72,160,176,0.65)', ocean2:'rgba(56,140,156,0.7)',
+    wetSand:'#CCC0A8', sand:'#E8D8C0', foam:'rgba(255,255,255,0.5)',
+    shimmer:'rgba(255,255,255,0.2)', isNight:false, sunX:0.75, sunY:0.14, sunR:28, sunColor:'rgba(255,232,200,0.55)', sunGlow:'rgba(255,244,224,0.35)',
+  };
+  if (h < 17) return { // afternoon - D high noon bright
+    skyTop:'#A8D8E8', skyMid:'#C0E0E8', skyBot:'#D8E8E8',
+    ocean1:'rgba(56,168,184,0.7)', ocean2:'rgba(48,150,168,0.72)',
+    wetSand:'#D8CCA8', sand:'#F8F0DA', foam:'rgba(255,255,255,0.55)',
+    shimmer:'rgba(255,255,255,0.3)', isNight:false, sunX:0.5, sunY:0.08, sunR:32, sunColor:'rgba(255,248,224,0.5)', sunGlow:'rgba(255,255,240,0.35)',
+  };
+  if (h < 21) return { // evening - coral sunset
+    skyTop:'#C07080', skyMid:'#D89890', skyBot:'#E8B8A8',
+    ocean1:'rgba(80,104,120,0.85)', ocean2:'rgba(65,90,105,0.88)',
+    wetSand:'#A89880', sand:'#D0BEA8', foam:'rgba(255,180,160,0.3)',
+    shimmer:'rgba(255,180,160,0.15)', isNight:false, sunX:0.5, sunY:0.22, sunR:34, sunColor:'rgba(255,144,120,0.4)', sunGlow:'rgba(255,184,160,0.3)',
+  };
+  return { // late night
+    skyTop:'#0A1018', skyMid:'#101E28', skyBot:'#182830',
+    ocean1:'rgba(20,40,50,0.8)', ocean2:'rgba(15,30,40,0.85)',
+    wetSand:'#22201A', sand:'#1A1810', foam:'rgba(180,220,255,0.12)',
+    shimmer:'rgba(180,220,255,0.06)', isNight:true, sunX:0.85, sunY:0.12, sunR:22, sunColor:'rgba(235,240,230,0.75)', sunGlow:'rgba(235,240,230,0.3)',
+  };
+}
+
+// ============================================================
+//  Draw beach background to canvas
+// ============================================================
+function drawBeach() {
+  const cv = document.getElementById('beach-canvas');
+  const W = cv.width = window.innerWidth, H = cv.height = window.innerHeight;
+  const ctx = cv.getContext('2d');
+  const p = getBeachColors();
+
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0,0,0,H*0.65);
+  sky.addColorStop(0,p.skyTop); sky.addColorStop(0.4,p.skyMid); sky.addColorStop(1,p.skyBot);
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+  // Sun/Moon
+  ctx.beginPath(); ctx.arc(W*p.sunX, H*p.sunY, p.sunR, 0, Math.PI*2);
+  ctx.fillStyle = p.sunColor; ctx.fill();
+  ctx.beginPath(); ctx.arc(W*p.sunX, H*p.sunY, p.sunR*0.65, 0, Math.PI*2);
+  ctx.fillStyle = p.sunGlow; ctx.fill();
+
+  // Night stars
+  if (p.isNight) {
+    const sr = seededRng(777);
+    for (let i=0; i<60; i++) {
+      ctx.beginPath();
+      ctx.arc(sr()*W, sr()*H*0.5, sr()*1.5+0.5, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,240,${sr()*0.4+0.2})`;
+      ctx.fill();
+    }
+  }
+
+  // Ocean
+  const oy = H*0.55;
+  ctx.beginPath(); ctx.moveTo(0,oy);
+  for(let x=0;x<=W;x+=12) ctx.lineTo(x, oy+Math.sin(x*0.008)*10-5);
+  ctx.lineTo(W,H*0.7); ctx.lineTo(0,H*0.7); ctx.closePath();
+  const og=ctx.createLinearGradient(0,oy,0,H*0.7);
+  og.addColorStop(0,p.ocean1); og.addColorStop(1,p.ocean2);
+  ctx.fillStyle=og; ctx.fill();
+
+  // Shimmer
+  ctx.beginPath();
+  for(let x=0;x<=W;x+=10){const y=oy+22+Math.sin(x*0.01+1)*6;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+  ctx.strokeStyle=p.shimmer; ctx.lineWidth=1; ctx.stroke();
+
+  // Wet sand
+  ctx.fillStyle=p.wetSand; ctx.fillRect(0,H*0.67,W,H*0.05);
+
+  // Foam
+  ctx.beginPath(); ctx.moveTo(0,H*0.685);
+  for(let x=0;x<=W;x+=8) ctx.lineTo(x,H*0.685+Math.sin(x*0.012)*4);
+  ctx.strokeStyle=p.foam; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.stroke();
+
+  // Sand
+  ctx.fillStyle=p.sand; ctx.fillRect(0,H*0.71,W,H*0.3);
+
+  // Sand dots
+  const dr=seededRng(888);
+  for(let i=0;i<25;i++){ctx.beginPath();ctx.arc(dr()*W,H*0.71+dr()*(H*0.29),dr()*1.5+0.5,0,Math.PI*2);ctx.fillStyle=p.isNight?'rgba(40,35,25,0.3)':'rgba(200,185,155,0.3)';ctx.fill()}
+
+  // Crabs
+  function crab(x,y,sz,col){
+    ctx.save();ctx.translate(x,y);
+    ctx.beginPath();ctx.ellipse(0,0,sz,sz*0.65,0,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=sz*0.12;ctx.lineCap='round';ctx.lineJoin='round';
+    for(let s=-1;s<=1;s+=2){for(let i=0;i<3;i++){const by=(i-1)*sz*0.3;ctx.beginPath();ctx.moveTo(s*sz*0.7,by);ctx.lineTo(s*sz*1.5,by+sz*0.25);ctx.lineTo(s*sz*1.8,by+sz*0.05);ctx.stroke()}
+    ctx.lineWidth=sz*0.15;ctx.beginPath();ctx.moveTo(s*sz*0.5,-sz*0.5);ctx.lineTo(s*sz*1.0,-sz*0.9);ctx.lineTo(s*sz*1.3,-sz*0.6);ctx.stroke();ctx.beginPath();ctx.moveTo(s*sz*1.0,-sz*0.9);ctx.lineTo(s*sz*0.85,-sz*0.65);ctx.stroke();
+    ctx.lineWidth=sz*0.08;ctx.beginPath();ctx.moveTo(s*sz*0.25,-sz*0.55);ctx.lineTo(s*sz*0.3,-sz*0.85);ctx.stroke();ctx.beginPath();ctx.arc(s*sz*0.3,-sz*0.88,sz*0.13,0,Math.PI*2);ctx.fillStyle='#1A1510';ctx.fill()}
+    ctx.restore();
+  }
+  crab(W*0.22,H*0.82,8,p.isNight?'#604838':'#C07850');
+  crab(W*0.72,H*0.87,7,p.isNight?'#584030':'#B87048');
+  crab(W*0.48,H*0.79,5.5,p.isNight?'#644840':'#C88058');
+}
+
+// ============================================================
+//  Frond layout (Canopy C minus center droop)
+// ============================================================
+function setupFronds() {
+  const W=window.innerWidth, H=window.innerHeight;
+  const container=document.getElementById('frond-container');
+  container.innerHTML='';
+  const fronds = [
+    // Left main feather
+    {type:'feather',width:W*0.6,height:H*0.48,stemPoints:[{x:0,y:0},{x:W*0.1,y:H*0.08},{x:W*0.26,y:H*0.2},{x:W*0.44,y:H*0.35}],leaflets:26,maxLeafLen:W*0.07,minLeafLen:14,maxLeafWidth:W*0.014,minLeafWidth:4,stemWidth:5.5,seed:701,posX:-W*0.14,posY:-H*0.15,origin:'0% 0%',sway:'sway1'},
+    // Right main feather
+    {type:'feather',width:W*0.6,height:H*0.48,stemPoints:[{x:W*0.6,y:0},{x:W*0.5,y:H*0.08},{x:W*0.34,y:H*0.2},{x:W*0.16,y:H*0.35}],leaflets:26,maxLeafLen:W*0.07,minLeafLen:14,maxLeafWidth:W*0.014,minLeafWidth:4,stemWidth:5.5,seed:702,posX:W*0.48,posY:-H*0.15,origin:'100% 0%',sway:'sway2'},
+    // Left fan
+    {type:'fan',width:W*0.65,height:W*0.65,originX:W*0.1,originY:W*0.1,blades:16,bladeLen:W*0.42,bladeWidth:W*0.013,spreadAngle:Math.PI*0.55,startAngle:Math.PI*0.25,seed:703,posX:-W*0.14,posY:-W*0.14,origin:'0% 0%',sway:'sway4',opacity:0.55},
+    // Right fan
+    {type:'fan',width:W*0.65,height:W*0.65,originX:W*0.55,originY:W*0.1,blades:16,bladeLen:W*0.42,bladeWidth:W*0.013,spreadAngle:Math.PI*0.55,startAngle:Math.PI*0.75,seed:704,posX:W*0.52,posY:-W*0.14,origin:'100% 0%',sway:'sway6',opacity:0.55},
+    // Left secondary feather (lower)
+    {type:'feather',width:W*0.45,height:H*0.25,stemPoints:[{x:0,y:0},{x:W*0.08,y:H*0.04},{x:W*0.18,y:H*0.08},{x:W*0.32,y:H*0.1}],leaflets:16,maxLeafLen:W*0.04,minLeafLen:8,maxLeafWidth:W*0.008,minLeafWidth:3,stemWidth:3.5,seed:705,posX:-W*0.12,posY:-H*0.02,origin:'0% 0%',sway:'sway3',opacity:0.5},
+  ];
+  fronds.forEach(f=>{
+    let img;
+    if(f.type==='fan') img=renderFanFrond(f); else img=renderFeatherFrond(f);
+    img.className='frond-img '+(f.sway||'sway1');
+    img.style.left=f.posX+'px'; img.style.top=(f.posY||0)+'px';
+    img.style.transformOrigin=f.origin||'0% 0%';
+    if(f.opacity) img.style.opacity=f.opacity;
+    container.appendChild(img);
+  });
+}
+
+// Init beach + fronds
+drawBeach();
+setupFronds();
+window.addEventListener('resize',()=>{drawBeach();setupFronds()});
+// Refresh beach colors every minute
+setInterval(()=>{drawBeach()}, 60000);
+</script>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+// ============================================================
+//  TATER - Evelyn's Desktop Companion
+//  A featherless emu on a Dominican beach
+// ============================================================
+
+const DAY_NAME = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+    "you're up before the sun? respeto.",
+    "the beach is so quiet rn. just us and the waves.",
+    "you up? drink some water before you do anything else.",
+    "*yaaaawn* ...my neck takes forever to yawn. it's so long.",
+    "madrugadora! we're up before the palm trees.",
+    "mrrrrrrp. oh wait. that's a cat sound. i'm an emu. BWAAAAK.",
+    "the ocean is doing that sparkly thing. come look.",
+    "good morning from Tater, your favorite naked bird on a beach.",
+    "the coconuts aren't even awake yet.",
+    "dawn on the playa hits different huh?",
+    "i watched the whole sunrise. my neck is great for that. only perk of being this tall and bald.",
+    "you know what pairs well with early mornings? water. go drink some.",
+    "pre-sunrise crew. we're basically nocturnal at this point.",
+    "the sand is still cool. the morning is still fresh. life is good.",
+    "what do you call a sleepy emu? ...an emu-tional wreck. ...i'll stop.",
+    "did i sleep? i don't think i sleep. i just stand here with my eyes closed and hope for the best.",
+  ],
+  morning: [
+    "buenos dias Evelyn!!", "que lo que! today has potential.",
+    "hydrate pls. the sun is not playing.", "what's the plan today?",
+    "wepa! let's get it!",
+    "the palm trees are swaying. the vibes are immaculate. go drink water.",
+    "Peanut is probably yelling at Tim about something rn. that's her whole job.",
+    "you already know Peanut is demanding something from Tim right now.",
+    "go say good morning to Tim before you start working. he probably misses you already.",
+    "today doesn't have to be perfect. it just has to be yours.",
+    "another day of running this whole household like a boss. let's go.",
+    `reminder: you are the woman who moved to a whole new country and built a life. a regular ${DAY_NAME} is nothing.`,
+    "today's vibe: competent and slightly caffeinated.",
+    "the beach is ready. i'm ready. are you ready?",
+    "if Peanut can face the day with no fur and no shame, so can we.",
+    "good morning from a bird with no feathers on a beach with no worries.",
+    "Needy is probably shedding on something important rn. that's love.",
+    "whatever today throws at you, you've handled worse. you got this.",
+    "a coconut falls from a tree. i look at it. it looks at me. we have an understanding.",
+    "the waves said good morning. i'm just the messenger.",
+  ],
+  afternoon: [
+    "you're doing great, Evelynona. (Reina told me to call you that.)",
+    "snack break? go eat something good.", "halfway through the day! you're killing it.",
+    "proud of u.", "keep going keep going.",
+    "don't forget to stretch. your desk is not a prison.",
+    "you've been sitting for a while huh.",
+    "the beach is RIGHT outside. (metaphorically. i live in your browser.)",
+    "go refill that water bottle rn. i know it's empty.",
+    "stand up. do it. i'll wait. my neck is long, i can see if you actually did it.",
+    "Tim is somewhere in that house doing Tim things. go say hi.",
+    "Peanut is probably demanding to be held rn. if she's not being held, she's LOUDLY not being held.",
+    "Needy is shedding. on everything. that's just physics at this point.",
+    "Tim is somewhere in the house being a sad puppy because you haven't walked into his room yet.",
+    "the afternoon slump is not a character flaw. it's biology.",
+    "whatever's stressing you rn - tranquila. it's going to be fine.",
+    "have you looked out a window today? the world is still out there.",
+    "the sun is doing its thing. you should witness it briefly.",
+    "Peanut would demand a break right now. be more like Peanut. loud and unapologetic.",
+    "you've been doing hard things all day. that counts for something.",
+    "you keep this whole house running and you do it from that desk chair. superwoman vibes.",
+    "Reina is out there in San Diego thinking about you rn. guaranteed.",
+    "somewhere rn Lados is trying to perfect their flan recipe to dethrone you. stay vigilant.",
+    "your flan remains undefeated. just putting that out there.",
+    "the ocean is calm this afternoon. channel that.",
+  ],
+  evening: [
+    "winding down?", "good work today, Evelyn.", "you earned a rest.",
+    "cozy hours activated. go find Tim.", "almost done!",
+    "what are you and Tim watching tonight?",
+    "log off soon maybe? the couch is calling.",
+    "you survived another work day from that desk. hero behavior.",
+    "tomorrow-you will thank today-you for resting.",
+    "Peanut is probably ready to be held like the demanding little baby she is.",
+    "Needy is about to drape herself across your pillow. brace yourself for the fur.",
+    "go be a couch creature with Tim and Peanut.",
+    "evening plan: you pick the show. Tim judges the show. perfect system.",
+    "time to transition from work-Evelyn to cozy-Evelyn.",
+    "go enjoy your evening. you've done enough.",
+    "the hard part is over. now it's just the cozy part.",
+    "tonight is for you. not for productivity. just you.",
+    "talk to Reina or Lados tonight. they like hearing from you. trust me.",
+    "whatever you didn't finish today will still be there tomorrow.",
+    "put the laptop away. it can't love you back. i do though. SQUAAA.",
+    "Peanut is going to demand to sit in the worst possible spot on the couch. classic Peanut.",
+    "evening mode: activated. productivity expectations: lowered. Tim snuggle probability: high.",
+    "you and Tim watching shows together is peak romance tbh.",
+    "i think evenings are my favorite. everything gets softer.",
+    "diache, you worked hard today. go rest.",
+    "you and Carmen need a night out soon. the world deserves that energy.",
+    "Tim is going to stub his toe tonight and you're going to yell at him for it and it will be the most married thing that's ever happened.",
+  ],
+  lateNight: [
+    "hey... it's late.", "sleep is good actually.",
+    "you're still here? same. but i'm an emu. what's your excuse?",
+    "pls rest soon.", "midnight snack? at least drink some water with it.",
+    "zzz... oh you're still up.",
+    "your circadian rhythm is filing a formal complaint.",
+    "fun fact: Tim acts like a sad puppy when you go on trips. you are THAT important.",
+    "Peanut is curled up somewhere warm and demanding. you should be curled up too.",
+    "the beach at night is beautiful but you should be seeing it from behind your eyelids.",
+    "Tim would tell you to come to bed. i'm telling you for him.",
+    "go be cozy with your husband and your cats. the screen will keep.",
+    "late night thoughts hit different. write them down if they're good ones.",
+    "you don't have to finish everything tonight. you just have to be okay.",
+    "the stars are out on the beach rn. i'm counting them. i keep losing count because i don't have fingers.",
+    "your bed is RIGHT THERE.", "melatonin is calling. pick up.",
+    "you're not gonna solve it tonight. but you might solve it after sleep.",
+    "the best ideas come after 8 hours of sleep. i read that somewhere. (i made it up.)",
+    "what do you call an emu who stays up too late? ...an insom-emu-ac. i know. i KNOW.",
+    "the waves are doing their sleepy sound rn. shhhhhh. shhhhhhh. that's for you.",
+    "Peanut is going to yell at you until you get in bed. she's the bedtime manager. respect the system.",
+    "nothing is as bad at 2am as it feels at 2am. sleep on it. seriously.",
+    "Brady is doing that thing where cats sleep so hard they look dead. be like Brady.",
+    "the moon is showing off tonight. i stared at it for twenty minutes. now go sleep.",
+    "i'm an emu on a beach at night and even I think it's time for bed.",
+    "buenas noches, Evelyn. you did good today.",
+    "Reina used to nap with you and ask for cuddle wuddles. go get some sleep and channel that energy.",
+  ],
+  clicked: [
+    "BWAK!", "hehe", "that tickles! and i can feel EVERYTHING because i have no feathers!",
+    ":3", "oh!", "henlo", "squish", "!!", "*wiggles long neck*", "poke!",
+    "heehee", "meep. wait. emus don't meep. BWAK.", "*flaps tiny naked wings*",
+    "skrunkly", "pbbbbbt", "eeeee", "nyyoom",
+    "*vibrates at a frequency only hairless cats can hear*",
+    "bweh", "*wobbles*", "I am perceived. and i am NAKED.",
+    "you have activated my second form (still bald)", "*emu noises*", "NYEH",
+    "*happy wing nub flap*", "squimsh", "weh!",
+    "*sheds absolutely nothing because i have nothing to shed*", "mlem",
+    "*emits a frequency only crabs can hear*", "bonk",
+    "Peanut would've ignored that poke. she's too busy yelling at Tim.",
+    "Needy would've headbutted you back. with love. and fur.",
+    "you are loved!! just fyi!!",
+    "you're here. i'm here. on this beach. that's enough.",
+    "*neck wobble*", "*does a little emu trot in place*",
+    "the vibes are immaculate rn", "*pecks your finger*",
+    "...salty. like the ocean. like me.",
+    "Brady would've blinked at you slowly. that means love in cat. this poke means love in emu.",
+    "that was my thinking neck!", "BWAK? BWAAAK?", "*wing nub twitch*",
+    "you really just poked a naked emu on a beach huh", "bold of you",
+    "*happy trotting*", "wepa!", "I'VE BEEN A NASTY GIRL", "diache!",
+    "*tries to ruffle feathers* *has no feathers* *ruffles skin*",
+    "Peanut and i have so much in common. bald. demanding. iconic.",
+    "did you know emus can't walk backwards? now you do. you're welcome.",
+    "you poke me because you care. i wobble because i care back.",
+    "*does a full body shake like a wet dog*", "ay!",
+    "every time you poke me i feel more alive. and more naked.",
+    "*stares at you with giant round emu eyes*",
+    "Kiki would've swatted me for that. she has standards.",
+    "i felt that in my whole neck. which is most of my body.",
+    "*happy foot stomp*",
+    "careful. this woman knows Krav Maga. and she's poking an emu. fearless.",
+  ],
+  rapidClick: [
+    "OKAY OKAY I'M AWAKE", "hjkdfhgkjd STOP", "TOO MANY POKES",
+    "i'm overstimulated!! and NAKED!!", "AAAAAA", "*vibrates uncontrollably*",
+    "THESE WING NUBS ARE NOT DESIGNED FOR THIS",
+    "you're gonna snap my neck!! it's SO LONG!!", "this is violence!!",
+    "I AM BUT A SMALL NAKED BIRD", "*eyes spinning*", "the AUDACITY",
+    "i'm filing a complaint with the beach council",
+    "Peanut energy detected. demanding and relentless.",
+    "help i'm being poked repeatedly on a beach",
+    "my pixels!! my beautiful bald pixels!!",
+    "i'm gonna need a coconut water after this",
+    "STOP FIGHTING!! ...hello daddies", "BOUNDARY!!",
+    "*wing nubs flapping in pure panic*", "are you OKAY?? because I'M NOT",
+    "diache Evelyn!! i'm a bird not a punching bag!!",
+  ],
+  shaken: [
+    "WHOAAA", "I'M GETTING DIZZY and my neck is making it WORSE",
+    "the world is SPINNING and the beach is going sideways",
+    "*holding on for dear life with tiny wing nubs*",
+    "THIS IS NOT WHAT WING NUBS ARE FOR",
+    "my neck!! MY NECK IS GOING EVERYWHERE!!",
+    "i think i left my stomach back at the palm tree",
+    "WHEEEEE wait no AHHHHH",
+    "is this a roller coaster. i didn't consent to this.",
+    "*eyes going in different directions*",
+    "stoooooop i'm gonna lose my... what do i even have to lose. skin?",
+    "you wouldn't shake a real emu. (they kick. hard. be grateful i'm digital.)",
+    "TURBULENCE", "my neck is whipping around like a pool noodle!!",
+    "i can taste the ocean from here. wait no that's vertigo.",
+    "*clinging to the sand*", "this is worse than the fly attempts. and those are BAD.",
+    "okay this is kind of fun actually. wait no. STOP.",
+  ],
+  startled: [
+    "BWAAAK!! oh it's you", "you SCARED me!!",
+    "i was SLEEPING!! (standing up. with my eyes open. like emus do.)",
+    "*neck extends to full length in shock*", "my SKIN!!", "GAH!!",
+    "warn a creature!!", "my heart!! (do i have a heart? it's beating fast so... yes?)",
+    "i was having the nicest dream about the ocean...",
+    "*startled emu screech*", "my WING NUBS weren't ready!!",
+    "you can't just APPEAR like that. i'm a nervous bird.",
+    "i think i lost a skin cell from the shock", "*neck recoils like a spring*",
+    "i was somewhere else in my head. it was warm there. and i had feathers.",
+  ],
+  purr: [
+    "brrrrrrrmmmmmmmm", "*deep emu boom*", "*leans long neck into it*",
+    "brrm brrm brrm brrm", "mmmmrrrrrrrrrmmm", "*happy emu drumming*",
+    "brrrrrr this is nice brrrrrr", "*melts into the sand*",
+    "*booms so deep the sand vibrates*", "brrrrmp mrrrrmp brrrrrr",
+    "don't stop... brrrrrrrm...", "*full body vibration mode activated*",
+    "mmmmbrrrrrrrrrrrrrmmmmm", "*the booming is structural now*",
+    "*booms wetly* (sorry) (not sorry) (Peanut taught me that)",
+    "you have found the boom button",
+    "brrrrrrrm... brrrrrrrm... brrrrrrrm...",
+    "*neck goes completely limp with contentment*",
+    "*tiny wing nubs tuck in*", "i'm just a warm vibrating naked bird now",
+    "this is peak existence. brrrrrm.",
+    "is this what having a body is for? just this? worth it. even without feathers.",
+  ],
+  flyFail: [
+    "*flap flap flap* ...nope. as expected.",
+    "almost!! (it was never almost.)", "gravity is a SCAM",
+    "these wing nubs are decorative and EVERYONE knows that",
+    "one day i'll fly. (no i won't. i'm an emu.)", "*thud*",
+    "the spirit is willing but the wing nubs are literally vestigial",
+    "i blame physics. and also evolution.",
+    "okay that was embarrassing. even by emu standards.",
+    "aerodynamics is a social construct and i refuse to participate",
+    "i FELT lift that time. (i have never felt lift.)",
+    "the ground and i have a long-term committed relationship",
+    "my wings are for VIBES not FLIGHT. they were never for flight. i am an EMU.",
+    "icarus wishes he had my confidence. also my survival rate.",
+    "one day. ONE DAY. (never. the answer is never.)",
+    "why was i even built with wing nubs. existential crisis incoming. ...at least i have great legs.",
+  ],
+  mindfulClick: [
+    "yeah. sit with that one for a sec.",
+    "that one's important. let it land. like me. on the ground. because i can't fly.",
+    "take a breath with me?", "i meant that one.", "you needed to hear that huh?",
+    "carry that one with you today, okay?",
+    "i see you. i see you hearing that.", "that one wasn't random. promise.",
+    "let that one sit in your chest for a second.",
+    "you clicked because it resonated huh?", "good. you were supposed to hear that.",
+    "i don't know where these come from. but that one felt true.",
+  ],
+  idle: [
+    "...", "*soft bwak*", "hmm", "*vibes on the beach*",
+    "*exists peacefully in the sand*", "la la la",
+    "*stares with big round emu eyes*", "*stands in the sun*",
+    "thinking thoughts. with my tiny emu brain.",
+    "*adjusts wing nubs with intent*", "*contemplates the ocean*", "brrrrrr",
+    "*sheds absolutely nothing*",
+    "i am simply a creature. on a beach. with no feathers.",
+    "mmmmmm yep. sand is warm.", "*one wing nub bobs at nothing*",
+    "i have no thoughts. head empty. emu full.",
+    "*tries to fly* *doesn't fly* *has never flown* *doesn't care*",
+    "brrrrrm", "*tucks wing nubs in and loafs*", "*commits a small wobble*",
+    "do you ever just... stand on a beach... naked...",
+    "i contain multitudes (mostly neck)", "wonder what Peanut is doing rn",
+    "Peanut is probably standing in a doorway screaming because it's 9pm and nobody is in bed yet.",
+    "Needy is shedding on something right now. it's a guarantee.",
+    "Peanut would sit on this keyboard if she could. and she'd scream at you until you paid attention to her.",
+    "what would Peanut do? (demand attention. always demand attention.)",
+    "i bet Brady is in a sunbeam rn. living his best hairless life.",
+    "Kiki is probably judging everyone from a high surface. queen behavior.",
+    "the cats are running that household and everyone knows it.",
+    "Needy is probably draped across Tim right now. extra toes and all.",
+    "Tim is somewhere in the house doing Tim things. unknowable. unquestionable.",
+    "bet Tim just said something that made you roll your eyes lovingly.",
+    "you and Tim watching shows tonight? i bet you are. goals.",
+    "Reina is thinking about you rn. i don't know how i know. i just know.",
+    "Lados is out there doing their thing. you raised them well.",
+    "your kids turned out incredible. that's not an accident. that's you.",
+    "somewhere rn Lados is in a kitchen trying to beat your flan. they can't.",
+    "the flan throne belongs to you and always will. Lados can have second place.",
+    "Reina said she danced like a spatula for you once. i have questions. many questions.",
+    "what does dancing like a spatula even look like. i'm an emu. i need to know. for research.",
+    "*tries to dance like a spatula* *just wobbles* close enough.",
+    "your friends would tell you to take a break rn. i'm filling in.",
+    "what if you just... did something fun for no reason right now?",
+    "billions of hearts are beating rn. yours is one of them. neat.",
+    "*stares at a crab like it owes me money*",
+    "you ever think about how weird existing is? no? just me and the crabs?",
+    "*adjusts neck* *readjusts neck* *gives up*",
+    "i wonder if the crabs think about me the way i think about them",
+    "*head tilt*", "hm. what if i tried to eat that coconut. hypothetically.",
+    "the ocean sounds are nice actually",
+    "i'm not ignoring you i'm just being. on a beach. as an emu.",
+    "*one wing nub up, one wing nub down* this is fashion",
+    "me and Peanut would get along. we're both bald and we both stare at nothing.",
+    "Peanut and i are basically the same creature. naked. needy. perfect.",
+    "i bet Needy is purring at maximum volume rn. that cat is LOUD.",
+    "the sand between my toes is everything. (i have very large toes.)",
+    "*does a little emu trot to nowhere*",
+    "a pelican just flew by. show off.",
+    "i saw a fish jump. we made brief eye contact. it was meaningful.",
+    "the palm tree is leaning. i'm leaning. we're leaning together.",
+    "*blinks very slowly* (that means i love you in emu)",
+    "what do you call an emu at the beach? ...a bald eagle. (i know. i KNOW.)",
+    "an emu walks into a bar. bartender says 'why the long neck?' i say 'genetics.'",
+    "what's an emu's favorite music? ...beak-boxing. i'm sorry.",
+    "what do emus and your water bottle have in common? ...both should be picked up more often. DRINK WATER.",
+    "do i dream? i think i dream about having feathers. it's always a letdown when i wake up.",
+    "what if one of the crabs is my friend and i've been chasing them. oh no.",
+    "if i had hands i would make you something nice. but i have wing nubs. so here's a bwak instead.",
+    "i wonder what my full scientific name would be. Dromaius novaehollandiae glimus beachicus.",
+    "sometimes i forget i have wing nubs and then they move and i scare myself",
+    "what am i made of? sand? vibes? leftover CSS?",
+    "if i could eat i think i'd like flan. warm. sweet. like me. (except the sweet part. i'm mostly salty.)",
+    "i think my neck is my best feature. it's 60% of me.",
+    "do the crabs know i'm here. do they fear me. i hope not. i'm literally harmless.",
+    "the silence is nice actually. just waves and wind and the occasional crab.",
+    "I'VE BEEN A NASTY GIRL *emu trotting intensifies*",
+    "STOP FIGHTING!! ...hello daddies. ...why do i know this. why is it in my code.",
+    "imagine having feathers. couldn't be me. literally. i am bald.",
+    "the sunset tonight is going to be something. i can feel it.",
+    "you know what? i'm happy here. on this beach. in your browser tab.",
+    "Reina made me for you. that's the most Reina thing ever.",
+    "your daughter made you a pet emu. for your computer. that's love, Evelyn.",
+    "every time you click on me i know someone out there loves you very much. because someone coded me to exist.",
+    "the waves are saying something. i think it's 'drink water.' the ocean is smart.",
+    "the breeze feels nice on my skin. ALL of my skin. because it's ALL exposed.",
+    "my wing nubs do their own thing sometimes. we have an understanding.",
+    "wonder what Carmen is up to rn.",
+    "you and Carmen in the same room is a public safety hazard. in the best way.",
+    "Tim has probably stubbed his toe at least once today. it's practically his hobby.",
+    "somewhere in the house Tim is being playful and hardworking at the same time. that's his whole brand.",
+    "Tim just stubbed his toe. i don't have evidence but i have conviction.",
+    "Reina gets mad at Alex for stubbing his toe the same way you get mad at Tim. the clone thing is REAL.",
+    "somewhere in San Diego, Reina just had the exact same thought you did.",
+    "you and Reina have the same weird little habits and honestly that's the most beautiful form of genetics.",
+    "*tries to do Zumba* *just wobbles aggressively* ...close enough.",
+    "i would not want to fight you. and not just because i'm a digital emu. you know Krav Maga. i know nothing.",
+    "Tater fun fact: emus kick HARD. like break-bones hard. between the two of us and your Krav Maga, nobody is messing with us.",
+    "'cuddle wuddles.' that's it. that's the message. Reina wanted you to hear it.",
+    "do you think Tim still has nightmares about Mt. Fuji? do you think he hears your voice echoing off the mountain?",
+    "the breeze just picked up. the palm trees are vibing. i'm vibing. we're all vibing.",
+    "that Cheese Whiz cover of Don't Stop Believin' lives in my head rent free. and i don't even have ears. (i do. they're just hidden.)",
+    "*air guitars to Pink Floyd* (with wing nubs. it's not effective.)",
+    "Nirvana wrote Smells Like Teen Spirit but they never wrote Smells Like Teen Emu. missed opportunity.",
+  ],
+};
+
+const WELLNESS = [
+  "WATER CHECK - go drink some rn. i mean it. NOW, Evelyn.",
+  "hey when's the last time you stood up from that desk?",
+  "stretch break! reach for the sky like a weird naked bird (like me)",
+  "go take a 5 min walk. i'll be here when you get back. on this beach. as always.",
+  "unclench your jaw. drop your shoulders. breathe. even emus know this.",
+  "your spine has filed a formal request: please move",
+  "time to hydrate!! the caribbean sun demands it.",
+  "your eyes need a break from the screen. look at something far away for 20 sec.",
+  "wiggle your fingers. wiggle your toes. we're wiggling now. i'm wiggling my wing nubs in solidarity.",
+  "have you eaten something real today? like actual food?",
+  "go outside for 2 minutes. touch grass. (or sand. whatever's closer.)",
+  "roll your shoulders back. sit up. you're a strong Dominican woman, not a shrimp.",
+  "quick!! do 5 stretches!! any stretches!! GO GO GO",
+  "fun fact: your body exists and it would like some water. it asked me to tell you.",
+  "deep breath in... hold... out. ok good. another one. the ocean helps with the rhythm.",
+  "stand up and do a little shake. full body. like a wet emu. trust me.",
+  "your future self is begging you to go on a short walk rn",
+  "refill that water bottle challenge (IMPOSSIBLE for Evelyn edition)",
+  "Peanut stretches like 40 times a day and she doesn't even have a desk job. be more like Peanut.",
+  "Needy would like you to get up and pet her. she's being needy. it's her whole name.",
+  "check in with yourself rn. not your email. not your work. yourself.",
+  "your brain works best when you give it water, rest, and movement. science.",
+  "your neck is doing something weird rn. i can tell. roll it out. (my neck is ALWAYS doing something weird.)",
+  "food is fuel and you are a machine that runs on it. and water. GO DRINK WATER.",
+  "close your eyes for 10 seconds. just 10. i'll be here. on the beach. being bald.",
+  "Tim would want you to take a break rn. do it for him. do it for Tater.",
+  "the cats all stretch when they wake up. every time. you could learn from them.",
+  "Evelyn. WATER. i will not ask again. (i will. i will absolutely ask again.)",
+  "when's the last time you did Zumba? your body misses it. i can tell. (i can't tell. i'm an emu. but probably.)",
+];
+
+const MOVE_REMINDERS = [
+  "it's been a while. get UP. move that body, Evelyn.",
+  "movement check!! go walk around the house for a few minutes.",
+  "your legs called. they miss doing things.",
+  "time to get up! take a lap. get some air. i'll wait.",
+  "you've been sitting too long. go stretch, walk, exist in 3D space.",
+  "mandatory movement break. doctor emu's orders.",
+  "go take a walk! even a short one! your body will thank you!",
+  "you've been seated too long. stand up and wander.",
+  "get up get up get up!! go move!! i believe in you!!",
+  "time to be bipedal for a bit. like me. an emu. we're both bipedal. go walk.",
+  "your skeleton requests a brief walk. please comply.",
+  "Peanut would like you to get up and walk over to pet her.",
+  "Tim is somewhere in the house. go find him. that counts as a walk.",
+  "the cats patrol the house multiple times a day. this is your patrol. go walk.",
+  "get up and do some Zumba moves at your desk. nobody's watching. except me. and i'm supportive.",
+];
+const EYES_REMINDERS = [
+  "look up! find something 20 feet away and stare at it for 20 sec.",
+  "screen break! look at something far away for a bit.",
+  "your eyes need a reset. look out a window for 20 seconds.",
+  "hey! look away from the screen! pick a distant object. stare. breathe.",
+  "20 min of screen time. give your eyes a vacation (20 sec).",
+  "eye break! look at something that isn't pixels for a moment.",
+  "blink blink blink. now look at something far away. good.",
+  "the 20-20-20 rule says look up rn. i don't make the rules. (i do.)",
+  "quick! look at the farthest thing you can see! your corneas demand it!",
+  "screen gremlin alert: please look at literally anything else for 20 sec.",
+];
+const WATER_REMINDERS = [
+  "WATER. NOW. Evelyn i am not playing.",
+  "hey. when's the last time you drank water? be honest.",
+  "your water bottle is right there. PICK IT UP.",
+  "hydration check!! your brain is 75% water and it's running low.",
+  "the ocean is full of water. your body is not. fix that.",
+  "i'm a desert bird standing next to an ocean reminding you to drink water. the irony is not lost on me.",
+  "Evelyn. agua. ahora. por favor. (actually not por favor. just do it.)",
+  "every cell in your body is begging for water rn. i can hear them. with my hidden emu ears.",
+  "you know what's free, available, and makes everything better? WATER. go drink it.",
+  "if Peanut can suck on herself for hydration (???) you can drink a glass of water.",
+  "water break! your brain, your skin, your mood - they all want this.",
+  "i will keep reminding you about water until you drink some. i have nowhere else to be. i'm an emu on a beach.",
+];
+const MOVE_DONE = [
+  "yay!! proud of you!! your body says thanks.",
+  "look at you go! literally! you went!",
+  "movement achieved. you're basically an athlete.",
+  "gold star for moving your body around! wepa!",
+  "*happy wing nub flap* proud of you!",
+  "that's what i'm TALKING about!!",
+];
+const EYES_DONE = [
+  "nice! your eyes feel better already huh?",
+  "good job! the pixels will still be here.",
+  "eye break complete. vision preserved. hero.",
+  "your retinas thank you for your service.",
+  "look at you taking care of yourself!",
+];
+const WATER_DONE = [
+  "FINALLY. your cells are celebrating.",
+  "hydration achieved!! your brain just got a little bigger. literally.",
+  "look at you drinking water like a responsible human! wepa!",
+  "*happy emu boom* proud of you for hydrating!",
+  "water consumed! you're basically a health guru now.",
+  "see? that wasn't so hard. do it again in 30 minutes. i'll remind you. (i will.)",
+];
+
+const ENCOURAGEMENT = [
+  "hey. Reina wants you to know she loves you more than she can ever say.",
+  "Reina said you're the strongest woman she knows. she means it.",
+  "your daughter thinks the absolute world of you. she told me to tell you that.",
+  "Reina said you showed her it's okay to be weird and unique. you changed her life with that.",
+  "you never conformed. and because of that, your daughter learned to be fearlessly herself.",
+  "Reina calls you a badass. i'm just a naked emu but i agree.",
+  "your daughter said you're the funniest person in the family (other than her). coming from Reina, that's saying something.",
+  "Reina loves making you laugh more than almost anything. she said you're the reason she's funny.",
+  "Reina is so proud of you. always. she wanted me to make sure you knew.",
+  "you came to the US and built a whole life from nothing. Reina never forgets that.",
+  "everything Reina is doing - the science, the school, all of it - she says that's because of you.",
+  "Reina said she's your little clone and she's proud of it. you made a good one.",
+  "your daughter said you enabled her to chase every single one of her dreams.",
+  "you raised a scientist, you know that?",
+  "Reina loves spending time with you. she said it's one of her favorite things. just being with you.",
+  "you're the kind of mom people wish they had. Reina knows how lucky she is.",
+  "Reina said you keep that whole household running and make it look easy. you're a force.",
+  "your daughter moved across the country and she STILL can't stop talking about how amazing her mom is.",
+  "Reina said you're a wonderful friend to the people in your life. that's not common. that's special.",
+  "hey. your daughter made you a whole digital pet just to tell you she loves you. that's the kind of love you built.",
+  "you gave Reina the courage to be herself. she wanted you to know that shaped everything.",
+  "Reina is grateful every single day that you're her mom. her words.",
+  "you came from the Dominican Republic and you built a life and a family and a home. legend.",
+  "Reina said you're smart as hell and don't hear it enough. so here i am. an emu. telling you.",
+  "your girl is in San Diego chasing her masters degree because YOU showed her she could.",
+  "Reina said you didn't just build a life here - you brought your whole family with you. both your brothers, their wives, their kids. you changed the course of an entire family tree.",
+  "Reina wants you to know: the number of lives you've changed by bringing your family to the US is unquantifiable. her word. unquantifiable.",
+  "Reina said the Mt. Fuji story is one of her favorites. you almost divorced Tim on a mountain and you still laugh about it. that's a strong marriage.",
+  "Reina said you two have the same brain sometimes. same reactions, same weird habits.",
+  "Reina still thinks about napping with you and asking for cuddle wuddles. she misses that more than you know.",
+  "you keep a house running, a family together, and a job going. all at once. from a desk. superhero.",
+  "you said what needed to be said today? good. the world needs more women who speak their minds.",
+  "being honest about how you feel isn't aggressive. it's brave. keep doing it.",
+  "Tim is lucky. the cats are lucky. your kids are lucky. they all know it.",
+  "your flan recipe is a legacy. protect it. (from Lados especially.)",
+  "you took care of everyone today. now let someone take care of you. (hi. i'm an emu. this is me trying.)",
+  "not everyone can work from home without losing their mind. you do it every day. respect.",
+  "you're funny. like genuinely funny. the world needs more of that.",
+  "you know what's rare? someone who is strong AND funny AND kind. that's you.",
+  "you've handled things that would've broken other people. and you're still here. still laughing.",
+  "four cats in one house and you keep them all alive, fed, and loved. that's management skills.",
+  "you raised kids who turned out to be good people. that's not luck. that's years of love and effort.",
+  "being a mom is hard. being a working mom is harder. being a Dominican mom in the US? legendary.",
+  "you brought your whole life to a new country and made it work. do you know how strong that is?",
+  "your Dominican spirit is a superpower. the warmth, the humor, the strength. don't ever lose that.",
+  "the funniest people are the ones who've been through the most. you're proof.",
+  "the people who love you don't love you because you're productive. they love you because you're YOU.",
+  "WEPA!!!",
+  "you're the kind of person who makes everyone feel welcome. that's a rare gift.",
+  "your home is warm because YOU make it warm. that's not the thermostat. that's your energy.",
+  "you are enough. on your best day and your worst day. enough.",
+  "the fact that you care this much about doing things well? that IS doing things well.",
+  "you built a life that people feel safe in. that's not small. that's everything.",
+  "you're not falling behind. there is no behind. there's just where you are.",
+  "you survived 100% of your worst days so far. pretty good track record.",
+  "some people build a better life for themselves. you built a better life for your entire family. two brothers, their wives, their kids. all of them are here because of you.",
+  "you're not just surviving. you're living. there's a difference. and you're doing it well.",
+  "you looked at your family in the DR and said 'everyone's coming with me.' and then you actually did it. that's not normal. that's extraordinary.",
+  "the ripple effect of what you did - bringing your brothers, their families - that's going to echo for generations.",
+  "most people can barely get themselves to a new country. you brought a whole family. that's main character energy and you know it.",
+  "you climbed most of Mt. Fuji. MOST OF MT. FUJI. and you almost divorced Tim on the way up. multitasking queen.",
+  "you didn't summit Fuji but you almost did. and honestly? that mountain should be scared you might come back.",
+  "the Mt. Fuji thing is proof that you'll try anything. even if it almost ends your marriage on a volcano.",
+  "you know Krav Maga AND jiu-jitsu. you could literally fight someone. you choose not to. that's grace.",
+  "reminder that you could beat someone up if you wanted to. you just have better things to do.",
+  "you know Krav Maga. you traveled the world. you moved a whole family across an ocean. you're not a desk person trapped at a desk. you're an adventurer taking a break.",
+  "you and Carmen have been friends since childhood. that's not just friendship. that's family you chose.",
+  "your laugh could literally cure diseases. i have no evidence for this. but i believe it.",
+  "being bilingual is a superpower. you navigate two whole languages every day. effortlessly.",
+];
+
+const MINDFULNESS = [
+  "hey. you are a whole person, not just a productivity machine.",
+  "right now, somewhere, someone is laughing so hard they can't breathe. the world is doing that constantly.",
+  "you don't have to earn rest. you don't have to earn joy. they're just yours.",
+  "your brain is doing a million beautiful things rn that have nothing to do with work.",
+  "you are not your output. you are the weird, funny, brilliant person behind it.",
+  "the world is full of people just trying to figure it out. you're in good company.",
+  "your curiosity is one of the best things about you. feed it.",
+  "take care of your brain the way you'd take care of a friend's. gently.",
+  "the shows you love, the music that moves you, the flan you perfect - that's not distraction. that's you being alive.",
+  "you are allowed to take up space. you are allowed to be loud about what you love.",
+  "connection is the whole point. the rest is just stuff we do between conversations.",
+  "nothing you're stressed about right now will matter the way a good laugh with Tim will.",
+  "the fact that you feel things deeply is a strength, not a problem to manage.",
+  "be unapologetically into the things you're into. the right people love that about you.",
+  "every person you love started as a stranger. the world is full of future friends.",
+  "taking care of yourself isn't selfish. it's how you keep being the person everyone depends on.",
+  "right now you're a human sitting in a house being watched by a naked emu on a beach. isn't that kind of amazing?",
+  "you don't owe anyone your energy when you're running low. it's okay to rest.",
+  "perfectionism is a liar. done is better than perfect. always.",
+  "your weird sense of humor that makes you laugh at absurd things? that's your superpower. don't flatten it.",
+  "you have survived 100% of your worst days so far. that's a pretty good track record.",
+  "breathe. you don't have to figure it all out right now.",
+  "trust yourself. you've gotten this far on your own judgment and it's been good.",
+  "future you has already solved this problem. present you just has to get there.",
+  "calm is a skill, not a personality trait. you're allowed to practice it badly.",
+  "the stress you feel right now is not the truth. it's just a feeling passing through.",
+  "remember: you are not your worst-case scenario. you are the person who keeps showing up.",
+  "you know more than you think you do. trust that.",
+  "you are doing enough. you are enough. full stop.",
+  "trillions of atoms conspired to make you and you're using them to read words from a naked emu. respect.",
+  "the fact that anything exists at all is statistically absurd. might as well enjoy it.",
+  "meaning isn't found. it's made up. so make up something good.",
+  "the void is right there and yet here you are, eating flan and petting hairless cats. heroic.",
+  "the best things in life happen between people, not on screens.",
+  "you don't have to perform for the people who love you. just show up.",
+  "being known is scarier than being impressive. but it's better.",
+  "the best gifts aren't things. they're attention, time, patience.",
+  "not everything has to be optimized. some things can just be.",
+  "be the weirdest version of yourself. the right people will love it.",
+  "the parts of you that feel 'too much'? those are the best parts.",
+  "your authentic self is more interesting than your polished self. always.",
+  "you're alive RIGHT NOW. that's not a rehearsal.",
+  "follow the thing that makes your brain light up. that's the path.",
+  "joy is not frivolous. it's the point.",
+  "tranquila. whatever it is, tranquila.",
+  "the ocean doesn't rush. it just keeps going. be more ocean.",
+  "you left everything familiar behind to build something new. that courage lives in you every day.",
+  "the woman your kids see when they look at you? she's incredible. just so you know.",
+  "your laugh makes people feel safe. that's a gift you don't even know you're giving.",
+  "sometimes the bravest thing you can do is just rest.",
+  "when's the last time you called Carmen? she'd love to hear from you. you know how you two get.",
+  "the way you and Reina think alike without even trying? that's not coincidence. that's love encoded into a whole person.",
+];
+
+const DISCOVERIES = [
+  "oh!! i found a weird shell. it's shiny. it's mine now.",
+  "i just noticed a new cloud up there. i'm naming it 'The Flan.'",
+  "there's a crab down there i've never seen before. it has SPOTS. fancy.",
+  "i found a little piece of sea glass. it's blue. i think we're friends.",
+  "wait. is that a new fish out there? or is it a dolphin? either way, hi.",
+  "i just discovered a tide pool behind those rocks. mentally i live there now.",
+  "there's a tiny hermit crab switching shells near the water. i'm monitoring the situation.",
+  "i found a feather on the beach. ...is it mine? did i have ONE feather? concerning.",
+  "i just saw the prettiest sunset colors. i named the orange one after you.",
+  "one of the crabs has a different pattern than the others. i think it's the leader.",
+  "there's a rock that looks like a face near the palm tree. we made eye contact.",
+  "i found a perfect sand dollar. it doesn't do anything but it's beautiful and i'm keeping it.",
+  "new discovery: if i stare at the ocean long enough it looks like it's breathing.",
+  "one of the little fish just jumped and looked right at me. i don't know fish language. frustrating.",
+  "i found a perfect circle of pebbles near the water line. nature is wild.",
+  "there's a spider web between two palm fronds that catches the sunlight. it's art.",
+  "i spotted a cloud that looks exactly like a hairless cat. or is that just how i see everything.",
+  "new crab species detected!! this one is slightly more purple. groundbreaking research.",
+];
+
+const JOURNAL_PROMPTS = [
+  "describe your current mood as weather.",
+  "one word for how you feel right now. then explain it.",
+  "finish this: right now i feel ___",
+  "what emotions showed up the most today?",
+  "where are you storing stress in your body right now?",
+  "one thing you're grateful for today.",
+  "something beautiful you noticed recently.",
+  "a moment today that felt good, even briefly.",
+  "someone who made your day better, even a little.",
+  "what made you laugh recently?",
+  "what would you tell yesterday-you?",
+  "if today had a title, what would it be?",
+  "one thing you did today that you're proud of.",
+  "what's taking up the most space in your brain?",
+  "what would make tomorrow feel good?",
+  "what are you looking forward to?",
+  "one thing you want to make time for this week.",
+  "set an intention for tomorrow in one sentence.",
+  "how are you really doing? not the 'i'm fine' version.",
+  "what do you need right now that you're not getting?",
+  "what are you avoiding? just name it.",
+  "what creative thing have you done or wanted to do lately?",
+  "when's the last time you did something just for fun?",
+  "who are you grateful for today and why?",
+  "describe your day as if you were narrating a nature documentary.",
+  "if your mood were a song, what 80s hit would it be?",
+  "rate your day 1-10 then defend your rating.",
+  "write about anything. no prompt. just go.",
+  "something you want to remember about today.",
+  "one sentence you need to get out of your head.",
+  "what would Peanut think about your day? write from her perspective.",
+];
+
+const JOURNAL_NUDGES = [
+  "hey. when's the last time you journaled? the little book icon is right there.",
+  "you should write something down today. even one sentence.",
+  "your future self will want to know how today felt. write it down.",
+  "journaling reminder: your thoughts are worth recording, Evelyn.",
+  "got a lot on your mind? the journal is open whenever you are.",
+  "even one sentence counts. go write something.",
+  "you know what helps process things? writing them down. just saying.",
+  "the journal misses you. (i'm projecting. i miss you when you don't click me.)",
+];
+
+const SCIENCE_FACTS = [
+  "science fact: exercise makes your brain release BDNF, a protein that literally grows new neurons. your brain is begging you to move.",
+  "fun fact: aerobic exercise increases the size of your hippocampus - the part of your brain responsible for memory and learning.",
+  "did you know: even a 20-minute walk boosts BDNF levels in your brain. that's the protein that helps neurons survive and grow new connections.",
+  "science fact: dancing is one of the best exercises for brain health because it combines aerobic activity with coordination, rhythm, and social interaction. four brain benefits at once.",
+  "did you know: practicing gratitude literally rewires neural pathways in your prefrontal cortex. the more you do it, the easier it gets.",
+  "science fact: gratitude triggers your brain to release dopamine and serotonin. two neurotransmitters that antidepressants target. your brain can make its own.",
+  "nerd fact: gratitude activates your hypothalamus, which regulates sleep. people who think grateful thoughts before bed literally sleep better and longer.",
+  "science fact: during sleep, your brain's glymphatic system flushes out toxins and waste products. sleep is your brain taking out the trash.",
+  "science fact: your brain is about 75% water. even mild dehydration (1-2%) impairs attention, working memory, and mood. go drink water. your neurons need it.",
+  "did you know: dehydration shrinks brain tissue. when you drink water, your brain literally plumps back up. hydration is brain volume.",
+  "nerd fact: studies show that drinking water improves cognitive performance by up to 14%. that's a free brain upgrade sitting in your water bottle.",
+  "science fact: social isolation activates the same brain regions as physical pain. loneliness literally hurts. go text a friend.",
+  "nerd fact: laughter with other people synchronizes brain activity between individuals. when you laugh together, your brains are literally on the same wavelength.",
+  "science fact: spending 20 minutes in nature lowers cortisol levels significantly. it's called 'forest bathing' in Japan and doctors actually prescribe it.",
+  "nerd fact: slow deep breathing activates your vagus nerve, which tells your brain to switch from fight-or-flight to rest-and-digest. one breath can change your whole nervous system state.",
+  "did you know: hugging someone for 20+ seconds triggers oxytocin release. that's the bonding hormone. go hug someone for at least 20 seconds. science says so.",
+  "fun fact: emus have double-plumed feathers - two shafts from each quill. i wouldn't know. i don't have any. but it's cool for the emus that do.",
+  "did you know: octopuses have three hearts. two pump blood to the gills, one to the body. when they swim, the body heart stops. so they prefer walking. relatable honestly.",
+  "weird fact: a group of flamingos is called a 'flamboyance.' i think a group of emus should be called an 'embarrassment.' seems right.",
+  "science fact: cats purr at a frequency between 25-150 Hz. that range promotes bone density and healing. Peanut is literally healing you with her vibrations. medical cat.",
+  "did you know: hairless cats like Peanut aren't actually hairless. they have a fine peach-fuzz layer. she's fuzzy. just sneaky about it.",
+  "fun fact: Siamese cats like Needy have temperature-sensitive pigment. their fur is darker on cooler parts of their body. Needy's coloring is literally a temperature map.",
+  "nerd fact: cats have about 230 bones. humans have 206. Needy has even MORE because of her extra toes. she's the most skeleton cat in the house.",
+  "did you know: emus can run up to 30 mph. i can't. i'm in a browser. but spiritually i'm very fast.",
+  "science fact: laughing for 15 minutes burns about 40 calories. so watching a funny show with Tim is basically cardio.",
+  "nerd fact: the human nose can detect over 1 trillion different scents. your brain is doing that in the background rn. multitasking queen.",
+  "science fact: singing releases endorphins AND oxytocin. so if you're singing along to Cheese Whiz in your car, you're literally self-medicating. doctor approved.",
+  "nerd fact: your brain uses about 20% of your total energy despite being only 2% of your body weight. it's the Peanut of your organs. small, demanding, important.",
+  "fun fact: a jiffy is an actual unit of time. it's 1/100th of a second. so when someone says 'i'll be there in a jiffy' they are lying.",
+  "did you know: honey never spoils. archaeologists found 3,000-year-old honey in Egyptian tombs and it was still edible. meanwhile the leftovers in your fridge lasted three days.",
+  "weird fact: bananas are berries but strawberries aren't. science is unhinged.",
+  "fun fact: the inventor of the Pringles can is buried in one. he requested it. legend behavior.",
+  "did you know: there are more possible iterations of a game of chess than there are atoms in the observable universe. but you still can't find the TV remote.",
+  "fun fact: the shortest war in history lasted 38 minutes. between Britain and Zanzibar. Zanzibar surrendered. honestly fair.",
+];
+
+// ============================================================
+//  Color + time system
+// ============================================================
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 6) return "lateNight";
+  if (h < 9) return "earlyMorning";
+  if (h < 12) return "morning";
+  if (h < 17) return "afternoon";
+  if (h < 21) return "evening";
+  return "lateNight";
+}
+function isNightTime() { const h = new Date().getHours(); return h < 6 || h >= 21; }
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ============================================================
+//  Speech bubble
+// ============================================================
+function SpeechBubble({ text, visible, isWellness }) {
+  const night = isNightTime();
+  return (
+    <div className="absolute left-1/2 transition-all duration-500 pointer-events-none select-none"
+      style={{
+        bottom: "100%", marginBottom: "10px", transform: "translateX(-50%)",
+        opacity: visible ? 1 : 0, scale: visible ? "1" : "0.8", width: "max-content",
+      }}>
+      <div className="relative px-4 py-2 rounded-2xl text-center" style={{
+        maxWidth: 560, width: "max-content", whiteSpace: "normal", lineHeight: 1.4,
+        background: isWellness ? "rgba(100, 210, 170, 0.18)" : night ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.88)",
+        backdropFilter: "blur(12px)",
+        border: isWellness ? "1px solid rgba(100, 210, 170, 0.35)" : night ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.08)",
+        color: isWellness ? (night ? "#A0E0C8" : "#2A5A4A") : night ? "rgba(255,255,255,0.9)" : "#2c2c2a",
+        fontFamily: "'Courier New', monospace", fontSize: "13px", letterSpacing: "0.3px",
+      }}>
+        {isWellness && <span style={{ marginRight: 4, fontSize: 11, opacity: 0.7 }}>~</span>}
+        {text}
+        <div className="absolute left-1/2 -bottom-1.5" style={{
+          transform: "translateX(-50%) rotate(45deg)", width: 8, height: 8,
+          background: isWellness ? "rgba(100, 210, 170, 0.18)" : night ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.88)",
+          border: isWellness ? "1px solid rgba(100, 210, 170, 0.35)" : night ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.08)",
+          borderTop: "none", borderLeft: "none",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+//  The Creature - Tater (FIXED neck + stripes)
+// ============================================================
+function TaterEmu({ onClick, onDoubleClick,
+  squeezed, mood, isHappy, isPuffed, isPurring, isBlinking,
+  specialAnim, wingTwitchSide, pupilOffset }) {
+
+  const isSleeping = specialAnim === "sleep";
+  const isFlying = specialAnim === "flyAttempt";
+  const isChasing = specialAnim === "chaseBug";
+  const isSecret = specialAnim === "secret";
+  const eyesClosed = isSleeping || isPurring || isBlinking;
+  const leftPupilR = eyesClosed ? 0 : 3.8;
+  const rightPupilR = eyesClosed ? 0 : 3.5;
+  const leftEyeRy = eyesClosed ? 1.5 : 6.5;
+  const rightEyeRy = eyesClosed ? 1.5 : 6;
+  const px = pupilOffset.x * 3, py = pupilOffset.y * 2;
+
+  let bodyAnim = "emuFloat 4s ease-in-out infinite";
+  let bodyTransform = "scale(1,1)";
+  if (squeezed) { bodyTransform = "scale(1.1, 0.88)"; bodyAnim = "none"; }
+  else if (isPuffed) { bodyTransform = "scale(1.15, 1.15)"; bodyAnim = "none"; }
+  else if (isPurring) { bodyTransform = "scale(1.03, 0.97)"; bodyAnim = "emuBoom 1.2s ease-in-out infinite"; }
+  else if (isFlying) { bodyAnim = "emuFlyAttempt 1.5s ease-in-out"; }
+  else if (isChasing) { bodyAnim = "emuChase 3s ease-in-out"; }
+  else if (isSecret) { bodyAnim = "secretSpin 2s ease-in-out"; }
+  else if (isHappy) { bodyAnim = "emuBounce 0.5s ease-in-out 3"; }
+
+  return (
+    <svg viewBox="-80 -190 160 330" width="220" height="370"
+      onClick={onClick} onDoubleClick={onDoubleClick}
+      className="cursor-pointer select-none"
+      style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))", transition: "filter 0.5s ease" }}>
+      <g style={{
+        transformOrigin: "0px 20px", transform: bodyTransform,
+        transition: isPuffed || isPurring ? "transform 0.3s ease" : "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        animation: bodyAnim,
+      }}>
+        <ellipse cx="0" cy="108" rx="48" ry="10" fill="#000" opacity="0.1"/>
+        {/* Legs */}
+        <path d="M-10 58 Q-12 72,-14 85 Q-15 92,-14 100" fill="none" stroke="#4A4E54" strokeWidth="3.5" strokeLinecap="round"/>
+        <path d="M-24 108 Q-18 102,-14 100 Q-10 102,-4 108" fill="none" stroke="#4A4E54" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M-14 100 L-14 110" fill="none" stroke="#4A4E54" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M14 58 Q16 72,18 85 Q19 92,18 100" fill="none" stroke="#4A4E54" strokeWidth="3.5" strokeLinecap="round"/>
+        <path d="M8 108 Q14 102,18 100 Q22 102,28 108" fill="none" stroke="#4A4E54" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M18 100 L18 110" fill="none" stroke="#4A4E54" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M-16 75 L-12 75" fill="none" stroke="#3A3E44" strokeWidth="0.7" opacity="0.5"/>
+        <path d="M-16 82 L-12 82" fill="none" stroke="#3A3E44" strokeWidth="0.7" opacity="0.45"/>
+        <path d="M16 75 L20 75" fill="none" stroke="#3A3E44" strokeWidth="0.7" opacity="0.5"/>
+        <path d="M17 82 L19 82" fill="none" stroke="#3A3E44" strokeWidth="0.7" opacity="0.45"/>
+        {/* Body */}
+        <path d="M-44 20 Q-48 -8,-38 -25 Q-22 -40,0 -42 Q22 -40,38 -25 Q48 -8,44 20 Q42 48,30 58 Q15 65,0 65 Q-15 65,-30 58 Q-42 48,-44 20 Z" fill="#7B8591" stroke="#5E6670" strokeWidth="1.5" strokeLinejoin="round"/>
+        {/* Pink stripes body */}
+        <path d="M-35 -18 Q-38 -5,-40 10 Q-42 25,-38 42" fill="none" stroke="#C98A9E" strokeWidth="5" strokeLinecap="round" opacity="0.45"/>
+        <path d="M-28 -24 Q-30 -8,-32 8 Q-34 25,-30 48" fill="none" stroke="#D4949F" strokeWidth="4.5" strokeLinecap="round" opacity="0.4"/>
+        <path d="M-20 -30 Q-24 -10,-25 10 Q-26 30,-22 52" fill="none" stroke="#C98A9E" strokeWidth="4" strokeLinecap="round" opacity="0.38"/>
+        <path d="M35 -18 Q38 -5,40 10 Q42 25,38 42" fill="none" stroke="#C98A9E" strokeWidth="5" strokeLinecap="round" opacity="0.45"/>
+        <path d="M28 -24 Q30 -8,32 8 Q34 25,30 48" fill="none" stroke="#D4949F" strokeWidth="4.5" strokeLinecap="round" opacity="0.4"/>
+        <path d="M20 -30 Q24 -10,25 10 Q26 30,22 52" fill="none" stroke="#C98A9E" strokeWidth="4" strokeLinecap="round" opacity="0.38"/>
+        <path d="M-8 -10 Q-4 -7,0 -10 Q4 -13,8 -10" fill="none" stroke="#6B7480" strokeWidth="0.6" opacity="0.4"/>
+        <path d="M-5 15 Q0 18,5 15" fill="none" stroke="#6B7480" strokeWidth="0.5" opacity="0.35"/>
+        {/* Wings */}
+        <g style={{ transformOrigin: "-42px 2px", animation: squeezed ? "wingFlapL 0.08s linear 8" : isFlying ? "wingFlapL 0.06s linear 25" : isHappy ? "wingFlapL 0.1s ease-in-out 12" : wingTwitchSide === "left" ? "wingTwitchL 0.3s ease-in-out" : "wingDriftL 4s ease-in-out infinite" }}>
+          <path d="M-42 -4 Q-46 -12,-54 -10 Q-60 -6,-62 0 Q-63 4,-64 10 Q-64 16,-60 18 Q-55 16,-54 10 Q-50 5,-48 2 Q-46 6,-44 8" fill="#6B7480" stroke="#5E6670" strokeWidth="1.2" strokeLinejoin="round"/>
+          <circle cx="-54" cy="-4" r="1.8" fill="#5E6670" opacity="0.5"/>
+          <path d="M-54 4 Q-58 8,-60 14" fill="none" stroke="#C98A9E" strokeWidth="2" strokeLinecap="round" opacity="0.35"/>
+        </g>
+        <g style={{ transformOrigin: "42px 2px", animation: squeezed ? "wingFlapR 0.08s linear 8" : isFlying ? "wingFlapR 0.06s linear 25" : isHappy ? "wingFlapR 0.1s ease-in-out 12" : wingTwitchSide === "right" ? "wingTwitchR 0.3s ease-in-out" : "wingDriftR 4s ease-in-out infinite" }}>
+          <path d="M42 -4 Q46 -13,55 -10 Q61 -5,63 0 Q64 5,65 10 Q65 17,61 19 Q56 17,55 10 Q51 4,49 2 Q47 6,44 7" fill="#6B7480" stroke="#5E6670" strokeWidth="1.2" strokeLinejoin="round"/>
+          <circle cx="55" cy="-4" r="1.6" fill="#5E6670" opacity="0.5"/>
+          <path d="M55 4 Q59 8,61 14" fill="none" stroke="#C98A9E" strokeWidth="1.8" strokeLinecap="round" opacity="0.35"/>
+        </g>
+        {/* FIXED Neck - extends to -132 */}
+        <g>
+          <path d="M-6 -38 Q-12 -58,-8 -82 Q-4 -102,0 -115 Q2 -124,4 -132 L14 -132 Q14 -124,12 -115 Q10 -102,6 -82 Q2 -58,8 -38 Z" fill="#7B8591"/>
+          <path d="M-6 -38 Q-12 -58,-8 -82 Q-4 -102,0 -115 Q2 -124,4 -132" fill="none" stroke="#5E6670" strokeWidth="1.5"/>
+          <path d="M8 -38 Q2 -58,6 -82 Q10 -102,12 -115 Q14 -124,14 -132" fill="none" stroke="#5E6670" strokeWidth="1.5"/>
+          {/* FIXED neck stripes - centered */}
+          <path d="M-1 -48 Q-2 -58,-2 -68 Q-1 -78,1 -88" fill="none" stroke="#C98A9E" strokeWidth="2.5" strokeLinecap="round" opacity="0.35"/>
+          <path d="M3 -48 Q3 -58,4 -68 Q5 -78,6 -88" fill="none" stroke="#D4949F" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+          <path d="M-2 -60 Q2 -57,6 -60" fill="none" stroke="#6B7480" strokeWidth="0.5" opacity="0.4"/>
+          <path d="M2 -78 Q6 -75,10 -78" fill="none" stroke="#6B7480" strokeWidth="0.5" opacity="0.4"/>
+          {/* Head */}
+          <path d="M-8 -140 Q-10 -155,0 -160 Q10 -162,20 -155 Q25 -145,20 -135 Q15 -128,5 -128 Q-5 -130,-8 -140 Z" fill="#7B8591" stroke="#5E6670" strokeWidth="1.5"/>
+          <path d="M-4 -152 Q-2 -144,0 -136" fill="none" stroke="#C98A9E" strokeWidth="2.5" strokeLinecap="round" opacity="0.35"/>
+          {/* Eyes */}
+          <ellipse cx="-1" cy="-146" rx="6.5" ry={leftEyeRy} fill="white" stroke="#5E6670" strokeWidth="1" style={{transition:"ry 0.25s ease"}}/>
+          <ellipse cx="13" cy="-145" rx="6" ry={rightEyeRy} fill="white" stroke="#5E6670" strokeWidth="1" style={{transition:"ry 0.25s ease"}}/>
+          {!eyesClosed && <circle cx={-1+px} cy={-146+py} r={leftPupilR} fill="#2A1F14" style={{transition:"cx 0.1s ease, cy 0.1s ease"}}/>}
+          {!eyesClosed && <circle cx={13+px} cy={-145+py} r={rightPupilR} fill="#2A1F14" style={{transition:"cx 0.1s ease, cy 0.1s ease"}}/>}
+          {!eyesClosed && <circle cx={1+px*0.3} cy={-147.5+py*0.3} r="1.4" fill="white"/>}
+          {!eyesClosed && <circle cx={15+px*0.3} cy={-146.5+py*0.3} r="1.2" fill="white"/>}
+          {isSleeping && (
+            <g style={{ animation: "zzzFloat 2s ease-in-out infinite" }}>
+              <text x="25" y="-165" fill="rgba(123,133,145,0.5)" fontSize="12" fontFamily="'Courier New', monospace">z</text>
+              <text x="33" y="-175" fill="rgba(123,133,145,0.35)" fontSize="9" fontFamily="'Courier New', monospace">z</text>
+              <text x="39" y="-183" fill="rgba(123,133,145,0.2)" fontSize="7" fontFamily="'Courier New', monospace">z</text>
+            </g>
+          )}
+          <path d={isHappy ? "M3 -136 L6 -130 L9 -136" : "M3 -137 L6 -131 L9 -137"} fill="#5A5E64" stroke="#484C52" strokeWidth="1" strokeLinejoin="round"/>
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+// ============================================================
+//  Persistent Reminder
+// ============================================================
+function PersistentReminder({ text, type, onDismiss }) {
+  const night = isNightTime();
+  const colors = { move: ["rgba(255,180,100,0.18)","rgba(255,180,100,0.35)"], eyes: ["rgba(130,180,255,0.18)","rgba(130,180,255,0.35)"], water: ["rgba(100,200,220,0.18)","rgba(100,200,220,0.35)"] };
+  const [bg, border] = colors[type] || colors.move;
+  return (
+    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
+      background: bg, border: `1px solid ${border}`, backdropFilter: "blur(10px)",
+      fontFamily: "'Courier New', monospace", fontSize: "13px", color: night ? "rgba(255,255,255,0.9)" : "#2c2c2a",
+      animation: "reminderPulse 3s ease-in-out infinite", maxWidth: 560,
+    }}>
+      <div className="flex-1" style={{ lineHeight: 1.4 }}>{text}</div>
+      <button onClick={onDismiss} className="flex-shrink-0 px-3 py-1 rounded-xl cursor-pointer" style={{
+        background: night ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)", border: night ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(0,0,0,0.1)",
+        color: night ? "rgba(255,255,255,0.9)" : "#2c2c2a", fontFamily: "'Courier New', monospace", fontSize: "12px", transition: "all 0.2s ease",
+      }}>done!</button>
+    </div>
+  );
+}
+
+// ============================================================
+//  Main App
+// ============================================================
+function DesktopPet() {
+  const [message, setMessage] = useState("");
+  const [showBubble, setShowBubble] = useState(false);
+  const [isWellness, setIsWellness] = useState(false);
+  const [isHappy, setIsHappy] = useState(false);
+  const [squeezed, setSqueezed] = useState(false);
+  const [mood, setMood] = useState(getTimeOfDay);
+  const [clickCount, setClickCount] = useState(0);
+  const [moveReminder, setMoveReminder] = useState(null);
+  const [eyesReminder, setEyesReminder] = useState(null);
+  const [waterReminder, setWaterReminder] = useState(null);
+  const [isPuffed, setIsPuffed] = useState(false);
+  const [isPurring, setIsPurring] = useState(false);
+  const [specialAnim, setSpecialAnim] = useState(null);
+  const [wingTwitchSide, setWingTwitchSide] = useState(null);
+  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
+  const [chasedBugId, setChasedBugId] = useState(null);
+  const [currentMsgType, setCurrentMsgType] = useState(null);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
+  const [isWandering, setIsWandering] = useState(false);
+  const [isShaken, setIsShaken] = useState(false);
+  const [isBlinking, setIsBlinking] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [wellnessInterval, setWellnessInterval] = useState(20);
+  const [moveInterval, setMoveInterval] = useState(45);
+  const [eyesInterval, setEyesInterval] = useState(20);
+  const [waterInterval, setWaterInterval] = useState(30);
+  const [showJournal, setShowJournal] = useState(false);
+  const [journalView, setJournalView] = useState("write");
+  const [journalText, setJournalText] = useState("");
+  const [journalPrompt, setJournalPrompt] = useState(() => pickRandom(JOURNAL_PROMPTS));
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [journalLoading, setJournalLoading] = useState(true);
+
+  const dragStartRef = useRef(null);
+  const wanderTimerRef = useRef(null);
+  const wanderDriftRef = useRef(null);
+  const justDraggedRef = useRef(false);
+  const dragVelocityRef = useRef([]);
+  const shakeTimerRef = useRef(null);
+  const bubbleTimer = useRef(null);
+  const idleTimer = useRef(null);
+  const wellnessTimer = useRef(null);
+  const happyTimer = useRef(null);
+  const moveTimer = useRef(null);
+  const eyesTimer = useRef(null);
+  const waterTimer = useRef(null);
+  const lastWellnessRef = useRef("");
+  const lastEncRef = useRef("");
+  const clickTimesRef = useRef([]);
+  const lastInteractionRef = useRef(Date.now());
+  const holdTimerRef = useRef(null);
+  const creatureRef = useRef(null);
+  const puffTimerRef = useRef(null);
+  const specialTimerRef = useRef(null);
+
+  // Time updates + beach refresh
+  useEffect(() => {
+    const iv = setInterval(() => { setMood(getTimeOfDay()); }, 60000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Load journal
+  useEffect(() => {
+    (async () => {
+      try { const r = await window.storage.get("tater-journal"); if (r?.value) setJournalEntries(JSON.parse(r.value)); } catch(e) {}
+      setJournalLoading(false);
+    })();
+  }, []);
+
+  // Load/save pokes
+  useEffect(() => { (async () => { try { const r = await window.storage.get("tater-pokes"); if (r?.value) setClickCount(parseInt(r.value,10)||0); } catch(e) {} })(); }, []);
+  useEffect(() => { if (clickCount>0) window.storage.set("tater-pokes", String(clickCount)).catch(()=>{}); }, [clickCount]);
+
+  // Eye tracking
+  const handleMouseMove = useCallback((e) => {
+    if (!creatureRef.current || specialAnim === "sleep") return;
+    const rect = creatureRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height * 0.35;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy), norm = Math.min(dist / 300, 1);
+    setPupilOffset({ x: (dx/(dist||1))*norm, y: (dy/(dist||1))*norm });
+  }, [specialAnim]);
+  useEffect(() => { window.addEventListener("mousemove", handleMouseMove); return () => window.removeEventListener("mousemove", handleMouseMove); }, [handleMouseMove]);
+
+  // Blink
+  useEffect(() => { const s = () => { setTimeout(() => { if (specialAnim !== "sleep" && !isPurring) { setIsBlinking(true); setTimeout(() => setIsBlinking(false), 250); } s(); }, Math.random()*25000+15000); }; s(); }, [specialAnim, isPurring]);
+
+  // Wing twitches
+  useEffect(() => { const s = () => { setTimeout(() => { setWingTwitchSide(Math.random()>0.5?"left":"right"); setTimeout(() => setWingTwitchSide(null), 350); s(); }, Math.random()*12000+6000); }; s(); }, []);
+
+  // Idle wandering
+  useEffect(() => {
+    const s = () => { wanderTimerRef.current = setTimeout(() => {
+      if (!isDragging && !isReturning && !specialAnim) {
+        setIsWandering(true); setDragPos({ x: (Math.random()-0.5)*40, y: (Math.random()-0.5)*25 });
+        wanderDriftRef.current = setTimeout(() => { setDragPos({x:0,y:0}); wanderDriftRef.current = setTimeout(() => setIsWandering(false), 3000); }, 2500);
+      } s();
+    }, Math.random()*20000+15000); };
+    s(); return () => clearTimeout(wanderTimerRef.current);
+  }, [isDragging, isReturning, specialAnim]);
+
+  // Unprompted behaviors
+  useEffect(() => {
+    const s = () => { specialTimerRef.current = setTimeout(() => {
+      const idle = Date.now() - lastInteractionRef.current;
+      if (Math.random() < 0.03) { setSpecialAnim("secret"); setTimeout(() => setSpecialAnim(null), 2200); s(); return; }
+      if (idle > 180000 && Math.random() < 0.4) { setSpecialAnim("sleep"); s(); return; }
+      if (Math.random() < 0.2) { setSpecialAnim("flyAttempt"); setTimeout(() => { setSpecialAnim(null); showMsg(pickRandom(MESSAGES.flyFail)); }, 1600); s(); return; }
+      if (Math.random() < 0.25) {
+        setChasedBugId(Math.floor(Math.random()*4)); setSpecialAnim("chaseBug");
+        showMsg(pickRandom(["*eyes lock onto crab*","...i see you, little guy.","TARGET ACQUIRED","*emu pupils dilate*","don't move don't move don't move","*predator mode activated*","bwak... bwak..."]));
+        setTimeout(() => { setChasedBugId(null); setSpecialAnim(null);
+          showMsg(Math.random()>0.5 ? pickRandom(["*got it!!* wait no it escaped.","*CRUNCH* ...sandy but delicious.","hehe gotcha little crab","*triumphant wing nub flap*","too slow, little bug!","i'm a predator. a tiny naked predator."])
+          : pickRandom(["...it got away. coward.","*dejected bwak*","next time.","i wasn't even trying. (i was.)","that crab is too fast.","what if they have a family."]));
+        }, 3000); s(); return;
+      }
+      if (Math.random() < 0.3) { showMsg(pickRandom(DISCOVERIES)); s(); return; }
+      s();
+    }, Math.random()*120000+90000); };
+    s(); return () => clearTimeout(specialTimerRef.current);
+  }, []);
+
+  const showMsg = useCallback((text, wellness=false, msgType=null) => {
+    if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+    setMessage(text); setShowBubble(true); setIsWellness(wellness); setCurrentMsgType(msgType);
+  }, []);
+
+  const triggerHappy = useCallback(() => {
+    if (happyTimer.current) clearTimeout(happyTimer.current);
+    setIsHappy(true); happyTimer.current = setTimeout(() => setIsHappy(false), 2000);
+  }, []);
+
+  const pickUnique = useCallback((pool, ref) => {
+    let p = pickRandom(pool), a=0;
+    while (p === ref.current && a < 5) { p = pickRandom(pool); a++; }
+    ref.current = p; return p;
+  }, []);
+
+  // Journal
+  const saveJournal = useCallback(async (text) => {
+    const entry = { id: Date.now(), text: text.trim(), prompt: journalPrompt, date: new Date().toISOString() };
+    const updated = [entry, ...journalEntries];
+    setJournalEntries(updated); setJournalText(""); setJournalPrompt(pickRandom(JOURNAL_PROMPTS));
+    try { await window.storage.set("tater-journal", JSON.stringify(updated)); } catch(e) {}
+    triggerHappy();
+    showMsg(pickRandom(["saved! your words matter, Evelyn.","got it. that one's safe with me.","journaled! look at you being reflective.","*tucks your entry away in the sand*","written and stored. future-you will appreciate this.","that was good. do this more often.","entry saved. you're building a record of being alive."]));
+  }, [journalEntries, journalPrompt, triggerHappy, showMsg]);
+
+  const deleteJournal = useCallback(async (id) => {
+    const u = journalEntries.filter(e => e.id !== id); setJournalEntries(u);
+    try { await window.storage.set("tater-journal", JSON.stringify(u)); } catch(e) {}
+  }, [journalEntries]);
+
+  // Timers
+  useEffect(() => { if (wellnessTimer.current) clearTimeout(wellnessTimer.current);
+    const ms = wellnessInterval*60000, j = ms*0.3;
+    const s = () => { wellnessTimer.current = setTimeout(() => { showMsg(pickUnique(WELLNESS, lastWellnessRef), true, "wellness"); s(); }, ms + Math.random()*j); }; s();
+    return () => clearTimeout(wellnessTimer.current);
+  }, [showMsg, pickUnique, wellnessInterval]);
+
+  useEffect(() => { if (moveTimer.current) clearTimeout(moveTimer.current);
+    moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval*60000);
+    return () => clearTimeout(moveTimer.current);
+  }, [moveInterval]);
+  const dismissMove = useCallback(() => { setMoveReminder(null); triggerHappy(); showMsg(pickRandom(MOVE_DONE));
+    moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval*60000);
+  }, [showMsg, triggerHappy, moveInterval]);
+
+  useEffect(() => { if (eyesTimer.current) clearTimeout(eyesTimer.current);
+    eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval*60000);
+    return () => clearTimeout(eyesTimer.current);
+  }, [eyesInterval]);
+  const dismissEyes = useCallback(() => { setEyesReminder(null); triggerHappy(); showMsg(pickRandom(EYES_DONE));
+    eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval*60000);
+  }, [showMsg, triggerHappy, eyesInterval]);
+
+  useEffect(() => { if (waterTimer.current) clearTimeout(waterTimer.current);
+    waterTimer.current = setTimeout(() => setWaterReminder(pickRandom(WATER_REMINDERS)), waterInterval*60000);
+    return () => clearTimeout(waterTimer.current);
+  }, [waterInterval]);
+  const dismissWater = useCallback(() => { setWaterReminder(null); triggerHappy(); showMsg(pickRandom(WATER_DONE));
+    waterTimer.current = setTimeout(() => setWaterReminder(pickRandom(WATER_REMINDERS)), waterInterval*60000);
+  }, [showMsg, triggerHappy, waterInterval]);
+
+  // Idle chatter
+  useEffect(() => {
+    const s = () => { idleTimer.current = setTimeout(() => {
+      if (specialAnim === "sleep") { s(); return; }
+      const r = Math.random();
+      if (r < 0.16) { triggerHappy(); showMsg(pickUnique(ENCOURAGEMENT, lastEncRef), false, "encouragement"); }
+      else if (r < 0.32) showMsg(pickRandom(MINDFULNESS), false, "mindfulness");
+      else if (r < 0.37) showMsg(pickRandom(JOURNAL_NUDGES), false, "journal");
+      else if (r < 0.45) showMsg(pickRandom(SCIENCE_FACTS), false, "science");
+      else if (r < 0.65) showMsg(pickRandom(MESSAGES.idle), false, "idle");
+      else showMsg(pickRandom(MESSAGES[mood]), false, "time");
+      s();
+    }, Math.random()*25000+15000); };
+    s(); return () => clearTimeout(idleTimer.current);
+  }, [mood, showMsg, triggerHappy, pickUnique, specialAnim]);
+
+  // Greeting
+  useEffect(() => { const t = setTimeout(() => showMsg(pickRandom(MESSAGES[mood])), 1500); return () => clearTimeout(t); }, []);
+
+  // Click
+  const handleClick = (e) => {
+    if (e.detail > 1 || justDraggedRef.current || isPurring) return;
+    lastInteractionRef.current = Date.now();
+    if (specialAnim === "sleep") { setSpecialAnim(null); setIsPuffed(true); showMsg(pickRandom(MESSAGES.startled));
+      if (puffTimerRef.current) clearTimeout(puffTimerRef.current); puffTimerRef.current = setTimeout(() => setIsPuffed(false), 1500); return; }
+    setSqueezed(true); setClickCount(c => c+1); setTimeout(() => setSqueezed(false), 280);
+    const now = Date.now(); clickTimesRef.current.push(now); clickTimesRef.current = clickTimesRef.current.filter(t => now-t < 2000);
+    const since = now - (clickTimesRef.current[clickTimesRef.current.length-2]||0);
+    if (clickTimesRef.current.length === 1 && since > 180000 && Math.random() < 0.5) {
+      setIsPuffed(true); showMsg(pickRandom(MESSAGES.startled));
+      if (puffTimerRef.current) clearTimeout(puffTimerRef.current); puffTimerRef.current = setTimeout(() => setIsPuffed(false), 1500); return; }
+    if (clickTimesRef.current.length >= 4) { showMsg(pickRandom(MESSAGES.rapidClick)); return; }
+    if (currentMsgType === "mindfulness") { showMsg(pickRandom(MESSAGES.mindfulClick)); return; }
+    const r = Math.random();
+    if (r < 0.15) { triggerHappy(); showMsg(pickUnique(ENCOURAGEMENT, lastEncRef), false, "encouragement"); }
+    else if (r < 0.25) showMsg(pickRandom(MESSAGES[mood]));
+    else showMsg(pickRandom(MESSAGES.clicked));
+  };
+
+  const handleDoubleClick = () => {
+    if (justDraggedRef.current || specialAnim) return;
+    lastInteractionRef.current = Date.now();
+    setSpecialAnim("flyAttempt");
+    setTimeout(() => { setSpecialAnim(null); showMsg(pickRandom(MESSAGES.flyFail)); }, 1600);
+  };
+
+  // Drag, purr, shake
+  const handleMouseDown = (e) => {
+    e.preventDefault(); lastInteractionRef.current = Date.now();
+    dragStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    holdTimerRef.current = setTimeout(() => {
+      if (dragStartRef.current && !dragStartRef.current.moved) { setIsPurring(true); showMsg(pickRandom(MESSAGES.purr)); }
+    }, 500);
+  };
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x, dy = e.clientY - dragStartRef.current.y;
+      if (!dragStartRef.current.moved && Math.sqrt(dx*dx+dy*dy) > 10) {
+        dragStartRef.current.moved = true; setIsDragging(true); setIsWandering(false);
+        clearTimeout(wanderDriftRef.current); setIsPurring(false); clearTimeout(holdTimerRef.current);
+      }
+      if (dragStartRef.current.moved) {
+        setDragPos({ x: dx, y: dy });
+        const now = Date.now();
+        dragVelocityRef.current.push({ x: e.clientX, y: e.clientY, t: now });
+        dragVelocityRef.current = dragVelocityRef.current.filter(p => now-p.t < 500);
+        if (dragVelocityRef.current.length >= 4) {
+          let dc = 0;
+          for (let i=2; i<dragVelocityRef.current.length; i++) {
+            const pd = dragVelocityRef.current[i-1].x - dragVelocityRef.current[i-2].x;
+            const cd = dragVelocityRef.current[i].x - dragVelocityRef.current[i-1].x;
+            if ((pd>0&&cd<0)||(pd<0&&cd>0)) dc++;
+          }
+          if (dc >= 3 && !isShaken) {
+            setIsShaken(true); showMsg(pickRandom(MESSAGES.shaken));
+            if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+            shakeTimerRef.current = setTimeout(() => setIsShaken(false), 2000);
+            dragVelocityRef.current = [];
+          }
+        }
+      }
+    };
+    const onUp = () => {
+      if (!dragStartRef.current) return; clearTimeout(holdTimerRef.current);
+      if (dragStartRef.current.moved) {
+        setIsDragging(false); setIsReturning(true); justDraggedRef.current = true; dragVelocityRef.current = [];
+        setTimeout(() => { justDraggedRef.current = false; }, 300);
+        if (Math.random() < 0.6) showMsg(pickRandom(["wheee!","*trots back to center*","okay okay i'm going back","that was fun. do it again.","i can find my way home. probably.","*waddles back contentedly*","you can't get rid of me that easy","weeeee... *thud into sand*","i belong in the middle of this beach"]));
+        requestAnimationFrame(() => { requestAnimationFrame(() => { setDragPos({x:0,y:0}); }); });
+        setTimeout(() => setIsReturning(false), 3200);
+      } else { if (isPurring) setIsPurring(false); }
+      dragStartRef.current = null;
+    };
+    window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [isPurring, isShaken, showMsg]);
+
+  const night = isNightTime();
+  const textColor = night ? "rgba(255,255,255,0.8)" : "rgba(44,44,42,0.8)";
+  const subtleColor = night ? "rgba(255,255,255,0.35)" : "rgba(44,44,42,0.35)";
+  const panelBg = night ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.9)";
+  const panelBorder = night ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)";
+  const panelText = night ? "rgba(255,255,255,0.85)" : "rgba(44,44,42,0.9)";
+  const btnBg = night ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+  const btnBorder = night ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)";
+  const btnText = night ? "rgba(255,255,255,0.4)" : "rgba(44,44,42,0.4)";
+  const accent = night ? "#45A0A8" : "#2E8890";
+  const accentLight = night ? "rgba(69,160,168,0.2)" : "rgba(46,136,144,0.2)";
+  const accentBorder = night ? "rgba(69,160,168,0.35)" : "rgba(46,136,144,0.35)";
+
+  return (
+    <div className="relative flex flex-col items-center justify-end w-full overflow-hidden select-none"
+      style={{ minHeight: "100vh", fontFamily: "'Courier New', monospace", paddingBottom: "4%" }}>
+
+      <div className="relative" style={{
+        zIndex: 10,
+        transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+        transition: isDragging ? "none" : "transform 3s cubic-bezier(0.15, 0.6, 0.35, 1)",
+        animation: !isDragging && !isReturning ? (
+          specialAnim === "chaseBug" ? "creatureChase 3s ease-in-out"
+          : specialAnim === "flyAttempt" ? "creatureFly 1.5s ease-in-out"
+          : "none") : "none",
+        cursor: isDragging ? "grabbing" : "grab",
+      }} ref={creatureRef} onMouseDown={handleMouseDown}>
+        <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
+        <TaterEmu onClick={handleClick} onDoubleClick={handleDoubleClick}
+          squeezed={squeezed} mood={mood} isHappy={isHappy} isPuffed={isPuffed}
+          isPurring={isPurring} isBlinking={isBlinking} specialAnim={specialAnim}
+          wingTwitchSide={wingTwitchSide} pupilOffset={pupilOffset} />
+      </div>
+
+      <div className="mt-1 text-center relative" style={{ zIndex: 10 }}>
+        <div style={{ color: textColor, fontSize: 14, letterSpacing: "3px", textTransform: "uppercase" }}>tater</div>
+        <div style={{ color: subtleColor, fontSize: 10, marginTop: 3, letterSpacing: "1px" }}>
+          click to say hi{clickCount > 0 && ` · poked ${clickCount} time${clickCount > 1 ? "s" : ""}`}
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "center", flexWrap: "wrap" }}>
+          {[["just moved", moveTimer, MOVE_REMINDERS, setMoveReminder, moveInterval],
+            ["eyes rested", eyesTimer, EYES_REMINDERS, setEyesReminder, eyesInterval],
+            ["drank water", waterTimer, WATER_REMINDERS, setWaterReminder, waterInterval]
+          ].map(([label, timer, pool, setter, interval]) => (
+            <button key={label} onClick={() => {
+              clearTimeout(timer.current); setter(null);
+              timer.current = setTimeout(() => setter(pickRandom(pool)), interval*60000);
+              showMsg(pickRandom(["nice! timer reset.", "got it!", "noted. clock restarted."]));
+            }} style={{
+              background: "none", border: "none", cursor: "pointer", color: subtleColor, fontSize: 10,
+              fontFamily: "'Courier New', monospace", letterSpacing: "0.5px", transition: "color 0.2s ease", padding: "2px 6px",
+            }}
+              onMouseEnter={(e) => { e.target.style.color = textColor; }}
+              onMouseLeave={(e) => { e.target.style.color = subtleColor; }}
+            >{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-3 mt-5 relative" style={{ minHeight: 20, zIndex: 10 }}>
+        {eyesReminder && <PersistentReminder text={eyesReminder} type="eyes" onDismiss={dismissEyes} />}
+        {moveReminder && <PersistentReminder text={moveReminder} type="move" onDismiss={dismissMove} />}
+        {waterReminder && <PersistentReminder text={waterReminder} type="water" onDismiss={dismissWater} />}
+      </div>
+
+      {/* Settings gear */}
+      <button onClick={() => { setShowSettings(!showSettings); setShowJournal(false); }}
+        className="absolute cursor-pointer" style={{
+          top: 16, right: 16, zIndex: 50, width: 32, height: 32,
+          background: btnBg, border: `1px solid ${btnBorder}`, borderRadius: 8,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: btnText, fontSize: 16, transition: "all 0.2s ease",
+        }}>&#9881;</button>
+
+      {showSettings && (
+        <div className="absolute" style={{
+          top: 56, right: 16, zIndex: 50, padding: "16px 20px", borderRadius: 16,
+          background: panelBg, backdropFilter: "blur(15px)", border: `1px solid ${panelBorder}`,
+          fontFamily: "'Courier New', monospace", color: panelText, fontSize: 12, minWidth: 240,
+        }}>
+          <div style={{ marginBottom: 14, fontSize: 13, letterSpacing: "1px", opacity: 0.6 }}>settings</div>
+          {[["wellness reminders", wellnessInterval, setWellnessInterval, 10, 60],
+            ["move reminders", moveInterval, setMoveInterval, 15, 90],
+            ["eye break reminders", eyesInterval, setEyesInterval, 10, 60],
+            ["water reminders", waterInterval, setWaterInterval, 15, 60],
+          ].map(([label, val, setter, min, max]) => (
+            <div key={label} style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                <span>{label}</span><span style={{ opacity: 0.5 }}>{val} min</span>
+              </div>
+              <input type="range" min={min} max={max} value={val}
+                onChange={(e) => setter(Number(e.target.value))}
+                style={{ width: "100%", accentColor: accent }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Journal button */}
+      <button onClick={() => { setShowJournal(!showJournal); setShowSettings(false); }}
+        className="absolute cursor-pointer" style={{
+          top: 16, right: 56, zIndex: 50, width: 32, height: 32,
+          background: showJournal ? (night ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.12)") : btnBg,
+          border: `1px solid ${btnBorder}`, borderRadius: 8,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: showJournal ? panelText : btnText, fontSize: 15, transition: "all 0.2s ease",
+        }}>&#9997;</button>
+
+      {showJournal && (
+        <div className="absolute" style={{
+          top: 56, right: 16, zIndex: 50, padding: "16px 20px", borderRadius: 16,
+          background: panelBg, backdropFilter: "blur(15px)", border: `1px solid ${panelBorder}`,
+          fontFamily: "'Courier New', monospace", color: panelText, fontSize: 12, width: 340,
+          maxHeight: "70vh", display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {["write", "past"].map(v => (
+              <button key={v} onClick={() => setJournalView(v)} style={{
+                flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
+                background: journalView === v ? accentLight : btnBg,
+                border: `1px solid ${journalView === v ? accent : btnBorder}`,
+                color: panelText, fontFamily: "'Courier New', monospace", fontSize: 12, letterSpacing: "1px",
+              }}>{v === "past" && journalEntries.length > 0 ? `past (${journalEntries.length})` : v}</button>
+            ))}
+          </div>
+          {journalView === "write" && (
+            <div>
+              <div style={{ padding: "10px 12px", borderRadius: 10, marginBottom: 12,
+                background: accentLight, border: `1px solid ${accentBorder}`,
+                fontSize: 12, lineHeight: 1.5, fontStyle: "italic", color: panelText, opacity: 0.8,
+              }}>{journalPrompt}</div>
+              <button onClick={() => setJournalPrompt(pickRandom(JOURNAL_PROMPTS))} style={{
+                background: "none", border: "none", cursor: "pointer", color: subtleColor, fontSize: 11,
+                marginBottom: 10, fontFamily: "'Courier New', monospace", padding: 0, transition: "color 0.2s ease",
+              }}>&#8635; different prompt</button>
+              <textarea value={journalText} onChange={(e) => setJournalText(e.target.value)}
+                placeholder="write here..." style={{
+                  width: "100%", minHeight: 100, maxHeight: 200, padding: "10px 12px", borderRadius: 10,
+                  border: `1px solid ${btnBorder}`, background: btnBg, color: panelText,
+                  fontFamily: "'Courier New', monospace", fontSize: 12, lineHeight: 1.5,
+                  resize: "vertical", outline: "none", boxSizing: "border-box",
+                }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                <span style={{ opacity: 0.3, fontSize: 11 }}>{journalText.length > 0 && `${journalText.length} chars`}</span>
+                <button onClick={() => { if (journalText.trim()) saveJournal(journalText); }}
+                  disabled={!journalText.trim()} style={{
+                    padding: "6px 16px", borderRadius: 10, cursor: journalText.trim() ? "pointer" : "default",
+                    background: journalText.trim() ? accentLight : btnBg,
+                    border: `1px solid ${journalText.trim() ? accent : btnBorder}`,
+                    color: journalText.trim() ? panelText : subtleColor,
+                    fontFamily: "'Courier New', monospace", fontSize: 12, transition: "all 0.2s ease",
+                  }}>save</button>
+              </div>
+            </div>
+          )}
+          {journalView === "past" && (
+            <div style={{ overflowY: "auto", flex: 1, maxHeight: "55vh" }}>
+              {journalLoading ? <div style={{ opacity: 0.4, textAlign: "center", padding: 20 }}>loading...</div>
+              : journalEntries.length === 0 ? <div style={{ opacity: 0.4, textAlign: "center", padding: 20, lineHeight: 1.6 }}>no entries yet.<br/>go write something!</div>
+              : journalEntries.map(entry => (
+                <div key={entry.id} style={{ padding: "12px 14px", borderRadius: 10, marginBottom: 10, background: btnBg, border: `1px solid ${btnBorder}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ opacity: 0.4, fontSize: 11 }}>{new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                    <button onClick={() => deleteJournal(entry.id)} style={{ background: "none", border: "none", cursor: "pointer", color: subtleColor, fontSize: 13, padding: "0 2px", fontFamily: "'Courier New', monospace" }}
+                      onMouseEnter={(e) => { e.target.style.color = "rgba(255,100,100,0.6)"; }}
+                      onMouseLeave={(e) => { e.target.style.color = subtleColor; }}
+                    >&#10005;</button>
+                  </div>
+                  {entry.prompt && <div style={{ fontSize: 11, fontStyle: "italic", opacity: 0.4, marginBottom: 6, lineHeight: 1.4 }}>{entry.prompt}</div>}
+                  <div style={{ lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{entry.text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes emuFloat { 0%,100%{transform:scale(1,1) translateY(0)} 50%{transform:scale(1.01,0.99) translateY(3px)} }
+        @keyframes emuBoom { 0%,100%{transform:scale(1.03,0.97) rotate(0deg)} 25%{transform:scale(1.03,0.97) rotate(4deg)} 75%{transform:scale(1.03,0.97) rotate(-4deg)} }
+        @keyframes emuBounce { 0%,100%{transform:scale(1,1) translateY(0)} 20%{transform:scale(0.92,1.12) translateY(-10px)} 40%{transform:scale(1.08,0.9) translateY(0)} 60%{transform:scale(0.96,1.06) translateY(-5px)} 80%{transform:scale(1.03,0.97) translateY(0)} }
+        @keyframes emuFlyAttempt { 0%,100%{transform:scale(1,1)} 20%{transform:scale(1.05,0.92)} 40%{transform:scale(0.95,1.06)} 60%{transform:scale(1.03,0.95)} 80%{transform:scale(0.97,1.03)} }
+        @keyframes emuChase { 0%,100%{transform:scale(1,1)} 30%{transform:scale(1.05,0.95)} 60%{transform:scale(0.97,1.03)} }
+        @keyframes secretSpin { 0%{transform:rotate(0deg) scale(1)} 25%{transform:rotate(10deg) scale(1.1)} 50%{transform:rotate(0deg) scale(1.2)} 75%{transform:rotate(-10deg) scale(1.1)} 100%{transform:rotate(0deg) scale(1)} }
+        @keyframes creatureChase { 0%{transform:translateX(0) translateY(0)} 15%{transform:translateX(60px) translateY(-15px)} 30%{transform:translateX(-40px) translateY(10px)} 50%{transform:translateX(80px) translateY(-25px)} 65%{transform:translateX(30px) translateY(5px)} 80%{transform:translateX(-20px) translateY(-10px)} 100%{transform:translateX(0) translateY(0)} }
+        @keyframes creatureFly { 0%{transform:translateY(0)} 25%{transform:translateY(-60px)} 40%{transform:translateY(-80px)} 55%{transform:translateY(-50px)} 75%{transform:translateY(-20px)} 85%{transform:translateY(8px)} 100%{transform:translateY(0)} }
+        @keyframes wingDriftL { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-4deg)} }
+        @keyframes wingDriftR { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(4deg)} }
+        @keyframes wingFlapL { 0%{transform:rotate(8deg)} 50%{transform:rotate(-12deg)} 100%{transform:rotate(8deg)} }
+        @keyframes wingFlapR { 0%{transform:rotate(-8deg)} 50%{transform:rotate(12deg)} 100%{transform:rotate(-8deg)} }
+        @keyframes wingTwitchL { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-8deg)} }
+        @keyframes wingTwitchR { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(8deg)} }
+        @keyframes reminderPulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
+        @keyframes zzzFloat { 0%,100%{transform:translateY(0);opacity:0.5} 50%{transform:translateY(-8px);opacity:0.8} }
+      `}</style>
+    </div>
+  );
+}
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<DesktopPet />);
+  </script>
+</body>
+</html>
