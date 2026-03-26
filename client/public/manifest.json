@@ -1,0 +1,22 @@
+{
+  "name": "Glim",
+  "short_name": "Glim",
+  "description": "Your glowy owl-cat-moth companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0820",
+  "theme_color": "#0d0820",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/glim-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/glim-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
