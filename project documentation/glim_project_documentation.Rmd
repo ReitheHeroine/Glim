@@ -1,0 +1,973 @@
+---
+title: "Glim -- Project Documentation"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 3
+    theme: default
+---
+
+**Last Updated:** 2026-03-25
+
+**Purpose:** This document is the cumulative, archival record of the Glim project. It contains all design context, technical decisions, feature documentation, and development history. This is the single source of truth for how Glim works, why it works that way, and where it's going.
+
+---
+
+# 1. Project Vision & Philosophy
+
+## 1.1 What is Glim?
+
+Glim is a personalized interactive companion that lives in a browser tab (desktop) and as a PWA on mobile. It takes the form of a glowy owl-cat-moth spirit - a round, chubby creature with owl eyes, spread wing-arms, bobble antennae, a curly tail, and fawn-like dot markings. Glim floats against an atmospheric twilight sky with twinkling stars, shooting stars, nebula wisps, silhouette mountains, pine trees, and ambient glowing bugs.
+
+Glim is evolving into a personalized wellness and productivity hub with a character-driven interface. Beyond its original role as a passive companion with wellness reminders and journaling, Glim will encompass water tracking, nutrition logging, step and exercise tracking, mood tracking, to-do lists, habit tracking, a pomodoro timer, goal/streak tracking, historical trends, and more. The creature isn't decoration - it's the personality layer that makes tracking daily habits feel like sharing your day with a friend rather than logging data into a clinical app. All data syncs across devices via Firebase so the desktop and mobile experiences stay in lockstep.
+
+It delivers personalized messages that reference the user's real life - their thesis project, their cats, their hobbies, their values - so it feels like a friend rather than a generic motivational tool.
+
+The project began in early March 2026 as "Blorb," a bioluminescent blob desktop companion. It evolved through several creature designs (Blorb, Mochi, Sprig) before settling on the owl-cat-moth spirit form. The name "Glim" was chosen because it evokes both "glimmer" and "glimpse."
+
+## 1.2 Design Philosophy
+
+The following values guide all design decisions for Glim:
+
+**Personality over polish.** Glim should feel alive and idiosyncratic, not like a polished product. Quirks, failed fly attempts, existential musings about being made of pixels - these are features, not bugs.
+
+**Passive presence.** On desktop, Glim sits in a pinned tab and doesn't demand attention. It offers gentle reminders and observations. The user glances over when they want to, not because Glim forces it.
+
+**Radical personalization.** Messages reference the user's actual life - specific cats by name, specific thesis topics, specific values and hobbies. Generic motivational content is avoided in favor of messages that could only be for this person.
+
+**Science-backed self-care.** Wellness messages are grounded in actual neuroscience and research (BDNF, gratitude neuroscience, sleep science, hydration research). Glim is a nerdy friend who drops real facts, not platitudes.
+
+**Show don't tell.** Glim's personality emerges through what it says and how it behaves, not through labels or descriptions. The user discovers behaviors (shake detection, off-screen wandering, bug chasing) through interaction.
+
+**Absurdism and warmth.** The tone balances genuine care with playful absurdity. Glim is simultaneously deeply supportive and hilariously self-aware about being a fictional owl-cat-moth made of SVG paths.
+
+---
+
+# 2. Technical Design
+
+## 2.1 Technology Stack
+
+### Current Stack (post-migration, 2026-03-25)
+
+| Layer | Technology | Version | Status |
+|---|---|---|---|
+| Build tool | Vite | 8.0.2 | Installed |
+| UI Framework | React | 19.2.4 | Installed |
+| Styling | Tailwind CSS v4 | 4.2.2 | Installed (via `@tailwindcss/vite` plugin) |
+| Rendering | SVG (inline) | - | Unchanged |
+| State persistence | `localStorage` via `window.storage` polyfill | - | Unchanged |
+| State management | Zustand | - | Planned (not yet installed) |
+| Data visualization | Chart.js | - | Planned (not yet installed) |
+| Backend/sync | Firebase (Firestore + Auth) | - | Planned (not yet installed) |
+| PWA | vite-plugin-pwa | - | Planned (not yet installed) |
+| Hosting | GitHub Pages (initially) | - | Planned (repo not yet created) |
+
+**Note on React version:** The Vite scaffold installed React 19 (not 18 as originally planned). No compatibility issues encountered. React 19 is backward compatible.
+
+**What the migration eliminated:** Babel Standalone CDN (~800KB, in-browser JSX transpilation), Tailwind CDN (replaced by build-integrated v4), ad-hoc `tail/sed/cat` HTML export pipeline (replaced by `npm run build`).
+
+**Migration decision rationale:** See Decision Register entry 2026-03-25 "Adopt Vite build system." Alternatives evaluated: staying on CDN-only (rejected - doesn't scale to 25+ features), Svelte/SvelteKit (rejected - React's larger ecosystem and skill transferability outweigh Svelte's simpler model for this project).
+
+## 2.2 File Structure & Build Process
+
+**Active project files (post-migration, 2026-03-25):**
+
+| File | Purpose |
+|---|---|
+| `client/src/DesktopPet.jsx` | All components + logic (~1724 lines). Source of truth for development. |
+| `client/src/messages.js` | All message pool arrays (10 named exports, ~706 lines). Edit messages here. |
+| `client/src/storage.js` | `window.storage` localStorage polyfill. Side-effect import. |
+| `client/src/App.jsx` | Root component. Renders `<DesktopPet />`. |
+| `client/src/main.jsx` | Vite entry point. Mounts App into `#root`. |
+| `client/src/index.css` | Tailwind v4 import + base styles (full-height, overflow hidden). |
+| `client/index.html` | HTML shell. Title "Glim", owl favicon. |
+| `client/vite.config.js` | Vite config (React + Tailwind v4 plugins). |
+| `client/package.json` | npm dependencies. |
+| `glim.html` | Legacy standalone HTML. Kept as reference/fallback. No longer the active source. |
+
+**Build commands (run from `client/` directory):**
+
+```bash
+npm run dev      # Dev server at localhost:5173 with hot module replacement
+npm run build    # Production build to client/dist/
+npm run preview  # Preview production build locally
+```
+
+**Build output:** `client/dist/index.html` + `client/dist/assets/` (JS + CSS bundles). As of 2026-03-25: 285KB JS (gzip: 90KB), 10.8KB CSS (gzip: 2.8KB).
+
+## 2.3 Codebase Organization
+
+**`messages.js`** (~726 lines) contains all message arrays, each exported:
+
+- `MESSAGES` object - time-of-day keys (earlyMorning, morning, afternoon, evening, night, lateNight), plus clicked, rapidClick, shaken, startled, purr, flyFail, mindfulClick, sleepTalk, idle, wellness, encouragement
+- Standalone arrays: `MINDFULNESS`, `MOVE_REMINDERS`, `EYES_REMINDERS`, `MOVE_DONE_RESPONSES`, `EYES_DONE_RESPONSES`, `DISCOVERIES`, `JOURNAL_PROMPTS`, `JOURNAL_NUDGES`, `SCIENCE_FACTS`
+
+**`DesktopPet.jsx`** (~1724 lines) is organized in the following order:
+
+1. **Imports** - React hooks, message arrays from `messages.js`, `storage.js` side-effect
+2. **Color system** - `getTimeOfDay()` and `getColors()` mapping hours to hue/saturation values
+3. **Utility** - `pickRandom(arr)`
+4. **Background component** - Sky crossfade layers, stars, shooting stars, nebula wisps, landscape SVG, floating motes, horizon glow, moon
+5. **AmbientBugs component** - 5 glowing bugs with unique flight paths
+6. **SpeechBubble component** - Message display with frosted glass styling
+7. **OwlMoth component** - The creature SVG: body, wings, face disc, eyes (squish-to-line closing), beak, blush, antennae, tail, feet, body dots
+8. **PersistentReminder component** - Wellness reminder display with dismiss buttons
+9. **DesktopPet component** (main) - All state, refs, effects, timers, interaction handlers, render tree
+
+**Key state management patterns:**
+
+- `useRef` for values that need to be current inside async callbacks (timers, intervals) without causing re-renders. Critical refs: `isSleepingRef`, `isPurringRef`, `lastInteractionRef`, `dragStartRef`, `justDraggedRef`, `dragVelocityRef`, `wanderDriftRef`, `settingsInitRef`
+- `useCallback` for stable function references passed as dependencies
+- `useState` for values that need to trigger re-renders (visual state, message display, UI panels)
+
+**Stale closure pattern:** All `useEffect` hooks that run asynchronous callbacks (timers, intervals) use `.current` refs instead of state variables for checks that need to reflect the latest value. This was the source of multiple bugs where Glim would talk in its sleep or ignore sleep state, because `specialAnim` was captured at effect creation time rather than checked at callback execution time.
+
+## 2.4 Persistent Storage
+
+| Key | Data Format | Purpose | Survives Code Updates |
+|---|---|---|---|
+| `glim-journal` | JSON array of `{id, text, prompt, date}` objects | Journal entries | Yes |
+| `glim-pokes` | String (integer) | Lifetime poke count | Yes |
+| `glim-settings` | JSON object `{wellnessInterval, moveInterval, eyesInterval}` | User-configured reminder intervals | Yes |
+
+**Storage backend:**
+
+- In the Vite dev/build environment: `window.storage` polyfill defined in `storage.js`, wrapping `localStorage.getItem/setItem/removeItem`. Imported as a side effect in `DesktopPet.jsx`.
+- In the legacy `glim.html`: same polyfill inlined in the HTML `<head>`.
+- The `window.storage` API mirrors Anthropic's artifact storage API, so the same Glim code works in both contexts.
+
+**Browser behavior when serving over HTTP (Vite dev server or GitHub Pages):**
+
+- Storage is scoped to the origin (`localhost:5173` in dev, `username.github.io` in production). Data persists across page refreshes and browser restarts for that origin.
+- Moving to a different URL/origin loses access to existing localStorage data.
+
+---
+
+# 3. Platform Specifications
+
+## 3.1 Shared Features
+
+Both desktop and mobile versions share the same codebase and the following features:
+
+- Full creature with all visual animations (float, bounce, puff, purr rock, fly attempt, chase, secret spin)
+- Eye tracking (cursor position), squish-to-line eye closing (sleep, purr, rare blink)
+- All mouse interaction types: click, double-click, long press (purr), drag, shake detection
+- **[NOT IMPLEMENTED]** Touch equivalents of the above interactions do not exist yet
+- All message pools and delivery system (messages persist until next message replaces them)
+- Time-of-day sky crossfade system (5 perpetual twilight backgrounds, 2-minute transitions)
+- Background with stars (brightness varies by time), shooting stars, nebula wisps, pine tree landscape, ambient bugs, floating motes, moon (late night only)
+- Journal with prompts, persistent storage, past entry viewer
+- Wellness reminders (configurable intervals for general wellness, move, and eye breaks)
+- Proactive timer reset buttons ("just moved", "eyes rested")
+- Settings panel with interval sliders (persisted across sessions)
+- Persistent poke count
+- All autonomous behaviors (idle chatter, sleep, fly attempt, bug chase, discoveries, wandering, secret spin)
+- **[NOT IMPLEMENTED]** Off-screen adventure behavior
+
+## 3.2 Desktop Version
+
+**Form factor:** Pinned browser tab. User opens `glim.html` (local file) or visits the GitHub Pages URL and pins the tab.
+
+**Primary role:** Passive companion. Glim sits visible on screen while the user works, offering ambient encouragement, wellness reminders, and occasional surprises. The user glances at Glim between tasks.
+
+**Desktop-specific considerations:**
+
+- Mouse-based interaction (hover states on buttons, cursor-following eye tracking)
+- Larger creature size (360x390px)
+- Floating panels (settings, journal) positioned top-right
+- "Click to say hi" prompt visible below creature name
+
+## 3.3 Mobile Version (PWA)
+
+**Form factor:** Progressive Web App installed via "Add to Home Screen." Full-screen, no browser chrome, own app icon.
+
+**Primary role:** Active wellness tool. The mobile version is intended to expand beyond the passive companion role into a more interactive personal tool.
+
+**Planned mobile-specific features:**
+
+- Water intake tracking
+- More in-depth journaling features
+- To-do list tracking
+
+**Mobile adaptations:**
+
+**[NOT IMPLEMENTED]** The following mobile adaptations are planned but do not exist in the current codebase as of 2026-03-24:
+
+- Touch event handlers parallel to all mouse events (unified pointer system via `getPointerXY()` helper)
+- Responsive layout: `isMobile` flag (screen width < 600px) scales creature, glow ring, and panels
+- Larger tap targets (44px minimum per Apple guidelines) for gear/journal buttons on mobile
+- `touch-action: none` to prevent browser default gestures during drag
+- Settings and journal panels expand to near-full-width on small screens
+- Off-screen return listens for `touchstart` in addition to `mousemove`
+
+**[FOLLOW-UP NEEDED]:** PWA files (manifest.json, service worker, app icons) have not been created yet. GitHub Pages repo has not been set up.
+
+## 3.4 One Codebase Strategy
+
+The current approach is a single file that adapts to both platforms using responsive detection:
+
+**[NOT IMPLEMENTED]** The `isMobile` flag and responsive detection do not exist in the current codebase. The planned implementation:
+
+```javascript
+const [winWidth, setWinWidth] = useState(window.innerWidth);
+const isMobile = winWidth < 600;
+```
+
+**Current state:** All event handlers are mouse-only (`onMouseDown`, `mousemove`, `mouseup`). No touch events are attached. No responsive sizing logic exists. The creature is hardcoded at 360x390px.
+
+**Planned strategy:** Both mouse and touch event listeners would be attached simultaneously. Browsers ignore whichever doesn't apply. Layout differences would be handled via the `isMobile` flag (creature size, panel widths, button sizes).
+
+**Open question:** As mobile-specific features are added (water tracking, to-do lists), the codebase will contain code that only runs on one platform. The current plan is to use `isMobile` as a feature flag to show/hide mobile-only UI. If the divergence becomes too large, the alternative is separate entry points that share a common component library. This decision should be revisited once 2-3 mobile-specific features have been implemented.
+
+**[FOLLOW-UP NEEDED]:** Decide on the threshold for splitting into separate entry points vs. continuing with feature flags.
+
+---
+
+# 4. Feature Inventory
+
+## 4.1 Creature Design & Visual System
+
+**Creature:** Owl-cat-moth spirit rendered as inline SVG within a 220x240 viewBox, displayed at 360x390px on desktop (responsive on mobile).
+
+**Visual elements:**
+
+- Radial gradient body (green-teal-blue-purple-pink, shifts with time of day via hue rotation)
+- Spread wing-arms with translucent fill
+- Round face disc with lighter tint
+- Large circular eyes with pupil tracking (pupils follow cursor/touch position, normalized offset)
+- Squish-to-line eye closing: eyes are ellipses where `ry` transitions from 12 to 1.5 for sleep, purr, and rare blink. Pupils and highlight reflections hidden when eyes closed.
+- Small triangular beak
+- Circular blush marks
+- Bobble antennae on curved stalks (perk outward when speech bubble appears)
+- Curly tail drawn as a bezier path
+- Small feet ellipses
+- Scattered dot markings (like a fawn)
+- Outer glow via CSS `drop-shadow` filter, intensity varies with state (brighter when puffed/purring)
+
+**Color system:** Hue rotates through the day: green (150) at early morning, teal (175) morning, blue (220) afternoon, purple (270) evening, pink (310) late night. Saturation is fixed at 65%. All creature colors derive from these base values.
+
+**Animations:**
+
+- `owlFloat`: Gentle 4s vertical bob (default idle)
+- `owlBounce`: Happy bounce triggered by encouragement and journal saves
+- `purrRock`: 1.2s side-to-side rocking during long press (rotate +/-5deg)
+- `flyAttempt`: Upward movement then drop (creature-level CSS animation)
+- `chaseBug`: Lateral movement toward target bug
+- `secretSpin`: Rare 2s glowy spin (3% chance per behavior cycle)
+- Body transform states: squeezed (on click), puffed (startled), happy (enlarged eyes + bounce)
+- Random wing twitches (independent, every 6-12s)
+- Rare blink (every 45-90s, 250ms squish, skipped during sleep/purr)
+
+## 4.2 Interaction System
+
+All interactions currently use mouse events only. **[NOT IMPLEMENTED]** Touch/pointer unification (planned `getPointerXY()` helper) does not exist in the codebase yet.
+
+| Interaction | Trigger | Response |
+|---|---|---|
+| Click/tap | Single click on Glim | Random clicked message; wakes from sleep with startled puff; context-aware during mindfulness |
+| Double-click/tap | Double click on Glim | Fly attempt (fails adorably with screen-level animation) |
+| Long press | Hold 500ms without moving | Purring with rocking animation and closed eyes; message from purr pool |
+| Drag | Move 10px+ after mousedown/touchstart | Glim follows pointer; window-level handlers ensure drag continues outside creature bounds |
+| Shake | 3+ direction reversals in 500ms during drag | Shaken message with 2s cooldown |
+| Rapid click | 4+ clicks within 2s | Overwhelmed/flustered response |
+| Startled | First click after 5+ min idle (50% chance) | Puff-up animation with startled message |
+
+**Drag return:** When released, Glim drifts back to center with a 3s ease-out CSS transition. `requestAnimationFrame` double-buffering ensures the transition CSS applies before the position changes. `isReturning` flag prevents other interactions during the drift. `justDraggedRef` blocks clicks for 300ms after release.
+
+## 4.3 Behavior System
+
+Autonomous behaviors are scheduled via a recursive `setTimeout` loop with random delays (90-210 seconds between behavior checks). All behaviors check `isSleepingRef.current` before firing. Behavior selection uses a single weighted random draw so documented percentages are exact.
+
+| Behavior | Chance | Duration | Notes |
+|---|---|---|---|
+| Sleep | 3% (after 15 min idle) | Until clicked | Eyes close, Zzz animation, only sleepTalk messages shown. Very rare by design. If idle threshold not met, this slot becomes "nothing happens." |
+| Fly attempt | 20% | 1.6s | Screen-level upward movement then drop; fly-fail message on land |
+| Bug chase | 25% | 3s | Targets specific ambient bug; pre-chase, catch (60%), or miss (40%) dialog |
+| Discovery | 30% | instant | Glim finds something in its world (20 discovery messages) |
+| Secret spin | 3% | 2.2s | Unexplained glowy spin; no explanation given |
+| Off-screen wander | **[NOT IMPLEMENTED]** | -- | Planned: Glim drifts off-screen and returns on pointer activity. Not in codebase. |
+| Nothing | 19% | -- | No behavior fires this cycle |
+| Idle wandering | Every 15-35s | 5.5s | Small random drift (40px) then back; cancelled if drag starts |
+| Idle chatter | Every 15-40s | Persistent | Cycles through message pools: encouragement (16%), mindfulness (16%), journal nudge (5%), science fact (8%), idle (20%), time-of-day (35%) |
+
+## 4.4 Background & Environment
+
+**Sky crossfade system:** Five sky gradient layers rendered simultaneously as stacked divs. Only the layer matching the current time period has opacity 1; the rest are at opacity 0. All layers have `transition: opacity 120s ease` for a 2-minute crossfade between time periods.
+
+| Time Period | Hours | Sky Character | Star Brightness | Moon |
+|---|---|---|---|---|
+| Early Morning | 6am-9am | Navy to warm muted horizon | 60% | No |
+| Morning | 9am-12pm | Navy to cool teal-green | 35% | No |
+| Afternoon | 12pm-5pm | Navy to blue-slate, brighter horizon | 25% | No |
+| Evening | 5pm-9pm | Deep purple to burnt orange horizon | 50% | No |
+| Late Night | 9pm-6am | Near black | 90% | Yes |
+
+**Design principle:** Always moody, always twilight, always stars visible. No sun. The sky shifts in hue and warmth but never reaches full daylight.
+
+**Other background elements:**
+
+- 80 twinkling stars with glow halos on largest ones
+- Shooting stars every 12-37s
+- 3 nebula wisps with drift animations (opacity varies with hue)
+- Horizon glow (color and intensity varies by time period, 120s transition)
+- Silhouette landscape: 2 mountain layers
+- Pine tree silhouettes: 4 clustered left, 4 clustered right, 4 scattered (varying sizes and opacity for depth)
+- Ground plane
+- 5 ambient bugs with unique flight paths (chaseable)
+- 12 floating motes near Glim
+
+## 4.5 Message System Overview
+
+Glim has 775+ messages across 29 categories. Messages persist on screen until the next message replaces them (no auto-hide timer).
+
+**Message delivery:** The `showMessage` function sets the message text, shows the speech bubble, and accepts optional `wellness` and `msgType` parameters. There is no auto-hide timer; messages stay visible until the next one fires.
+
+**Message personalization themes:** Thesis project (Proteomic Signatures of Ketamine-Treated Cortical Astrocytes, Dr. Blanco-Suarez), cats (Spooky's specific behaviors - flopping, trilling, fish plushie, cardboard tower, feather toy, bed sheets; Pepita's behaviors - loud purring, following Spooky, getting braver), partner (Alex), siblings (Lados, Anora), improv (Artificial Idiocy), sobriety, values (absurdism, radical inclusion, gifting, decommodification, self-expression, participation, immediacy), teaching (TA for genetics).
+
+**Full message inventory:** See `glim-messages.txt` for all messages organized by pool.
+
+## 4.6 Journal System
+
+**Access:** Pen icon (&#9997;) next to settings gear, top-right.
+
+**Write view:**
+
+- Random journaling prompt displayed in tinted box (39 prompts, short-entry focused)
+- Shuffle button for new prompt
+- Text area with focus-highlighting matching current hue
+- Character count and save button (activates only when text present)
+- Glim reacts on save with happy bounce + save message
+
+**Past entries view:**
+
+- Scrollable list, newest first
+- Each entry shows date/time, prompt used (italic), and full text
+- Delete button per entry (turns red on hover)
+
+**Storage:** Entries saved to `glim-journal` key as JSON array. Each entry: `{id: timestamp, text, prompt, date: ISO string}`.
+
+**Journal prompts (39):** Organized into mood/feelings, gratitude/joy, reflection, looking forward, self-check-in, curiosity/play, connection, absurdist/fun, and open categories. Designed for one-sentence to short-paragraph entries.
+
+**Journal nudges:** ~5% of idle chatter is a gentle journal reminder (8 messages).
+
+## 4.7 Wellness Reminders
+
+Three configurable reminder timers with jitter to prevent predictability:
+
+| Reminder | Default Interval | Jitter | Delivery |
+|---|---|---|---|
+| Wellness (general) | 20 min | 30% | Message in speech bubble |
+| Move | 45 min | None | Persistent reminder below creature |
+| Eye break | 20 min | None | Persistent reminder below creature |
+
+**Proactive reset buttons:** "just moved" and "eyes rested" buttons below the poke counter. Clicking one wakes Glim (if sleeping), clears any active reminder, restarts the timer at the full configured interval, and triggers an acknowledgment message.
+
+**Settings panel:** Gear icon, top-right. Frosted glass panel with sliders for each reminder interval.
+
+## 4.8 Settings Panel
+
+**Access:** Gear icon (&#9881;) top-right. Mutually exclusive with journal panel (opening one closes the other).
+
+**Controls:**
+
+- Wellness reminders: 10-60 min slider (default 20)
+- Move reminders: 15-90 min slider (default 45)
+- Eye break reminders: 10-60 min slider (default 20)
+
+Slider accent colors match Glim's current hue. All slider values are persisted to the `glim-settings` storage key and restored on page load.
+
+---
+
+# 5. Message Inventory
+
+## 5.1 Pool Structure & Categories
+
+Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main `MESSAGES` object contains keyed pools, and additional standalone arrays exist for specialized categories.
+
+**Full message list:** See `glim-messages.txt` for the complete inventory organized by pool with numbering.
+
+## 5.2 Message Counts by Category
+
+| Category | Count | Trigger |
+|---|---|---|
+| Early Morning | 16 | Time-of-day idle chatter (6am-9am) |
+| Morning | 20 | Time-of-day idle chatter (9am-12pm) |
+| Afternoon | 30 | Time-of-day idle chatter (12pm-5pm) |
+| Evening | 27 | Time-of-day idle chatter (5pm-9pm) |
+| Late Night | 28 | Time-of-day idle chatter (9pm-6am) |
+| Clicked | 64 | Single click/tap on Glim |
+| Rapid Click | 22 | 4+ clicks in 2 seconds |
+| Shaken | 18 | Shaking Glim during drag |
+| Startled | 15 | First click after 5+ min idle |
+| Purr | 22 | Long press |
+| Fly Fail | 16 | After fly attempt animation |
+| Mindful Click | 12 | Clicking during a mindfulness message |
+| Sleep Talk | 16 | Idle chatter while sleeping |
+| Idle | 109 | General idle chatter (personality, musings, cat references) |
+| Wellness | 31 | Wellness timer |
+| Encouragement | 75 | Idle chatter with happy bounce |
+| Move Reminders | 14 | Move timer |
+| Eyes Reminders | 10 | Eye break timer |
+| Move Done | 6 | Dismissing move reminder |
+| Eyes Done | 5 | Dismissing eyes reminder |
+| Mindfulness | 119 | Idle chatter (values, calm, trust, it's-okay-to-not-know) |
+| Discoveries | 20 | Autonomous discovery behavior |
+| Journal Prompts | 39 | Journal write view |
+| Journal Nudges | 8 | Idle chatter (~5% chance) |
+| Off-screen Return | **[NOT IMPLEMENTED]** | Planned for off-screen adventure behavior |
+| Science Facts | 35 | Idle chatter (~8% chance) |
+| Bug Chase (pre/catch/miss) | 19 | Autonomous bug chase behavior |
+| Drag Release | 9 | After being dragged and released |
+| Journal Save | 7 | After saving a journal entry |
+| **Total** | **~775** | (excludes 20 planned off-screen return messages) |
+
+## 5.3 Content Themes
+
+**Personal references:** Spooky (flop, trill, fish plushie, cardboard tower, feather toy, bed sheets, greeting at door), Pepita (loud purr, following Spooky, getting braver, cuddling), Alex (silly, talkative), siblings (Lados, Anora - big sister references), Artificial Idiocy improv team.
+
+**Research:** Thesis title ("Proteomic Signatures of Ketamine-Treated Cortical Astrocytes"), Dr. Blanco-Suarez, multi-omics, astrocytes, proteomics workflow, R/Python, thesis encouragement.
+
+**Values:** Absurdism, radical inclusion, gifting, decommodification, radical self-expression, participation, immediacy, chasing fun/joy/curiosity. Drawn from Burning Man principles but presented as personal values.
+
+**Self-care science (35 facts):** BDNF and exercise (8), gratitude neuroscience (7), sleep science (4), hydration and cognition (3), social connection (4), nature exposure (2), breathing and mindfulness (3), miscellaneous (4). Each prefixed with a casual tag ("science fact:", "nerd fact:", "did you know:", etc.).
+
+**Emotional support:** Trust yourself, things will work out, it's okay to not know, everyone feels stupid sometimes, calm is a skill, imposter syndrome. ~30 messages across mindfulness and encouragement pools.
+
+**Thesis-specific encouragement:** 15 messages rooting for thesis completion, referencing the specific project, advisor, and the significance of the work.
+
+**Humor:** Science jokes scattered across time-of-day pools, Glim's existential musings about being made of pixels, self-aware commentary on its own behaviors.
+
+---
+
+# 6. Deployment & Distribution
+
+## 6.1 Standalone HTML (Desktop) - Legacy
+
+**Status:** `glim.html` is now a legacy artifact kept for reference. The active path is the Vite build served via GitHub Pages (see Section 6.2). The standalone HTML still works but is no longer the development source of truth.
+
+**Legacy setup (still functional):**
+
+1. Open `glim.html` directly in Chrome
+2. Pin the tab
+
+**Requirements for legacy HTML:** Internet connection on first load (React/Tailwind CDN caching). Works offline after first load.
+
+## 6.2 GitHub Pages PWA (Mobile)
+
+**Status:** Not yet implemented.
+
+**Planned setup:**
+
+1. Create GitHub repo with `index.html`, `manifest.json`, `sw.js`, app icons
+2. Enable GitHub Pages in repo settings
+3. URL: `username.github.io/glim`
+4. On phone: visit URL in Safari/Chrome, "Add to Home Screen"
+5. Glim appears as installable app with own icon, full screen, no browser chrome
+
+**Files needed:**
+
+- `index.html` - the single Glim file (same as `glim.html` but served from HTTPS)
+- `manifest.json` - PWA configuration (name, icons, display mode, theme colors)
+- `sw.js` - Service worker for offline caching
+- `icon-192.png` and `icon-512.png` - App icons (could be generated from Glim SVG)
+
+**[FOLLOW-UP NEEDED]:** Create PWA files, set up GitHub repo, test on iOS and Android.
+
+## 6.3 Update Workflow
+
+**Current workflow (post-migration, Vite):**
+
+1. Edit `client/src/DesktopPet.jsx` or `client/src/messages.js` (Claude Code or directly)
+2. Run `npm run dev` from `client/` for live preview at `localhost:5173`
+3. Run `npm run build` to verify production build
+4. Push to GitHub repo (once repo is set up) - GitHub Pages auto-deploys from `dist/`
+5. Journal entries and poke count persist (localStorage, not in source files)
+
+**Note on Claude.ai workflow:** Feature and message changes designed in the Claude.ai artifact environment should be transferred to `client/src/DesktopPet.jsx` (components/logic) and `client/src/messages.js` (message content) by Claude Code. The artifact is no longer the source of truth.
+
+---
+
+# 7. Known Limitations & Bugs
+
+**Stale closure pattern:** Multiple bugs arose from `useEffect` callbacks capturing state variables at creation time rather than execution time. Resolved by introducing `isSleepingRef` and `isPurringRef` that stay current via sync effects. Any new timer-based features should follow this pattern.
+
+**CSS gradient transitions:** CSS cannot natively transition between `linear-gradient` values. Solved with an opacity crossfade approach (5 stacked layers, only the active one visible). The 2-minute transition is smooth but adds 5 DOM elements permanently.
+
+**Drag return snap:** Early implementations had a visible snap at the end of the drag-return animation caused by the CSS `transition` property changing when `isReturning` cleared. Solved by using a constant transition (`isDragging ? "none" : "3s smooth"`) that never changes during the return.
+
+**localStorage origin for local files:** Browser behavior varies for `file://` origins. Chrome is permissive (same origin for all local files). Firefox and Safari may be stricter. Mitigated by recommending users always save to the same file path.
+
+**Tailwind dependency:** Tailwind CSS is loaded from CDN but barely used (a handful of utility classes, primarily in PersistentReminder). Could be replaced with inline styles to eliminate the dependency and the console warning.
+
+**Babel in-browser transpilation:** Adds a small load time on first open. The alternative (pre-compiling to `React.createElement` calls) would make the code unreadable and unmaintainable for a single-file project.
+
+**No data export for journal:** If localStorage is cleared or the browser changes, journal entries are lost. A JSON export/import feature has been discussed but not implemented.
+
+**No touch event support:** All interaction handlers are mouse-only (`onMouseDown`, `mousemove`, `mouseup`). Glim is non-functional on touch-only devices. This is the primary blocker for mobile deployment.
+
+**No responsive layout:** Creature size is hardcoded at 360x390px. No `isMobile` flag, no responsive sizing. UI panels are fixed-width and may overflow on small screens.
+
+**Off-screen adventure not implemented:** The behavior is documented in the roadmap and was planned during the 03-23/24 session but was never coded. No `isOffScreenRef`, no `OFFSCREEN_RETURN` message array, no off-screen detection logic exists.
+
+### 7.1 Resolved Issues (2026-03-24 audit)
+
+**Timer memory leaks (fixed):** `scheduleBlink`, `scheduleTwitch`, and the shooting star scheduler all used recursive `setTimeout` without cleanup refs. The blink effect was particularly problematic because its `[isPurring]` dependency array meant every purr cycle spawned a new parallel blink chain. All three now use local timer refs with proper cleanup returns.
+
+**Wander drift orphan (fixed):** The idle wandering effect cleaned up `wanderTimerRef` but not `wanderDriftRef` on teardown. If the effect re-ran mid-drift, the drift-back timeout was orphaned. Now both refs are cleared.
+
+**Behavior probability drift (fixed):** The autonomous behavior system used cascading independent `Math.random()` draws, causing effective probabilities to drift from documented values (e.g., discovery was documented as 30% but effective rate was ~17.5%). Replaced with a single weighted random draw against a 0-100 roll. Sleep probability corrected from 10% to 3%. Bug chase catch rate corrected from 50/50 to 60/40.
+
+**Eye tracking callback churn (fixed):** `handleMouseMove` depended on `specialAnim` state, causing the window event listener to be removed and re-added on every animation state change. Switched to `isSleepingRef.current` check, making the callback stable with an empty dependency array.
+
+**Dead code removed:** `calcDuration` function and unused `durationOverride` parameter in `showMessage` were removed. The function was defined but never called; the parameter was accepted but ignored.
+
+**Settings not persisted (fixed):** Wellness, move, and eye break interval sliders now save to `glim-settings` storage key and restore on load. Uses a `settingsInitRef` guard to prevent the save effect from overwriting storage with defaults before the load effect runs.
+
+---
+
+# 8. Roadmap & Future Features
+
+## 8.1 Product Vision (updated 2026-03-25)
+
+Glim is evolving from a passive desktop companion into a personalized wellness and productivity hub. The creature isn't decoration - it's the personality layer that makes tracking water intake feel like talking to a friend rather than logging data into an app. The goal is to consolidate all personal management and self-care tools into a single application with a character-driven interface.
+
+**Core differentiator:** Every tracking app on the market is clinical and impersonal. Glim is warm, funny, personalized, and opinionated about your wellbeing. The creature reacts to your progress, notices patterns, celebrates streaks, and nudges you when you're slipping - all in its own voice, with references to your actual life.
+
+**Platform strategy:** Single codebase, cross-device sync via Firebase. Desktop (pinned browser tab) serves as passive companion during work. Mobile (PWA) serves as active wellness tool throughout the day. Both share all data in real time.
+
+## 8.2 Infrastructure (build before features)
+
+These items are prerequisite to or should be built alongside the feature work below.
+
+| Feature | Status | Priority | Notes |
+|---|---|---|---|
+| Touch event support | Not started | **High** | Primary mobile blocker. Needs `getPointerXY()` helper, dual mouse/touch handlers |
+| Responsive layout | Not started | **High** | `isMobile` flag, responsive creature sizing, panel widths, 44px+ tap targets |
+| Vite migration | Not started | **High** | Migrate from CDN-loaded React/Babel/Tailwind to Vite-based build system. Enables multiple source files, proper imports, optimized builds, dev server with hot reload. Eliminates Babel CDN. See Section 2.1 Planned Stack |
+| Zustand state management | Not started | **High** | Migrate 30+ useState calls from DesktopPet into Zustand shared stores. Organize by domain (creature, trackers, UI, settings). Prerequisite for multi-component architecture |
+| File separation | Not started | **High** | Split single 2460-line file into: message data, creature component, background component, UI panels, stores, reaction system. Enabled by Vite migration |
+| Sync-ready data model | Not started | **High** | Design storage schema for all trackers before building them. Event-based logging (not running totals) for merge-safe sync. See Section 8.8 |
+| Glim reaction system | Not started | **High** | Centralized system for creature responses to tracker events: `glimReact('water_logged', { current: 6, goal: 8 })`. Keeps personality layer separate from tracker code |
+| Behavior state machine | Not started | **Medium** | Formal states and transitions for creature behavior. Prevents impossible state combinations as feature count grows |
+| PWA setup (manifest, service worker, icons) | Not started | **Medium** | Required for mobile deployment. Blocked by GitHub repo setup |
+| GitHub repository and Pages deployment | Not started | **Medium** | Repo structure, .gitignore, README, GitHub Pages config |
+| Cross-device sync (Firebase) | Not started | **Later** | Firestore database, authentication, offline-first with background sync. Build after trackers exist and data model is proven |
+| Off-screen adventure behavior | Not started | **Low** | Creature behavior: drift off-screen, return on pointer activity. Needs `isOffScreenRef`, `OFFSCREEN_RETURN` messages |
+| Remove Tailwind dependency | Not started | **Low** | Replace utility classes with inline styles. Eliminates CDN dependency and console warning |
+
+## 8.3 Daily Tracking
+
+Features that log daily data toward goals. These form the core of the mobile experience.
+
+| Feature | Status | Priority | Description |
+|---|---|---|---|
+| Water tracking | Not started | **High** | Log glasses/oz toward a configurable daily goal. Glim reacts to each log, celebrates hitting the goal, notices patterns over time. Data model: timestamped log events (not running totals) for sync-safe merging |
+| Step tracking | Not started | **Medium** | Log daily steps toward a goal. Could integrate with phone pedometer APIs if available, or manual entry. Glim cheers milestones |
+| Nutrition / food logging | Not started | **Medium** | Log meals with optional macros/calories. More complex data model - meals contain foods, foods have nutritional data. Scope needs narrowing before build (full macro tracking vs. simple meal logging) |
+| Exercise tracking | Not started | **Medium** | Log workouts - type, duration, notes. Connects to move reminders. Glim acknowledges specific activities |
+| Sleep tracking | Not started | **Medium** | Log bedtime and wake time. Connects to existing late-night messages. Glim notices patterns ("you've been staying up past midnight three days in a row") |
+| Mood tracking | Not started | **Medium** | Daily mood check-in (emoji or scale). Glim responds to mood, notices trends, connects mood to other tracked data over time |
+| Medication / supplement reminders | Not started | **Low** | Timed reminders for specific items with quick "done" buttons. Similar to existing wellness reminders but user-configurable per item |
+
+## 8.4 Productivity
+
+Features for task management and focus.
+
+| Feature | Status | Priority | Description |
+|---|---|---|---|
+| To-do lists | Not started | **High** | Tasks with completion tracking. Glim reacts to checking things off. Needs: add, complete, delete, reorder. Persistent across sessions |
+| Pomodoro timer | Not started | **Medium** | 25-min work sessions with break announcements. Glim counts down, announces breaks, tracks completed sessions per day. Integrates with existing wellness reminder system |
+| Quick capture / brain dump | Not started | **Low** | Fast text box for stray thoughts, timestamped and saved. Different from journaling - no prompt, no reflection, just capture. Glim can reference past captures in idle chatter |
+
+## 8.5 Reflection and Wellbeing
+
+Features for self-awareness and personal growth.
+
+| Feature | Status | Priority | Description |
+|---|---|---|---|
+| Enhanced journaling | Not started | **High** | Expand beyond current prompt-and-write system. Could include: guided reflection templates, tagging, search, longer entries, image attachment (mobile camera). Scope needs narrowing |
+| Habit tracker | Not started | **Medium** | Generic repeating habits beyond the specific trackers (e.g., "floss," "practice guitar," "read 20 pages"). Daily check-off with streak tracking |
+| Gratitude log | Not started | **Medium** | One line per day, "one thing you're grateful for." Separate from journal. Dedicated tracker with streak counting. Connects to existing gratitude science facts |
+| Social check-in tracker | Not started | **Low** | Lightweight "who did you connect with today?" log. Glim notices if you haven't reached out to anyone in several days. Not a contact manager - just awareness |
+| Weekly review prompt | Not started | **Low** | Once a week, Glim nudges a structured reflection: what went well, what was hard, what do you want next week to look like. More structured than daily journaling |
+
+## 8.6 Trends and Summaries
+
+Features that analyze and present tracked data over time.
+
+| Feature | Status | Priority | Description |
+|---|---|---|---|
+| Goal setting and streak tracking | Not started | **High** | Unified goal system across all trackers. Daily/weekly goals with streak counting. Glim celebrates streaks, encourages recovery from broken ones |
+| Daily/weekly summaries | Not started | **Medium** | Glim generates a progress report: "today you drank 7 glasses of water, completed 4 tasks, walked 8200 steps, and journaled." Could display as a dedicated summary panel or as Glim's idle chatter |
+| Historical trends visualization | Not started | **Medium** | Charts/graphs showing tracked data over days, weeks, months. Water intake over time, mood trends, exercise frequency. Mobile-friendly data visualization |
+| Custom countdowns | Not started | **Low** | Things to look forward to. "Thesis defense: 47 days." "Artificial Idiocy show: 3 days." Glim references these in idle chatter |
+
+## 8.7 Gifting and Customization
+
+Features for sharing Glim with others.
+
+| Feature | Status | Priority | Description |
+|---|---|---|---|
+| Glim Builder | Not started | **Low** | Web tool where you fill in someone's name, pet names, interests, values, etc. and generate a customized Glim. Outputs a personalized HTML file or account setup |
+| Gifting workflow | Not started | **Low** | Package a customized Glim for someone. Needs Glim Builder + delivery mechanism (download, email, link) |
+| Editable message panel | Not started | **Low** | Let recipients of gifted Glims modify/add their own messages without touching code |
+
+## 8.8 Data Model Design Notes (pre-implementation)
+
+**Sync-safe data principle:** All tracker data should be stored as timestamped events, not running totals. This makes cross-device merging trivial - combine event lists and deduplicate by ID.
+
+Example - water tracking:
+```
+BAD (sync conflicts):  { today: 5, goal: 8 }
+GOOD (merge-safe):     { goal: 8, logs: [{ id: "w_1711...", time: "2026-03-25T10:30:00Z", amount: 1, unit: "glass" }, ...] }
+```
+
+**Planned unified storage structure:**
+```javascript
+{
+  journal: [{ id, text, prompt, date, tags? }],
+  todos: [{ id, text, created, completed?, deleted? }],
+  water: { goal: 8, unit: "glass", logs: [{ id, time, amount }] },
+  nutrition: { logs: [{ id, time, meal, items: [...], notes? }] },
+  steps: { goal: 10000, logs: [{ id, date, count, source? }] },
+  exercise: { logs: [{ id, time, type, duration, notes? }] },
+  sleep: { logs: [{ id, date, bedtime, waketime, notes? }] },
+  mood: { logs: [{ id, date, value, note? }] },
+  habits: { definitions: [...], logs: [{ id, habitId, date, done }] },
+  gratitude: { logs: [{ id, date, text }] },
+  goals: { active: [...], history: [...] },
+  settings: { wellnessInterval, moveInterval, eyesInterval, ... },
+  pokes: 847,
+}
+```
+
+This structure supports: per-tracker querying, cross-tracker correlation (mood vs. sleep vs. exercise), clean merge on sync, single JSON export/import, and incremental migration as features are added.
+
+**Conflict resolution strategy:**
+- Journal/logs/todos: Merge by combining lists, deduplicate by ID
+- Settings: Last-write-wins (most recent timestamp)
+- Pokes: Additive (sum deltas from each device)
+- Goals/streaks: Recompute from underlying event logs after merge
+
+## 8.9 Creature Personality Ideas
+
+Not features per se, but ideas for how Glim's personality layer extends as features are added.
+
+- **Keyboard shortcuts:** 'j' for journal, 'p' to pet, spacebar to poke
+- **Trophy collection:** Glim accumulates stats (stars caught, bugs eaten, journal entries, goals met) shown as tiny trophies
+- **Seasonal events:** Holiday hat, birthday mode, first-poke anniversary
+- **Routine detection:** Glim remembers when you usually show up and greets differently if early/late
+- **Cross-tracker commentary:** Glim notices correlations in idle chatter: "you slept 8 hours and your mood was great today... coincidence? (it's not, it's science)"
+- **Achievement messages:** New message pools for each tracker milestone: first water goal hit, 7-day streak, 100 tasks completed, etc.
+- **Personalized nagging:** Glim escalates nudges if a tracker hasn't been updated: gentle day 1, pointed day 2, dramatic day 3
+
+---
+
+# 9. Decision Register
+
+> **Entry template:**
+>
+> ### [DATE] - [Short Decision Title]
+> **Decision:** [What was decided]
+> **Rationale:** [Why this choice was made]
+> **Alternatives considered:** [What else was on the table and why it was rejected]
+> **Impact:** [What this decision affects downstream]
+
+### 2026-03-03 - Creature redesign from Blorb to owl-cat-moth
+
+**Decision:** Abandoned the original blob creature design in favor of an owl-cat-moth spirit with defined features (eyes, wings, antennae, tail).
+**Rationale:** The blob was too abstract to convey personality through animation. The owl-cat-moth form allows for expressive eyes, wing movements, and antenna reactions that communicate emotion.
+**Alternatives considered:** Moth-axolotl-cat hybrid ("Mochi"), chunky forest creature ("Sprig"). Mochi was too complex; Sprig was too earthy and lost the cute-weird charm.
+**Impact:** Defined the entire visual language and animation system.
+
+### 2026-03-24 - Perpetual twilight sky (no sun)
+
+**Decision:** All time-of-day backgrounds maintain a moody, twilight atmosphere. No sun. Stars always visible. Moon only at late night.
+**Rationale:** User rejected the full-daylight morning/afternoon mockups as too bright and inconsistent with Glim's aesthetic. The perpetual twilight maintains the atmospheric, cozy feel across all times.
+**Alternatives considered:** Realistic day/night cycle with sun positioning. Rejected because full daylight looked wrong with Glim's glowy translucent design.
+**Impact:** Background system uses 5 gradient layers with opacity crossfade rather than a single transitioning gradient.
+
+### 2026-03-24 - Squish-to-line eye closing
+
+**Decision:** Eyes close by transitioning the ellipse `ry` from 12 to 1.5, creating a horizontal line. Pupils and highlights hidden when closed.
+**Rationale:** User preferred this over curved smile arcs and half-moon crescents. The squish is clean, anime-inspired, and works well for sleep, purr, and blink without extra geometry.
+**Alternatives considered:** Curved smile arcs (too dramatic for blinks), half-moon crescents (too complex, previous rectangle attempt looked mechanical).
+**Impact:** Eyes are now ellipses rather than circles in all states.
+
+### 2026-03-24 - Messages persist until replaced
+
+**Decision:** Removed auto-hide timer. Messages stay on screen until the next message fires.
+**Rationale:** User was missing messages when looking away from the screen. Since idle chatter cycles every 15-40s anyway, old messages don't linger forever.
+**Impact:** Removed all hardcoded duration arguments from `showMessage` calls. `calcDuration` function was later removed entirely during the 2026-03-24 audit.
+
+### 2026-03-24 - isSleepingRef pattern for async callbacks
+
+**Decision:** Introduced `isSleepingRef` (and later `isPurringRef`) as refs that stay in sync with state via dedicated effects. All timer callbacks check `.current` instead of captured state.
+**Rationale:** Multiple bugs where Glim talked in its sleep were caused by stale closures in `useEffect` callbacks capturing `specialAnim` at effect creation time. The ref pattern ensures callbacks always see the latest value.
+**Alternatives considered:** Adding `specialAnim` to every dependency array. Rejected because it causes effects to re-run and reset timers unnecessarily.
+**Impact:** Pattern should be followed for any new timer-based feature that needs to check sleep or purr state.
+
+### 2026-03-24 - One codebase for desktop and mobile
+
+**Decision:** Maintain a single file that adapts to both platforms via responsive detection (`isMobile` flag) and dual event handlers (mouse + touch).
+**Rationale:** Separate codebases would require maintaining 800+ messages and all behavior logic in two places. The divergence is currently small (layout and tap targets).
+**Impact:** Mobile-specific features will use `isMobile` to show/hide UI. Decision should be revisited if platform divergence becomes significant.
+**Note (2026-03-24 audit):** Neither `isMobile` nor touch handlers are implemented yet. Decision stands as the planned approach.
+
+### 2026-03-24 - Single weighted random draw for behavior system
+
+**Decision:** Replaced cascading independent `Math.random()` draws in the autonomous behavior scheduler with a single `Math.random() * 100` roll against defined weight buckets.
+**Rationale:** The cascading approach caused effective probabilities to drift from documented values. Discovery was documented as 30% but had an effective rate of ~17.5% because each check was conditional on all prior checks failing. The weighted draw guarantees exact percentages.
+**Alternatives considered:** Keeping cascading draws and updating documentation with effective rates. Rejected because the code intent is clearer with a single draw that matches the labels, and the "nothing happens" bucket is now explicit (19%) rather than implicit.
+**Impact:** Behavior percentages are now: secret spin 3%, sleep 3%, fly 20%, chase 25%, discovery 30%, nothing 19%. Sleep probability corrected from 10% to 3% to match "very rare by design" intent. Bug catch rate corrected from 50/50 to documented 60/40.
+
+### 2026-03-24 - Persist settings intervals to storage
+
+**Decision:** Settings slider values (wellness, move, eye break intervals) are now saved to `glim-settings` storage key and restored on page load.
+**Rationale:** Journal entries and poke count were already persisted, but settings reset on every refresh. Users who customize their reminder intervals would lose those changes.
+**Alternatives considered:** Leaving settings as session-only. Rejected because the inconsistency with other persisted state was confusing, and the implementation cost was trivial.
+**Impact:** New storage key `glim-settings`. Uses `settingsInitRef` guard to prevent save-before-load race condition.
+
+### 2026-03-24 - Timer cleanup pattern for recursive schedulers
+
+**Decision:** All recursive `setTimeout` schedulers now use local timer refs with proper `useEffect` cleanup returns. The blink effect was refactored to use `isPurringRef` instead of `isPurring` state in its dependency array, reducing it to `[]` (mount-only).
+**Rationale:** The blink scheduler had an active memory leak: its `[isPurring]` dependency meant each purr cycle spawned a new parallel timer chain. The twitch and shooting star schedulers had the same structural fragility. While not actively leaking (empty deps), they had no cleanup path if the component ever remounted.
+**Alternatives considered:** None. This was a correctness fix.
+**Impact:** Pattern for all future schedulers: use a local `{ current: null }` timer object, clear it in the cleanup return. Avoid state dependencies in scheduler effects - use refs instead.
+
+### 2026-03-25 - Stay on React (not migrate to vanilla JS)
+
+**Decision:** Continue building Glim on React rather than migrating to vanilla JavaScript.
+**Rationale:** The planned feature set (to-do lists, nutrition tracking, water tracking, step tracking, habit tracking, mood tracking, etc.) involves complex data-driven UI with lists, forms, counters, and multiple views of shared state. This is React's core strength. While the creature/timer system pays a "React tax" (refs, sync effects, cleanup returns), the productivity/wellness tracker features that make up the bulk of future development would be significantly harder to build and maintain in vanilla JS. The trade-off favors React given the project's direction.
+**Alternatives considered:** (1) Full migration to vanilla JS - rejected because the planned features are exactly what React handles well. (2) Hybrid approach keeping JSX/Babel but dropping React state management - rejected as too novel/unsupported. (3) Stay on React but adopt a state machine - adopted as a complementary improvement (see data model and reaction system decisions).
+**Impact:** React, ReactDOM, and Babel remain as dependencies. The ref/cleanup patterns documented in the audit remain the standard for timer-based code. New features should use React's state model for UI and the planned reaction system for creature personality integration.
+
+### 2026-03-25 - Cross-device sync via Firebase (design now, build later)
+
+**Decision:** Glim will use Firebase (Firestore) for cross-device sync. The sync-ready data model will be designed before building any new trackers, but the Firebase integration itself will be built after trackers exist.
+**Rationale:** Cross-device sync is essential to the product vision (phone for active tracking throughout the day, desktop for passive companion during work). Designing the data model for sync from the start is cheap. Retrofitting sync onto a data model designed for local-only storage is expensive and error-prone. But building the actual Firebase integration before having features that generate data to sync would be premature.
+**Alternatives considered:** (1) Manual JSON export/import - rejected as too cumbersome for daily use across two devices. (2) Build sync first - rejected because we don't know the exact data shapes yet. (3) Different backend (Supabase, custom server) - Firebase chosen for generous free tier, built-in auth, real-time listeners, and offline-first support.
+**Impact:** All tracker data models must use timestamped events (not running totals) for merge-safe sync. See Section 8.8 for data model design notes. Firebase SDK will be added as a CDN dependency when sync is implemented.
+
+### 2026-03-25 - Event-based data model for all trackers
+
+**Decision:** All tracker data will be stored as timestamped event logs rather than running totals or current-state snapshots.
+**Rationale:** Event logs are trivially mergeable across devices (combine lists, deduplicate by ID). Running totals create conflicts when two devices modify the same value independently. Event logs also enable historical trend analysis, daily/weekly summaries, and cross-tracker correlations without maintaining separate aggregation tables.
+**Alternatives considered:** Running totals with conflict resolution heuristics. Rejected because the resolution logic would be different for each tracker type, is error-prone, and loses information (you can derive a total from events but can't derive events from a total).
+**Impact:** Every tracker must assign unique IDs and timestamps to each event. Derived values (daily totals, streaks, progress toward goals) are computed from the event log, not stored directly. See Section 8.8 for the planned unified storage structure.
+
+### 2026-03-25 - Centralized Glim reaction system
+
+**Decision:** Glim's personality responses to tracker events will be handled by a centralized reaction system rather than being baked into each feature's code.
+**Rationale:** With 10+ planned trackers, each needing personality integration (Glim celebrates, nudges, comments, notices patterns), embedding reaction logic in each tracker would scatter personality code across the entire codebase. A centralized `glimReact(event, data)` function keeps the personality layer as a single maintainable system that all trackers call into.
+**Alternatives considered:** Per-tracker reaction code (current journal save pattern). Rejected because it doesn't scale to 10+ features and makes personality consistency hard to maintain.
+**Impact:** New design pattern for all features: trackers emit events, the reaction system handles creature responses. The current journal save reaction (inline `showMessage` + `triggerHappy`) should eventually be refactored to use this system.
+
+### 2026-03-25 - Adopt Vite build system
+
+**Decision:** Migrate from in-browser CDN loading (React, Babel, Tailwind CDNs) to a Vite-based build system with npm-managed dependencies.
+**Rationale:** The single-file, no-build approach doesn't scale to 25+ features. In-browser Babel compilation (~800KB loaded on every page open) is slow and unnecessary. A build tool enables: multiple source files with proper imports, optimized production builds, dev server with hot reload, proper dependency versioning, PWA auto-generation via vite-plugin-pwa, and Tailwind build-time scanning (eliminates the CDN console warning). The codebase is projected to grow from ~2460 lines to 5000-8000+, which requires file separation.
+**Alternatives considered:** (1) Continue with CDN-only approach - rejected because it can't support multiple source files, proper imports, or build-time optimization. (2) Webpack - rejected because Vite is faster, simpler to configure, and the current industry standard for new projects. (3) Parcel - rejected as less mature than Vite for this use case.
+**Impact:** Development workflow changes from "edit HTML file, open in browser" to "run `npm run dev`, edit source files, see changes instantly." Deployment changes from "download HTML" to "`npm run build`, push to GitHub Pages." Requires Node.js + npm on dev machine. Claude Code handles setup.
+
+### 2026-03-25 - React over Svelte for UI framework
+
+**Decision:** Stay on React rather than migrating to Svelte or SvelteKit.
+**Rationale:** Evaluated both frameworks against Glim's full feature roadmap. Svelte offers a simpler programming model that eliminates the stale closure / ref sync pattern issues in timer-heavy creature code. However, React's ecosystem advantages are decisive for this project: (1) vastly more tutorials, Stack Overflow answers, and example code for every feature Glim needs (Firebase integration, chart libraries, PWA setup), (2) skills transfer to other projects and the broader web development field, (3) Claude has deeper training on React patterns, and (4) existing 2460-line codebase doesn't require rewriting. The timer-side complexity is manageable with documented patterns.
+**Alternatives considered:** Svelte / SvelteKit - genuine technical advantages for Glim's creature code (no stale closures, simpler reactive model, smaller bundle), but smaller ecosystem, less transferable skills, and rewrite cost (~1200 lines of logic).
+**Impact:** React remains the framework. Zustand adopted for state management (replaces 30+ useState calls with a shared store). All React patterns documented in the audit (ref sync, timer cleanup) remain the standard.
+
+### 2026-03-25 - Zustand for state management
+
+**Decision:** Adopt Zustand as a shared state management library, replacing the current pattern of 30+ `useState` calls in the DesktopPet component with a centralized store.
+**Rationale:** As features grow from 1 main component to 15+ tracker panels, passing state through props becomes unworkable. Zustand provides a simple shared store that any component can read from without prop drilling or React Context boilerplate. At 1KB, it adds negligible bundle weight.
+**Alternatives considered:** (1) React Context - built-in but verbose and causes unnecessary re-renders in consuming components. (2) Redux - powerful but heavy boilerplate, overkill for this project. (3) Jotai/Recoil - atom-based, good but less intuitive than Zustand's single-store model.
+**Impact:** State will be organized into domain stores (creature state, tracker data, UI state, settings). Any component can access any store directly. Existing useState calls will be migrated incrementally as components are extracted.
+
+---
+
+# 10. Project Log
+
+> **Entry template:**
+>
+> ### [DATE] - [Phase/Activity Label]
+> **Work performed:** [What was done]
+> **Outputs:** [Files generated]
+> **Key findings:** [Notable results, unexpected observations]
+> **Decisions made:** [Reference to Decision Register if applicable]
+> **Next steps identified:** [What should come next]
+
+### 2026-03-03 - Initial build (Blorb)
+
+**Work performed:** Built original desktop companion "Blorb" as a bioluminescent blob with wellness reminders, personalized messages, and time-aware behaviors.
+**Outputs:** Initial `desktop-pet.jsx`, standalone HTML
+**Key findings:** Blob creature was too abstract; needed a more expressive form.
+**Next steps identified:** Redesign creature.
+
+### 2026-03-23/24 - Major feature session (Blorb to Glim)
+
+**Work performed:** Complete creature redesign through Mochi, Sprig, and final owl-cat-moth form. Named "Glim." Built: eye tracking, all interaction types (click, double-click, long press, drag, shake, rapid click, startled), autonomous behaviors (sleep, fly, chase, discover, secret spin, wandering), background system (sky crossfade, landscape, stars, shooting stars, nebulae, ambient bugs, motes), journal system (prompts, persistent storage, past entries), wellness reminders (with proactive reset), settings panel, squish-to-line eye closing, purr rocking animation, 775+ personalized messages across 29 categories, science self-care facts (35), drag system rewrite (unified pointer, smooth return), sleep system rewrite (isSleepingRef pattern), persistent poke count, time-of-day sky crossfade.
+**Note (added 2026-03-24 audit):** Off-screen adventure, touch event support, responsive sizing, and `isMobile` flag were planned but not implemented during this session. Documentation was corrected to mark these as [NOT IMPLEMENTED].
+**Outputs:** `desktop-pet.jsx` (~2450 lines), `glim.html`, `glim-messages.txt`, `eye-comparison.jsx`, `sky-mockup.jsx`, `sky-mockup-v2.jsx`
+**Key findings:** Stale closure pattern in useEffect callbacks caused multiple sleep-related bugs. CSS gradient transitions require opacity crossfade workaround. Drag return animation requires requestAnimationFrame double-buffering to avoid snap.
+**Decisions made:** See Decision Register entries for 2026-03-24.
+**Next steps identified:** Complete PWA setup for mobile, test touch interactions on real devices, implement mobile-specific features (water tracking, enhanced journaling, to-do lists), set up GitHub Pages deployment.
+
+### 2026-03-24 - Project documentation
+
+**Work performed:** Created project documentation .rmd file adapted from research project template. Discussed and finalized section structure. Documented full technical state, all features, message inventory, decision history, and roadmap.
+**Outputs:** `glim_project_documentation.Rmd`
+**Decisions made:** Documentation format: .rmd (consistent with user's research workflow). Structure: 12 sections covering vision, technical design, platforms, features, messages, deployment, limitations, roadmap, decisions, log, references, and Claude instructions.
+**Next steps identified:** Keep documentation updated as features are added. Create PWA files.
+
+### 2026-03-24 - Codebase audit and bug fixes
+
+**Work performed:** Full line-by-line audit of `glim.html` against project documentation. Identified and fixed 6 bugs/issues, corrected documentation-code mismatches, and added missing feature.
+
+**Fixes applied:**
+
+1. Timer memory leaks in `scheduleBlink` (active leak via `[isPurring]` dep spawning parallel chains), `scheduleTwitch`, and shooting star scheduler. All now use local timer refs with cleanup returns.
+2. Orphaned `wanderDriftRef` timeout on wander effect teardown.
+3. Behavior system rewritten from cascading independent draws to single weighted random draw. Sleep corrected from 10% to 3%. Catch rate corrected from 50/50 to 60/40. Added explicit "nothing happens" bucket (19%).
+4. Eye tracking `handleMouseMove` callback stabilized by switching from `specialAnim` state check to `isSleepingRef.current`, eliminating unnecessary event listener churn.
+5. Dead code removed: `calcDuration` function, unused `durationOverride` parameter in `showMessage`.
+6. Settings persistence added: wellness/move/eyes intervals now saved to `glim-settings` storage key with `settingsInitRef` guard against save-before-load race.
+
+**Documentation corrections:**
+
+- Marked off-screen adventure, touch events, responsive layout, and `isMobile` flag as [NOT IMPLEMENTED]
+- Removed `isOffScreenRef` and `OFFSCREEN_RETURN` from code organization descriptions
+- Fixed message count from 795 to 775 (20 off-screen return messages not in codebase)
+- Updated behavior probability table with exact weighted-draw percentages
+- Added `glim-settings` to persistent storage table
+- Added `isPurringRef` and `settingsInitRef` to critical refs list
+- Added Section 7.1 (Resolved Issues) documenting all fixes with rationale
+- Added 4 new Decision Register entries
+
+**Outputs:** Updated `glim.html`, updated `glim_project_documentation.Rmd`
+**Key findings:** The most significant gap was between documentation and code: several features described as "in progress" or existing had zero implementation. The timer leak in `scheduleBlink` was the only actively harmful bug (spawning parallel chains on each purr). The behavior probability drift was subtle but meaningful (discovery at 17.5% effective vs 30% documented).
+**Decisions made:** See Decision Register entries for 2026-03-24 (weighted draw, settings persistence, timer cleanup pattern).
+**Next steps identified:** Implement touch event support (primary mobile blocker). Implement responsive layout. Implement off-screen adventure. Consider removing Tailwind dependency.
+
+### 2026-03-25 - Architecture review and feature planning
+
+**Work performed:** Comprehensive review of Glim's technical architecture in light of expanded feature vision. Evaluated React vs. vanilla JS migration. Discussed vanilla DOM manipulation concepts, React's purpose and trade-offs, and why Glim's planned feature set (10+ productivity/wellness trackers) favors staying on React. Explored cross-device sync requirements and Firebase as the sync backend. Designed sync-safe event-based data model. Cataloged full feature roadmap across 7 categories with ~25 features total. Created Handoff File for cross-session coordination.
+
+**Outputs:** Updated `glim_project_documentation.Rmd` (Section 8 rewritten as comprehensive feature catalog with data model design notes), `glim_handoff.Rmd` and `.docx`, 4 new Decision Register entries.
+
+**Key decisions:**
+
+1. Stay on React - planned features (to-do lists, nutrition, water, steps, habits, mood, etc.) are data-driven UI that React handles well. Creature-side timer tax is manageable.
+2. Cross-device sync via Firebase - design data model now, build integration later after trackers exist.
+3. Event-based data model - all tracker data stored as timestamped event logs for merge-safe sync and historical analysis.
+4. Centralized reaction system - Glim's personality responses handled by a single `glimReact(event, data)` system rather than scattered per-feature.
+
+**Key architectural insight:** Glim is really two systems coexisting: (A) the creature and its world (timer-driven, animation-driven, fights React's model) and (B) the productivity/wellness tools (data-driven UI, React's strength). Both share Glim's personality layer, which should be a separate system that both call into.
+
+**Next steps identified:** Design sync-ready data model in detail. Build infrastructure items (touch events, responsive layout, build script, reaction system) before starting tracker features. Water tracking as first tracker (simplest data model, proves the pattern).
+
+### 2026-03-25 - Vite migration
+
+**Work performed:** Migrated Glim from standalone HTML (CDN-based) to a Vite + React project in `client/`. Extracted message pools to a separate file. Configured Tailwind v4 (build-integrated). Verified build and dev server.
+
+**Outputs:** `client/src/DesktopPet.jsx`, `client/src/messages.js`, `client/src/storage.js`, `client/src/App.jsx`, `client/src/index.css`, `client/index.html`, `.gitignore`
+
+**Key findings:**
+- Build is clean and fast (135ms). Bundle: 285KB JS / 10.8KB CSS.
+- React 19 was installed instead of planned React 18; no issues.
+- Tailwind v4 does not use `tailwind.config.js` - configuration is handled via the `@tailwindcss/vite` plugin and `@import "tailwindcss"` in CSS.
+- `glim.html` kept as legacy reference but is no longer the active source.
+
+**Decisions made:** None new. Execution of the Vite migration decision from 2026-03-25 tech stack evaluation.
+
+**Next steps identified:** Browser verification of Vite build (see Handoff Changes for Testing). GitHub repo setup. Zustand state migration (Claude.ai). GitHub Pages deployment configuration.
+
+---
+
+# 11. References & Resources
+
+## 11.1 Tools & Libraries
+
+### Current (pre-migration)
+
+| Tool | Version | URL | Purpose |
+|---|---|---|---|
+| React | 18.2.0 | cdnjs.cloudflare.com | UI framework |
+| ReactDOM | 18.2.0 | cdnjs.cloudflare.com | React rendering |
+| Babel Standalone | 7.23.9 | cdnjs.cloudflare.com | In-browser JSX transpilation |
+| Tailwind CSS | Latest (CDN) | cdn.tailwindcss.com | Utility CSS classes |
+
+### Planned (post-migration)
+
+| Tool | Version | URL / Package | Purpose |
+|---|---|---|---|
+| Vite | Latest | npm: vite | Build tool, dev server, production optimization |
+| React | 18.x | npm: react | UI framework (migrated from CDN to npm) |
+| ReactDOM | 18.x | npm: react-dom | React rendering (migrated from CDN to npm) |
+| Zustand | Latest | npm: zustand | Shared state management (replaces 30+ useState calls) |
+| Tailwind CSS | 3.x | npm: tailwindcss | Utility CSS (migrated from CDN to build-integrated) |
+| Chart.js | Latest | npm: chart.js | Data visualization for trends, progress charts |
+| Firebase | Latest | npm: firebase | Cloud database, auth, real-time sync (build later) |
+| vite-plugin-pwa | Latest | npm: vite-plugin-pwa | Service worker and manifest auto-generation |
+
+## 11.2 Key References
+
+- Vite documentation: https://vitejs.dev/
+- React documentation: https://react.dev/
+- Zustand documentation: https://zustand-demo.pmnd.rs/
+- Tailwind CSS documentation: https://tailwindcss.com/docs
+- Chart.js documentation: https://www.chartjs.org/docs/
+- Firebase documentation: https://firebase.google.com/docs
+- PWA documentation: https://web.dev/progressive-web-apps/
+- BDNF and exercise research: ScienceDirect, Frontiers in Molecular Neuroscience, PMC
+- Gratitude neuroscience: positivepsychology.com, American Brain Foundation, Berkeley Greater Good
+- Journal prompt research: various (one-line-a-day journaling, daily prompts for short entries)
+
+---
+
+# 12. Instructions for Claude
+
+This section governs how Claude should interact with this document and the Glim project across sessions.
+
+## 12.1 Core Editing Rules
+
+**This document is append-only for Sections 9 and 10.** Decision Register and Project Log entries are permanent records and should never be modified except to fix factual errors.
+
+**Living sections (1-8, 11)** may be updated in place when new information refines or extends what is already there. Always date significant updates.
+
+When updating this document, Claude must preserve all existing information and details. New content should be added to the appropriate section. If a section needs revision, annotate the change with the date and reason rather than silently overwriting.
+
+## 12.2 Project-Specific Rules
+
+**Code header convention:** All scripts and code files should include headers following the user's standard format (title, project, author, contact, date created, last modified, purpose, inputs, outputs, usage example).
+
+**Message content:** Messages should be written in Glim's voice: lowercase, casual, no em dashes (use hyphens), personal references by name, science facts prefixed with casual tags. Avoid hustle culture, toxic positivity, and pressure to perform.
+
+**Testing:** Always rebuild the HTML export after code changes and verify key elements are present (storage keys, new functions, message pools).
+
+## 12.3 What Claude Should Always Do
+
+- **Date everything.** Every log entry, decision, and significant update gets a date.
+- **Document the "why."** Never record a technical or design choice without its rationale.
+- **Flag uncertainty.** If Claude is not confident about a technical claim or design recommendation, say so clearly.
+- **Flag follow-ups.** Use **[FOLLOW-UP NEEDED]** tags for items that need future attention.
+- **State limitations proactively.** When documenting features, include known issues in the same entry.
+- **Rebuild and verify.** After code changes, always rebuild the HTML export and spot-check the output.
+
+## 12.4 What Claude Should Never Do
+
+- **Never silently overwrite content.** Changes and their reasons must be visible.
+- **Never assume context not present in this document.** If information is missing, ask.
+- **Never add messages with em dashes.** Use single hyphens only.
+- **Never add messages with hustle culture, toxic positivity, or pressure-to-perform energy.** These have been explicitly removed from the project.
+
+## 12.5 Tone and Voice
+
+This document should read as the working notebook of a developer-designer. Write in a direct, precise style. Avoid filler. The goal is a record that the user (and future Claude instances) can trust as accurate and complete.
+
+## 12.6 When This Document Is Not Provided
+
+If a session involves Glim work but this document was not uploaded, Claude should remind the user that updates may need to be logged here afterward. Claude should not attempt to update this document from memory alone.

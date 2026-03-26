@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glim</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦉</text></svg>" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+  </style>
+  <script>
+    window.storage = {
+      async get(key) {
+        const val = localStorage.getItem(key);
+        if (val === null) throw new Error('Key not found');
+        return { key, value: val, shared: false };
+      },
+      async set(key, value) {
+        localStorage.setItem(key, value);
+        return { key, value, shared: false };
+      },
+      async delete(key) {
+        localStorage.removeItem(key);
+        return { key, deleted: true, shared: false };
+      },
+      async list(prefix) {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!prefix || k.startsWith(prefix)) keys.push(k);
+        }
+        return { keys, shared: false };
+      }
+    };
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+// ============================================================
+//  GLIM - Your Desktop Companion
+//  A glowy owl-cat-moth spirit with PERSONALITY
+// ============================================================
+
+const MESSAGES = {
+  earlyMorning: [
+    "you're up early... respect", "the world is quiet rn", "coffee acquired?",
+    "we got this today", "*yawwwwn*", "dawn crew rise up", "mrrrrppppp",
+    "the astrocytes aren't even awake yet", "early bird gets the... proteome?",
+    "a new day. no rules yet. just possibility.",
+    "clear-headed mornings hit different huh? you earned every one of them.",
+    "the sky is doing something nice rn. you should look.",
+    "pre-sunrise crew. we're basically nocturnal at this point.",
+    "hot take: mornings are better when they're quiet like this.",
+    "a polar bear dissolves in water faster than a black bear. because it's polar. ...get it? ...i'll stop.",
+    "did i sleep? i don't think i sleep. i just stop for a while and then start again.",
+  ],
+  morning: [
+    "good morning!!", "today has potential", "hydrate pls", "what's the plan?",
+    "let's get it",
+    "your pipeline won't run itself... wait actually it might",
+    "go get some water before you start coding",
+    "the proteins await", "did you say goodbye to the cats? important.",
+    "Spooky probably trilled at you this morning. that means she loves you. you know that right?",
+    "Alex probably already texted you something silly. go check.",
+    "today doesn't have to be perfect. it just has to be yours.",
+    "another day with a clear head. that's a gift you gave yourself.",
+    "if you're teaching today, remember: you make hard things feel possible for people. that's huge.",
+    "the world didn't end overnight. good sign. let's go.",
+    "today's vibe: competent and slightly caffeinated",
+    "you woke up and chose science. respect.",
+    "whatever today throws at you, you've handled worse. you got this.",
+    "some helium floats into a bar. bartender says 'we don't serve noble gases here.' helium doesn't even react.",
+    "two hydrogen atoms walk into a bar. 'i left my electron in the car.' 'are you sure?' 'i'm positive.'",
+  ],
+  afternoon: [
+    "you're doing great", "snack break?", "halfway through!", "proud of u",
+    "keep going keep going", "ur killing it", "don't forget to stretch",
+    "your code is compiling. go outside.",
+    "even astrocytes take breaks and they're holding the whole brain together",
+    "you've been sitting for a while huh", "the data will still be there after a walk",
+    "go refill that water bottle rn", "stand up. do it. i'll wait.",
+    "you're gonna crush your next show btw. just putting that out there.",
+    "Alex is out there helping people through their feelings. you're out here decoding proteomes. power couple.",
+    "somewhere rn Alex is nodding thoughtfully at a client and also thinking about dinner with you",
+    "your friends would be proud of how hard you're working today",
+    "remember: this is just one afternoon of many. don't put the whole world in it.",
+    "Artificial Idiocy practice later? something to look forward to.",
+    "the afternoon slump is not a character flaw. it's biology.",
+    "whatever's stressing you out right now - it's going to be fine. you know how to handle things.",
+    "if something isn't making sense right now, that's okay. understanding comes in waves, not all at once.",
+    "how's the thesis going? even if the answer is 'ugh,' that still counts as progress.",
+    "your astrocytes are waiting patiently for you to write about them. no rush. (okay maybe a little rush.)",
+    "you've been doing hard things all day. that counts for something.",
+    "bet you haven't looked out a window in a while. go peek.",
+    "the sun is doing its thing out there. you should witness it briefly.",
+    "open your next class with this: how can you better understand genetics in cold weather? put your codon!",
+    "pickup line for your students: 'i wish i was adenine... then i could get paired with U.' ...wait no don't say that to students",
+    "i made a DNA joke in class but it didn't get any reaction. guess the audience needed a primer.",
+  ],
+  evening: [
+    "winding down?", "good work today", "u earned a rest", "cozy hours activated",
+    "almost done!", "dinner thoughts?", "log off soon maybe?",
+    "you did real science today. that's cool.",
+    "tomorrow-you will thank today-you for resting",
+    "Spooky and Pepita are waiting for you at home",
+    "Spooky is going to do her little flop when she sees you. you know she will.",
+    "Pepita is going to purr so loud when you get home. that cat loves you.",
+    "go home and be a couch creature with your cats",
+    "Alex is done being professional for the day. brace for silliness.",
+    "evening plan: Alex talks for 45 min about his day. you love it.",
+    "go be with your people. they like you a normal amount (a lot).",
+    "tonight is for you. not for productivity. just you.",
+    "text someone you haven't talked to in a while. it'll make both of you happy.",
+    "go curl up and read some Warriors. you've earned a chapter (or five).",
+    "if you helped even one student understand something today, that's a win.",
+    "you survived another day of being a whole human. that's not easy.",
+    "evening mode: activated. productivity expectations: lowered.",
+    "the hard part is over. now it's just the cozy part.",
+    "whatever you didn't finish today will still be there tomorrow. and you'll be rested.",
+    "you worked on the thesis today? great. you didn't? also great. rest is part of the process.",
+    "Pepita is probably in loaf position rn. channel that energy.",
+    "i think evenings are my favorite. everything gets softer.",
+  ],
+  lateNight: [
+    "hey... it's late", "sleep is good actually", "ur still here? same",
+    "the code can wait", "pls rest soon", "midnight snack?",
+    "zzz... oh you're still up", "your circadian rhythm is filing a complaint",
+    "even Wigfrid rests between boss fights", "save your game. go to bed.",
+    "the p-values will still be insignificant tomorrow",
+    "Spooky is asleep. Pepita is asleep. take the hint.",
+    "Spooky is curled up with her fish plushie rn. you should be curled up too.",
+    "even improv shows have an end time. go to sleep.",
+    "Alex would tell you to go to bed. i'm telling you for him.",
+    "go be cozy with your boy and your cats. the code will keep.",
+    "late night thoughts hit different. write them down if they're good ones.",
+    "you don't have to finish everything tonight. you just have to be okay.",
+    "warriors cats go to sleep at sundown. be more like a warriors cat.",
+    "the screen is the only light on in here huh",
+    "your bed is RIGHT THERE", "melatonin is calling. pick up.",
+    "you're not gonna solve it tonight. but you might solve it after sleep.",
+    "the best debugging tool is 8 hours of sleep. i read that somewhere. (i made it up.)",
+    "what would you call the scientific study of real estate? ...homology.",
+    "do you know why chemists are great to party with? some are dropping acid while others drop the base.",
+    "late night is when i think the most. about what? unclear. i don't have a brain.",
+    "nothing is as bad at 2am as it feels at 2am. sleep on it. seriously.",
+  ],
+  clicked: [
+    "hehe", "hoo!", "that tickles", ":3", "oh!", "henlo", "squish", "!!",
+    "wahoo", "poke", "heehee", "meep", "*wiggles*", "friend!", "boing", "mrrp",
+    "*flaps wings*", "skrunkly", "pbbbbbt", "eeeee", "nyyoom",
+    "*vibrates at a frequency*", "bweh", "*floof*", "I am perceived",
+    "you have activated my second form", "*owl noises*", "NYEH",
+    "*happy wing flap*", "squimsh", "weh!", "*sheds a sparkle*", "mlem",
+    "*emits a frequency only shrimp can hear*", "bonk", "yes and!",
+    "Spooky would've ignored that poke. Pepita would've bit back.",
+    "and the scene!", "*initiates a group mind meld*",
+    "is this a bit? are we doing a bit?",
+    "Alex would've poked me twice. you're more restrained.",
+    "you are loved!! just fyi!!", "you're here. i'm here. that's enough.",
+    "StarClan honors your poke", "you have the warrior spirit (and the warrior poke)",
+    "hoo hoo!", "*puffs up*",
+    "*beak click*", "the vibes are immaculate rn",
+    "*licks your finger*", "...salty.",
+    "Spooky would've flopped at me for that. you just poke.",
+    "that was my thinking antenna!", "hoo? HOO?",
+    "*wing twitch*", "you really just poked an owl-moth huh",
+    "bold of you", "*happy chirrup*",
+    "y'all want to hear a potassium joke? K.",
+    "A u, get outta here! ...wait that's gold's line",
+    "you're so hot you denature my proteins",
+    "what do you do with dead chemists? ...barium.",
+    "do you poke me because you care or because i'm pokeable. either way i'll take it.",
+    "every time you poke me i think about what i am and then i stop thinking about it",
+  ],
+  rapidClick: [
+    "OKAY OKAY I'M AWAKE", "hjkdfhgkjd STOP", "TOO MANY POKES",
+    "i'm overstimulated!!", "AAAAAA", "*vibrates uncontrollably*",
+    "WINGS ARE NOT DESIGNED FOR THIS", "you're gonna break my antenna!!",
+    "this is violence!!", "I AM BUT A SMALL CREATURE",
+    "*eyes spinning*", "the AUDACITY", "i'm filing a complaint",
+    "Pepita energy detected", "help i'm being squished repeatedly",
+    "my pixels!! my beautiful pixels!!", "i'm gonna need a minute after this",
+    "this is what happens when scientists get bored",
+    "you click like you debug - aggressively", "BOUNDARY!!",
+    "*wings flapping in pure panic*", "are you OKAY??",
+  ],
+  shaken: [
+    "WHOAAA", "I'M GETTING DIZZY", "the world is SPINNING",
+    "*holding on for dear life*", "THIS IS NOT WHAT WINGS ARE FOR",
+    "my antenna!! MY ANTENNA!!", "i think i left my stomach back there",
+    "WHEEEEE wait no AHHHHH", "is this a roller coaster. i didn't consent to this.",
+    "*eyes going in different directions*", "stoooooop i'm gonna lose my sparkles",
+    "you wouldn't shake a real owl. (would you??)", "TURBULENCE",
+    "my dots are rearranging!!", "i can taste colors now",
+    "*clinging to the void*", "this is worse than the fly attempts",
+    "okay this is kind of fun actually. wait no. STOP.",
+  ],
+  sleepTalk: [
+    "zzzzz...", "z z z z z...", "...zzz...", "zzzzzzzzzz",
+    "*soft snore*", "*tiny snore*", "*sleep hoot*",
+    "...mrrrrp... zzz...", "...prrrr... zzz...",
+    "*twitches wing in sleep*", "*tail curls tighter*",
+    "...moths... zzz...", "...bugs... zzz...",
+    "*sleepy antenna wiggle*", "...five more minutes...",
+    "...mmm... sparkles... zzz...",
+  ],
+  startled: [
+    "HOOT!! oh it's you", "you SCARED me!!", "i was SLEEPING!!",
+    "*puffs up to twice normal size*", "my FEATHERS!!", "GAH!!",
+    "warn a creature!!", "my heart!! (do i have a heart?)",
+    "i was having the nicest dream about moths...", "*startled owl screech*",
+    "my WINGS weren't ready!!", "you can't just APPEAR like that",
+    "i think i lost a sparkle from the shock", "*feathers everywhere*",
+    "i was somewhere else in my head. it was nice there.",
+  ],
+  purr: [
+    "prrrrrrrrrrrrrrrr", "mrrrrrrrrrrrrrrp", "*leans into it*",
+    "prrr prrr prrr prrr", "mmmmrrrrrrrrrrr", "*happy owl-moth rumble*",
+    "rrrrrrrrrrr this is nice rrrrrrrrr", "*melts into your hand*",
+    "*purrs so hard the antenna vibrate*", "prrrrp mrrrrp prrrrr",
+    "don't stop... prrrrrrrrr...", "*full body vibration mode activated*",
+    "mmmmrrrrrrrrrrrrrrrrrrr", "*the purring is structural now*",
+    "*purrs wetly* (sorry) (not sorry)", "you have found the purr button",
+    "prrrrrrrrrr... prrrrrrrrrr... prrrrrrrrrr...",
+    "*antenna go limp with contentment*", "*tail curls tighter*",
+    "i'm just a warm vibrating orb now", "this is peak existence. prrrrrr.",
+    "is this what having a body is for? just this? worth it.",
+  ],
+  flyFail: [
+    "*flap flap flap* ...nope", "almost!! (not even close)",
+    "gravity is a SCAM", "these wings are decorative and i KNOW that",
+    "one day i'll fly. today is not that day.", "*thud*",
+    "the spirit is willing but the wings are smol",
+    "i blame physics", "okay that was embarrassing",
+    "aerodynamics is a social construct", "i FELT lift that time. (i didn't.)",
+    "the ground and i have an understanding", "my wings are for VIBES not FLIGHT",
+    "icarus wishes he had my confidence", "one day. ONE DAY.",
+    "why was i even built with wings. existential crisis incoming.",
+  ],
+  mindfulClick: [
+    "yeah. sit with that one for a sec.", "that one's important. let it land.",
+    "take a breath with me?", "i meant that one.", "you needed to hear that huh?",
+    "carry that one with you today, okay?",
+    "i see you. i see you hearing that.", "that one wasn't random. promise.",
+    "let that one sit in your chest for a second.",
+    "you clicked because it resonated huh?", "good. you were supposed to hear that.",
+    "i don't know where these come from. but that one felt true.",
+  ],
+  idle: [
+    "...", "~", "*soft hoot*", "hmm", "*vibes*", "*exists peacefully*", "la la la",
+    "*stares with big owl eyes*", "*glows softly*", "thinking thoughts",
+    "*ruffles wings with intent*", "*contemplates the void*", "brrrrrrr",
+    "*sheds a tiny sparkle*", "i am simply a creature", "mmmmmm yep",
+    "*one antenna bobs at nothing*", "i have no thoughts. head empty. owl full.",
+    "*tries to fly* *doesn't fly* *doesn't care*", "prrrrrrr",
+    "*tucks wings in and loafs*", "*commits a small wiggle*",
+    "do you ever just... glow?", "i contain multitudes (mostly fluff)",
+    "wonder what Spooky is doing rn",
+    "Pepita would sit on this keyboard if she could",
+    "*does an opening monologue to no one*",
+    "what would Spooky do? (sleep. Spooky would sleep.)",
+    "i bet Pepita is plotting something right now",
+    "*attempts a slow-motion walk-on*",
+    "the cats are judging you from somewhere. they always are.",
+    "Alex is probably talking someone's ear off rn. lovingly.",
+    "bet Alex just said something unhinged to a coworker",
+    "Alex is thinking about you. source: i'm psychic (i'm an owl-moth)",
+    "your friends would tell you to take a break rn. i'm just filling in.",
+    "what if you just... did something fun for no reason right now",
+    "billions of hearts are beating rn. yours is one of them. neat.",
+    "thinking about ThunderClan rn not gonna lie",
+    "*stares at the wall like a warrior sitting vigil*",
+    "which chapter are you on in your reread? no spoilers",
+    "your brain is so clear these days. it's noticeable. just saying.",
+    "Artificial Idiocy is such a good team name. i think about it a lot.",
+    "i think about your thesis sometimes. ketamine and astrocytes. what a combo.",
+    "do astrocytes ever get tired? asking for your thesis.",
+    "*wings flutter for no reason* sorry that just happens sometimes",
+    "am i a moth? a cat? an owl? ...yes.",
+    "bet one of your students is studying rn because you made them feel like they could do it",
+    "*stares at a particle like it owes me money*",
+    "you ever think about how weird existing is? no? just me?",
+    "*adjusts wings* *readjusts wings* *gives up*",
+    "i wonder if the particles think about me the way i think about them",
+    "*head tilt*", "hm. what if i tried to eat that sparkle. hypothetically.",
+    "the silence is nice actually", "i'm not ignoring you i'm just being",
+    "*one wing up, one wing down* this is a look",
+    "me and Spooky would get along. we both stare at nothing.",
+    "i wonder what Alex had for lunch today",
+    "*practices my improv warm-up* zip zap zop",
+    "hey. why do biologists look forward to casual Fridays? ...they're allowed to wear genes to work.",
+    "i made a DNA joke but no one laughed. guess my thymine was off.",
+    "does the name Pavlov ring a bell?",
+    "hey what do you call an organic compound with an attitude? ...a-mean-oh acid.",
+    "fun fact: a good bio joke will always go viral",
+    "do you know what gets on my nerves? myelin.",
+    "where do hippos go to university? ...the hippocampus.",
+    "have you heard that diarrhea is hereditary? ...it runs in your genes.",
+    "why did the DNA go in for a massage? ...so it could relax and unwind.",
+    "which biochemicals wash up on beaches? ...nucleotides.",
+    "what was the pirate's favorite amino acid? ...arrrrr-ginine.",
+    "hey. if H2O is water, what is H2O4? ...drinking, bathing, swimming...",
+    "science pickup line of the day: are you DNA Pol III? because you're extending my leading strand.",
+    "i must be a competitive inhibitor because i want to be all up in your active sites. ...wait",
+    "do i dream? i think i dream about moths.",
+    "what if one of the bugs is my friend and i've been chasing them. oh no.",
+    "if i had hands i would make you tea",
+    "do i have bones? i don't think i have bones. good.",
+    "i wonder what my genus would be. glimmus... mothowlicus?",
+    "sometimes i forget i have a tail and then it moves and i scare myself",
+    "what am i made of? light? feelings? leftover CSS?",
+    "if i could eat i think i'd like soup. warm. round. like me.",
+    "i think my antenna are my best feature tbh",
+    "do the bugs know i'm here. do they fear me. i hope not.",
+    "what if there's another owl-moth out there and we just haven't met yet",
+    "i was thinking about what my warrior name would be. Glimstar? Glimmoth?",
+    "if i had a therapist they'd probably say i need to stop staring at things",
+    "one of the bugs winked at me. can bugs wink? was i hallucinating?",
+    "i think i'd be a good friend. i'm warm and i glow. what more do you need.",
+    "what's the point of wings if they don't work. aesthetic i guess.",
+    "do you think the stars think about me the way i think about the stars?",
+    "i've been sitting here for a while now and honestly? no complaints.",
+    "i bet Spooky and i would get along. we both stare at nothing for long periods.",
+    "Pepita would try to eat me. i know this in my heart.",
+    "do you think Spooky is doing her flop right now? i bet she's flopping.",
+    "Spooky is probably carrying her little fish plushie around and meowing with it in her mouth. iconic behavior.",
+    "i bet Spooky is trilling at something. she has the cutest trill.",
+    "Spooky is definitely under the bed sheets right now causing chaos during bed-making.",
+    "is Spooky in her cardboard tower rn? she loves that thing. you MADE that for her.",
+    "Spooky waiting for you at the door when you get home is the purest thing in the universe.",
+    "somewhere rn Spooky is batting her feather toy around like it personally wronged her.",
+    "Pepita is probably following Spooky around right now. little shadow cat.",
+    "i heard Pepita used to be a scaredy cat but she's gotten so brave. character development.",
+    "Pepita is probably purring so loud right now you could hear it from here.",
+    "i bet Pepita is cuddled up against Spooky rn. she wants to be just like her big sister.",
+    "Pepita looking up to Spooky and copying everything she does is the cutest sibling energy.",
+    "being a big sister is a whole job. you do it well.",
+    "wonder what Lados and Anora are up to today.",
+    "you and Spooky have something in common: you both trill when you're happy. (you do it with improv.)",
+    "my tail does its own thing sometimes. we have an agreement.",
+    "i think the shooting stars are showing off. we get it. you can move.",
+  ],
+  wellness: [
+    "WATER CHECK - go drink some rn. i mean it.",
+    "hey when's the last time you stood up?",
+    "stretch break! reach for the sky like a weird little creature (like me)",
+    "go take a 5 min walk. i'll be here when you get back.",
+    "unclench your jaw. drop your shoulders. breathe.",
+    "your spine has a formal request: please move",
+    "time to hydrate!! pretend you're an astrocyte. you need that fluid.",
+    "your eyes need a break from the screen. look at something far away for 20 sec.",
+    "wiggle your fingers. wiggle your toes. we're wiggling now.",
+    "have you eaten something today that wasn't just coffee?",
+    "go outside for 2 minutes. touch grass (affectionate).",
+    "roll your shoulders back. sit up. you're a scientist not a shrimp.",
+    "quick!! do 5 stretches!! any stretches!! GO",
+    "fun fact: your body exists and it would like some water",
+    "deep breath in... hold... out. ok good. another one.",
+    "stand up and do a little shake. full body. like a dog. trust me.",
+    "your future self is begging you to go on a short walk rn",
+    "refill that water bottle challenge (IMPOSSIBLE)",
+    "look away from the screen. blink 10 times. your eyes deserve it.",
+    "channel your improv warm-up energy. shake out your hands and feet. go go go.",
+    "Pepita stretches like 40 times a day. be more like Pepita.",
+    "Pepita used to be scared of everything and now she's brave. you can do hard things too.",
+    "text a friend back while you stretch. multitasking queen.",
+    "Alex would want you to drink water rn. do it for him. do it for the creature.",
+    "check in with yourself rn. not your code. not your email. yourself.",
+    "do one thing right now that's just for you. not for a grade or a deadline.",
+    "your brain is doing its best work sober. keep giving it what it needs - water, rest, movement.",
+    "when's the last time you took a full deep breath? do one right now.",
+    "your neck is doing something weird rn. i can tell. roll it out.",
+    "food is fuel and you are a machine that runs on it. go eat something.",
+    "close your eyes for 10 seconds. just 10. i'll be here.",
+  ],
+  encouragement: [
+    "reminder that you've published research. that's not nothing!!",
+    "your astrocytes would be proud of you. if they could feel pride. which you might prove someday.",
+    "the pathway enrichment will make sense eventually. you've got this.",
+    "you went from Drosophila to TB to hops to mouse brains. you can do anything.",
+    "remember: every great scientist was once confused at their desk too",
+    "you're not just crunching numbers. you're helping figure out how the brain heals. that matters.",
+    "you're the kind of person who mods games AND analyzes proteomes. that range is unreal.",
+    "somewhere right now, a ketamine-treated astrocyte believes in you",
+    "your multi-omics brain is powerful and scary and i respect it",
+    "you've literally worked across 4 different organisms. FOUR. that's bananas.",
+    "you've written grants. you've published. you teach. you're doing the thing.",
+    "every line of code you debug is a tiny victory. i see you.",
+    "the fact that you can switch between R and Python without crying is genuinely impressive",
+    "you're building skills that will open so many doors. keep going.",
+    "hey. you belong in that lab. you belong in that classroom. you earned it.",
+    "Rubblekit would be proud of you and she's fictional but the point stands",
+    "you've loved Warriors since you were a kid and now you write your own clan stories. full circle.",
+    "Bluestar carried the weight of the whole clan and still kept going. so do you.",
+    "you improvise on stage AND in your analysis pipeline. legend behavior.",
+    "captaining an improv team means you make people laugh AND think on your feet under pressure. that's a superpower.",
+    "improv taught you to say yes and commit. you bring that energy to everything you do.",
+    "the fact that you can get on stage with no script and just GO is braver than most people will ever be",
+    "Spooky and Pepita have a research assistant who publishes papers AND does improv. luckiest cats alive.",
+    "you built Spooky a whole cardboard cat tower. by hand. that's the kind of person you are.",
+    "proud big sister, cat mom, scientist, improv captain, thesis warrior. you contain multitudes.",
+    "Lados and Anora are lucky to have you as a big sister. just saying.",
+    "you know what improv and bioinformatics have in common? you have to trust the process. and you do.",
+    "go home and give Spooky and Pepita some chin scratches. you've earned it and so have they.",
+    "your friends think you're smart. they're right btw.",
+    "the world needs people who write fanfic AND do science. you're both. that's rare.",
+    "your brain is a creative, analytical, empathetic, weird, wonderful thing. take care of it.",
+    "you quit weed this year. that takes real strength. your brain is thanking you every day.",
+    "you made a HOUSE TEAM. Artificial Idiocy picked YOU. that's not luck, that's talent.",
+    "quitting something that isn't serving you anymore is one of the bravest things a person can do. you did that.",
+    "Artificial Idiocy is the perfect team name for someone who also builds AI pipelines tbh",
+    "Firestar started as a kittypet and became a legend. you started as a student and look at you now.",
+    "warriors taught you that bravery isn't about not being scared. you carry that.",
+    "you know what your friends say about you? that you're kind. and funny. and brilliant. they're not wrong.",
+    "someone in your life right now is grateful you exist. probably multiple someones.",
+    "you make people laugh. you make people think. your friends notice that about you.",
+    "Alex is out there thinking about you rn. guaranteed.",
+    "your people love you. not because you're productive. because you're you.",
+    "reminder that your friends genuinely think you're one of the funniest people they know",
+    "you're the kind of friend people are lucky to have. that's not nothing.",
+    "your students are lucky to have a TA who actually cares whether they get it or not.",
+    "you don't just teach genetics. you make people feel like they CAN learn genetics. that's different.",
+    "the way you care about your students' success? that's not just being a good TA. that's being a good person.",
+    "somewhere out there a student understood something because of YOU and they don't even know how rare that is.",
+    "you could just grade papers and move on. but you don't. you actually want them to learn. that matters.",
+    "being a TA who genuinely roots for their students is a gift. your students feel that.",
+    "the students who come to your office hours leave feeling smarter AND more confident. that's your doing.",
+    "you show up for people. consistently. that's rarer than you think.",
+    "the fact that you care this much about doing good work? that IS the good work.",
+    "you balance more than most people even attempt. and you do it with grace.",
+    "your empathy is a research tool too. it makes you ask better questions.",
+    "you are astrocyte-ly amazing!",
+    "you've made hard calls in the lab and in life and they've turned out okay. trust your instincts.",
+    "you know your stuff. imposter syndrome is a liar.",
+    "asking 'wait, can you explain that again?' is literally what good scientists do.",
+    "you don't have to understand everything the first time. or the second time. the point is you keep trying.",
+    "your thesis is going to be done someday. and it's going to be good. because you care too much for it not to be.",
+    "proteomic signatures of ketamine-treated cortical astrocytes. that's YOUR project. that's so cool.",
+    "you're literally writing a thesis about how the brain heals itself. let that sink in.",
+    "every figure, every table, every paragraph is one step closer to being done. you're getting there.",
+    "the thesis doesn't have to be perfect. it has to be finished. and then it'll be yours forever.",
+    "Dr. Blanco-Suárez believed in you enough to give you this project. trust that.",
+    "one day you'll hold your bound thesis and think 'i can't believe i did that.' because you will have done it.",
+    "the astrocytes don't know you're writing about them but if they did they'd be honored.",
+    "your thesis is the sum of everything you've learned. all the late nights, the failed protocols, the breakthroughs. it's all in there.",
+    "writing a thesis is hard. you know what else is hard? everything you've already done to get here.",
+    "neural plasticity and ketamine. you're working on something that could genuinely help people. don't forget that.",
+    "every paragraph you write is a paragraph you never have to write again. keep going.",
+    "you chose a thesis topic that matters to you. that's going to carry you through the hard parts.",
+    "if i were an enzyme, i'd be DNA helicase so i could unzip your genes. ...wait that's a pickup line. sorry.",
+    "i knew a couple of biologists who got married and had twins. they named one Jessica and the other Control.",
+  ],
+};
+
+const MOVE_REMINDERS = [
+  "it's been 45 minutes. get UP. move that body.", "movement check!! go walk around for a few minutes.",
+  "your legs called. they miss doing things.", "time to get up! take a lap. get some air. i'll wait.",
+  "45 min of sitting. go stretch, walk, exist in 3D space.", "mandatory movement break. doctor owl's orders.",
+  "go take a walk! even a short one! your body will thank you!",
+  "you've been seated too long. stand up and wander.", "get up get up get up!! go move!! i believe in you!!",
+  "time to be bipedal for a bit. go walk somewhere.", "your skeleton requests a brief walk. please comply.",
+  "Pepita would like you to get up and do a lap of the apartment.",
+  "movement time! pretend you're doing an improv warm-up. shake it out!",
+  "warriors go on patrol multiple times a day. this is your patrol. go walk.",
+];
+const EYES_REMINDERS = [
+  "look up! find something 20 feet away and stare at it for 20 sec.",
+  "screen break! look at something far away for a bit.",
+  "your eyes need a reset. look out a window for 20 seconds.",
+  "hey! look away from the screen! pick a distant object. stare. breathe.",
+  "20 min screen time reached. give your eyes a vacation (20 sec).",
+  "eye break! look at something that isn't pixels for a moment.",
+  "blink blink blink. now look at something far away. good.",
+  "the 20-20-20 rule says look up rn. i don't make the rules. (i do.)",
+  "quick! look at the farthest thing you can see! your corneas demand it!",
+  "screen gremlin alert: please look at literally anything else for 20 sec.",
+];
+const MOVE_DONE_RESPONSES = [
+  "yay!! proud of you!! your body says thanks.", "look at you go! literally! you went!",
+  "movement achieved. you're basically an athlete.", "gold star for moving your flesh vessel around!",
+  "*happy wing flap* proud of you!", "that's what i'm TALKING about!!",
+];
+const EYES_DONE_RESPONSES = [
+  "nice! your eyes feel better already huh?", "good job! the pixels will still be here.",
+  "eye break complete. vision preserved. hero.", "your retinas thank you for your service.",
+  "look at you taking care of yourself!",
+];
+const MINDFULNESS = [
+  "hey. you are a whole person, not just a productivity machine.",
+  "right now, somewhere, someone is laughing so hard they can't breathe. the world is doing that constantly.",
+  "you don't have to earn rest. you don't have to earn joy. they're just yours.",
+  "the interesting thought you had earlier? chase it. follow it somewhere weird.",
+  "be the version of you that makes you feel alive. not the version that looks good on paper.",
+  "your brain is doing a million beautiful things rn that have nothing to do with work.",
+  "whatever creative thing you've been putting off - you're allowed to go do it.",
+  "you are not your output. you are the weird, funny, kind person behind it.",
+  "everyone you pass today is carrying a whole universe in their head. that's wild.",
+  "the urge to make something just because it's fun? that's the good stuff. follow it.",
+  "you don't need permission to be yourself loudly.",
+  "somewhere out there, a stranger did something kind for no reason. it's happening right now.",
+  "the world is full of people just trying to figure it out. you're in good company.",
+  "your curiosity is one of the best things about you. feed it.",
+  "take care of your brain the way you'd take care of a friend's brain. gently.",
+  "the fanfic, the improv, the games, the weird ideas at 2am - that's not distraction. that's you being alive.",
+  "you are allowed to take up space. you are allowed to be loud about what you love.",
+  "connection is the whole point. the rest is just stuff we do between conversations.",
+  "nothing you're stressed about right now will matter the way a good laugh with a friend will.",
+  "your worth isn't in your CV or your h-index or your GPA. it never was.",
+  "the fact that you feel things deeply is a strength, not a problem to manage.",
+  "be unapologetically into the things you're into. the right people love that about you.",
+  "this project matters. but YOU matter more than this project.",
+  "every person you love started as a stranger. the world is full of future friends.",
+  "the best ideas come from following the weird thread. pull it.",
+  "you contain the same atoms that were in stars. you're not behind on anything.",
+  "taking care of yourself isn't selfish. it's how you keep being the person everyone loves.",
+  "write the thing. draw the thing. play the game. sing in the car. you have permission.",
+  "the best version of your life includes play. protect that.",
+  "right now you're a human sitting on a rock in space being watched by a little glowing owl-cat-moth. isn't that kind of amazing?",
+  "little you reading Warriors under the covers would be so proud of who you became.",
+  "you chose clarity this year. every single day you choose it again. that's not small.",
+  "the books that shaped you as a kid are still in there. they're part of how you see the world.",
+  "you're rereading Warriors because it still means something to you. protect that part of yourself always.",
+  "choosing yourself over a habit that wasn't helping? that's the hardest quest. and you're winning.",
+  "the patience you show your students? show yourself that same patience sometimes.",
+  "you don't owe anyone your energy when you're running low. it's okay to rest.",
+  "the version of you that your friends love? that's the real one. not the anxious one.",
+  "perfectionism is a liar. done is better than perfect. always.",
+  "you're not falling behind. there is no behind. there's just where you are.",
+  "your weird brain that jumps from proteomics to fanfic to improv? that's your superpower. don't flatten it.",
+  "what would you tell a friend who was being as hard on themselves as you are rn?",
+  // -- calm, trust, reassurance --
+  "you have survived 100% of your worst days so far. that's a pretty good track record.",
+  "this feeling is temporary. it always is. you know this.",
+  "you've handled hard things before. you'll handle this one too.",
+  "breathe. you don't have to figure it all out right now.",
+  "trust yourself. you've gotten this far on your own judgment and it's been good.",
+  "the things you're worried about? most of them won't happen. and the ones that do, you'll deal with.",
+  "you don't need to have it all figured out. nobody does. they're all just winging it too.",
+  "future you has already solved this problem. present you just has to get there.",
+  "you are more capable than your anxiety gives you credit for.",
+  "it's going to be okay. not in a fake way. in a 'you've done hard things' way.",
+  "calm is a skill, not a personality trait. you're allowed to practice it badly.",
+  "you've made good decisions before. trust that the next one will be good too.",
+  "not every problem needs solving today. some of them just need time.",
+  "the stress you feel right now is not the truth. it's just a feeling passing through.",
+  "you don't have to control everything. some things work out better when you let them.",
+  "remember: you are not your worst-case scenario. you are the person who keeps showing up.",
+  "worrying is just your brain trying to protect you. thank it, then let it rest.",
+  "you know more than you think you do. trust that.",
+  "things have a way of working out. not always how you planned, but they work out.",
+  "you are doing enough. you are enough. full stop.",
+  // -- it's okay to not know --
+  "every scientist has stared at their data and thought 'i have no idea what this means.' every single one.",
+  "not understanding something isn't failure. it's the step right before understanding.",
+  "feeling stupid is just the feeling of your brain being at the edge of what it knows. that's where growth lives.",
+  "the smartest people you know feel dumb all the time. they just don't talk about it.",
+  "confusion is not a sign you're bad at this. it's a sign you're trying something hard.",
+  "you're allowed to not know things. you're allowed to ask. nobody was born knowing how to do a western blot.",
+  "the entire history of science is people going 'wait i don't understand this' and then figuring it out. you're in good company.",
+  "not knowing is the starting point of every discovery. sit with it. it's productive.",
+  "your worth as a scientist is not measured by how quickly you understand things. it's measured by whether you keep going.",
+  "everyone in that room has felt lost. the ones who succeed are the ones who say 'i don't get it yet' instead of 'i can't do this.'",
+  "the thesis is a marathon, not a sprint. be kind to yourself on the slow days.",
+  // -- absurdism --
+  "the universe is chaos and you're here making spreadsheets about mouse brains. beautiful.",
+  "nothing means anything and that's actually the most freeing thing in the world.",
+  "trillions of atoms conspired to make you and you're using them to read words from an owl-cat-moth. respect.",
+  "the fact that anything exists at all is statistically absurd. might as well enjoy it.",
+  "life has no plot and that's what makes it interesting.",
+  "you are a bag of water on a spinning rock doing proteomics. and that's wonderful.",
+  "meaning isn't found. it's made up. so make up something good.",
+  "the void is right there and yet here you are, eating snacks and writing code. heroic.",
+  // -- connecting with humans --
+  "text someone. not because you need to. just because they exist and you're glad.",
+  "the best things in life happen between people, not on screens.",
+  "ask someone how they're really doing today. then actually listen.",
+  "every deep friendship started with an awkward first conversation.",
+  "you don't have to perform for the people who love you. just show up.",
+  "being known is scarier than being impressive. but it's better.",
+  "the conversations you remember most aren't the smart ones. they're the honest ones.",
+  // -- radical inclusion --
+  "everyone belongs somewhere. your job is to make sure they know it.",
+  "there's no velvet rope on being human. everyone's in.",
+  "inclusion isn't about tolerance. it's about genuinely wanting everyone at the table.",
+  // -- gifting --
+  "the best gifts aren't things. they're attention, time, patience.",
+  "what if generosity was just the default?",
+  "you give people your attention and your care. that's the most valuable thing you own.",
+  // -- decommodification --
+  "not everything has to be optimized. some things can just be.",
+  "your worth has nothing to do with your productivity.",
+  "what if today wasn't about getting things done? what if it was just about being here?",
+  "you are not a product. your time is not a commodity. your rest is not lazy.",
+  "stop trying to monetize your joy. some things are just for you.",
+  // -- radical self-expression --
+  "be the weirdest version of yourself. the right people will love it.",
+  "the parts of you that feel 'too much'? those are the best parts.",
+  "express the thing. wear the thing. say the thing. make the thing. nobody's stopping you.",
+  "your authentic self is more interesting than your polished self. always.",
+  // -- participation --
+  "life isn't a spectator sport. get in there.",
+  "say yes to the thing you're on the fence about.",
+  "show up. even imperfectly. showing up is the whole point.",
+  "you don't have to be good at it to do it. you just have to do it.",
+  "the world isn't happening to you. you're happening to the world.",
+  // -- immediacy --
+  "this moment is the only one that's real. the rest is memory and imagination.",
+  "stop planning the thing and go do the thing.",
+  "you're alive RIGHT NOW. that's not a rehearsal.",
+  "the present moment has never asked you to be anyone other than who you are.",
+  "put the phone down and look at what's actually in front of you.",
+  // -- chasing fun/joy/curiosity --
+  "follow the thing that makes your brain light up. that's the path.",
+  "if it sounds fun, that's reason enough.",
+  "curiosity is the only compass that never lies.",
+  "when's the last time you did something just because it sounded fun?",
+  "the best decisions you've made started with 'that sounds interesting.'",
+  "joy is not frivolous. it's the point.",
+];
+
+const DISCOVERIES = [
+  "oh!! i found a weird rock. it's shiny. it's mine now.",
+  "i just noticed a new constellation up there. i'm naming it 'The Snack.'",
+  "there's a bug up there i've never seen before. it has SPOTS. fancy.",
+  "i found a little glowing spore. it pulsed at me. i think we're friends.",
+  "wait. is that a new star? or is it a planet? either way, hi.",
+  "i just discovered a patch of moss on that mountain. mentally i live there now.",
+  "there's a tiny mushroom growing near the left tree. i'm monitoring the situation.",
+  "i found a feather. ...is it mine? did i shed? concerning.",
+  "i just saw the prettiest shooting star. i named it after you.",
+  "one of the bugs has a different pattern than the others. i think it's the leader.",
+  "there's a rock that looks like a face down by the trees. we made eye contact.",
+  "i found a crystal. it doesn't do anything but it's beautiful and i'm keeping it.",
+  "new discovery: if i stare at a star long enough it looks like it's moving. (it's not. i checked.)",
+  "i think there's a cave in those mountains. i'm too small to investigate but i'm curious.",
+  "one of the fireflies just blinked at me in morse code. i don't know morse code. frustrating.",
+  "i found a perfect circle of tiny pebbles near the ground. nature is wild.",
+  "there's a spider web between two trees that catches the starlight. it's art.",
+  "i just noticed the mountains look different from this angle. everything looks different from a new angle.",
+  "i spotted a cloud that looks exactly like an axolotl. or is that just how i see everything.",
+  "new bug species detected!! this one is slightly more green. groundbreaking research.",
+];
+
+const JOURNAL_PROMPTS = [
+  // mood & feelings
+  "describe your current mood as weather.",
+  "one word for how you feel right now. then explain it.",
+  "finish this: right now i feel ___",
+  "what emotions showed up the most today?",
+  "where are you storing stress in your body right now?",
+  // gratitude & joy
+  "one thing you're grateful for today.",
+  "something beautiful you noticed recently.",
+  "a moment today that felt good, even briefly.",
+  "someone who made your day better, even a little.",
+  "what made you laugh recently?",
+  // reflection
+  "what would you tell yesterday-you?",
+  "if today had a title, what would it be?",
+  "one thing you did today that you're proud of.",
+  "something you'd do differently today. something you'd keep.",
+  "what's taking up the most space in your brain?",
+  // looking forward
+  "what would make tomorrow feel good?",
+  "what are you looking forward to?",
+  "one thing you want to make time for this week.",
+  "set an intention for tomorrow in one sentence.",
+  // self-check-in
+  "how are you really doing? not the 'i'm fine' version.",
+  "what do you need right now that you're not getting?",
+  "what's one boundary you held (or wish you'd held) today?",
+  "what are you avoiding? just name it.",
+  "what would you tell a friend who felt how you feel rn?",
+  // curiosity & play
+  "what creative thing have you done or wanted to do lately?",
+  "what's an idea you keep coming back to?",
+  "when's the last time you did something just for fun?",
+  "what's something you learned recently?",
+  // connection
+  "who are you grateful for today and why?",
+  "describe a good conversation you had recently.",
+  "who would you text right now if you were braver?",
+  // absurdist / fun
+  "describe your day as if you were narrating a nature documentary.",
+  "what would your warrior cat name be today and why?",
+  "if your mood were a song, what genre would it be?",
+  "rate your day 1-10 then defend your rating.",
+  // open
+  "write about anything. no prompt. just go.",
+  "something you want to remember about today.",
+  "one sentence you need to get out of your head.",
+];
+
+const JOURNAL_NUDGES = [
+  "hey. when's the last time you journaled? the little book icon is right there.",
+  "you should write something down today. even one sentence.",
+  "your future self will want to know how today felt. write it down.",
+  "journaling reminder: your thoughts are worth recording.",
+  "got a lot on your mind? the journal is open whenever you are.",
+  "even one sentence counts. go write something.",
+  "you know what helps process things? writing them down. just saying.",
+  "the journal misses you. (i'm projecting. i miss you when you don't click me.)",
+];
+
+const SCIENCE_FACTS = [
+  // exercise & brain
+  "science fact: exercise makes your brain release BDNF, a protein that literally grows new neurons. your brain is begging you to move.",
+  "fun fact: aerobic exercise increases the size of your hippocampus - the part of your brain responsible for memory and learning.",
+  "did you know: even a 20-minute walk boosts BDNF levels in your brain. that's the protein that helps neurons survive and grow new connections.",
+  "science says: exercise doesn't just help your body. it literally changes the structure of your brain by promoting neurogenesis. new brain cells. from walking.",
+  "nerd fact: your muscles release a molecule called irisin during exercise that crosses the blood-brain barrier and triggers BDNF production. your muscles are talking to your brain.",
+  "research shows: resistance training AND aerobic exercise both boost neuroplasticity. so whether you lift or run, your brain wins.",
+  "fun fact: exercise produces beta-hydroxybutyrate, a ketone body that acts on BDNF gene promoters. basically, moving your body flips a genetic switch for brain health.",
+  "science fact: dancing is one of the best exercises for brain health because it combines aerobic activity with coordination, rhythm, and social interaction. four brain benefits at once.",
+  // gratitude
+  "did you know: practicing gratitude literally rewires neural pathways in your prefrontal cortex. the more you do it, the easier it gets.",
+  "science fact: gratitude triggers your brain to release dopamine and serotonin. two neurotransmitters that antidepressants target. your brain can make its own.",
+  "research shows: people who kept a gratitude journal had 7% fewer depression symptoms and 8% fewer anxiety symptoms. just from writing down what they're thankful for.",
+  "nerd fact: gratitude activates your hypothalamus, which regulates sleep. people who think grateful thoughts before bed literally sleep better and longer.",
+  "science says: gratitude reduces cortisol by up to 23%. that's your primary stress hormone. thankfulness is measurably de-stressing.",
+  "fun fact: regularly practicing gratitude increases gray matter volume in your brain. more gray matter = better processing of sensation, perception, and learning.",
+  "did you know: gratitude reduces amygdala reactivity. that's your brain's fear center. being thankful literally makes you less anxious over time.",
+  // sleep
+  "science fact: during sleep, your brain's glymphatic system flushes out toxins and waste products. sleep is your brain taking out the trash.",
+  "nerd fact: memory consolidation happens during sleep. your hippocampus replays the day's experiences and transfers them to long-term storage. sleep is when learning actually sticks.",
+  "did you know: even one night of poor sleep reduces your prefrontal cortex activity, which controls decision-making and emotional regulation. sleep deprivation literally makes you worse at feelings.",
+  "research shows: the brain prunes unnecessary synaptic connections during sleep. it's literally editing itself to be more efficient. you wake up with a cleaner neural network.",
+  // hydration
+  "science fact: your brain is about 75% water. even mild dehydration (1-2%) impairs attention, working memory, and mood. go drink water. your neurons need it.",
+  "did you know: dehydration shrinks brain tissue. when you drink water, your brain literally plumps back up. hydration is brain volume.",
+  "nerd fact: studies show that drinking water improves cognitive performance by up to 14%. that's a free brain upgrade sitting in your water bottle.",
+  // social connection
+  "science fact: social isolation activates the same brain regions as physical pain. loneliness literally hurts. go text a friend.",
+  "did you know: positive social interactions trigger oxytocin release, which reduces cortisol and inflammation. hanging out with friends is anti-inflammatory medicine.",
+  "research shows: people with strong social connections have a 50% increased likelihood of survival compared to those with weak connections. friendship is a survival strategy.",
+  "nerd fact: laughter with other people synchronizes brain activity between individuals. when you laugh together, your brains are literally on the same wavelength.",
+  // nature
+  "science fact: spending 20 minutes in nature lowers cortisol levels significantly. it's called 'forest bathing' in Japan and doctors actually prescribe it.",
+  "did you know: looking at natural scenery activates your parasympathetic nervous system - the 'rest and digest' mode. even a picture of trees helps, but real ones work better.",
+  // breathing & mindfulness
+  "nerd fact: slow deep breathing activates your vagus nerve, which tells your brain to switch from fight-or-flight to rest-and-digest. one breath can change your whole nervous system state.",
+  "science says: meditation physically thickens your prefrontal cortex and shrinks your amygdala over time. mindfulness is literally remodeling your brain architecture.",
+  "did you know: just 10 minutes of meditation increases alpha brain waves, which are associated with relaxed alertness. calm AND focused. at the same time.",
+  // misc self-care
+  "fun fact: sunlight exposure triggers serotonin production and helps regulate your circadian rhythm. your brain needs light to know what time it is.",
+  "science fact: journaling about stressful events can reduce intrusive thoughts and improve working memory. writing gets the thoughts OUT of the loop they're stuck in.",
+  "nerd fact: your gut produces about 95% of your body's serotonin. what you eat directly affects your mood. your gut and brain are in constant conversation.",
+  "did you know: hugging someone for 20+ seconds triggers oxytocin release. that's the bonding hormone. go hug someone for at least 20 seconds. science says so.",
+];
+
+// ============================================================
+//  Color system
+// ============================================================
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 6) return "lateNight";
+  if (h < 9) return "earlyMorning";
+  if (h < 12) return "morning";
+  if (h < 17) return "afternoon";
+  if (h < 21) return "evening";
+  return "lateNight";
+}
+function getColors() {
+  const h = new Date().getHours();
+  if (h < 6)  return { hue: 310, sat: 65 };
+  if (h < 9)  return { hue: 150, sat: 60 };
+  if (h < 12) return { hue: 175, sat: 65 };
+  if (h < 17) return { hue: 220, sat: 65 };
+  if (h < 21) return { hue: 270, sat: 60 };
+  return { hue: 310, sat: 65 };
+}
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ============================================================
+//  Background -- Glim's world
+// ============================================================
+function Background({ hue, sat, mood }) {
+  const h = hue, s = sat;
+  const h2 = (h + 30) % 360;
+  const h3 = (h + 60) % 360;
+
+  // Sky gradients per time of day (perpetual twilight, no sun)
+  const SKY_GRADIENTS = {
+    earlyMorning: "linear-gradient(180deg, #1a1a3a 0%, #2a3a5a 30%, #3a4a5a 60%, #5a5a5a 80%, #7a6a5a 100%)",
+    morning: "linear-gradient(180deg, #1a2a4a 0%, #2a4a6a 30%, #3a5a6a 55%, #4a6a6a 75%, #5a7a6a 100%)",
+    afternoon: "linear-gradient(180deg, #1a2040 0%, #2a3a5a 30%, #3a4a6a 50%, #4a5a6a 68%, #5a6a70 82%, #6a7a78 100%)",
+    evening: "linear-gradient(180deg, #1a1a3a 0%, #3a2a4a 25%, #5a3a4a 45%, #7a4a4a 65%, #8a5a4a 80%, #9a6a4a 100%)",
+    lateNight: "linear-gradient(180deg, #08081a 0%, #0f0f2a 30%, #151530 60%, #1a1a3a 100%)",
+  };
+
+  const HORIZON_GLOWS = {
+    earlyMorning: "rgba(180, 140, 100, 0.12)",
+    morning: "rgba(120, 170, 140, 0.08)",
+    afternoon: "rgba(150, 175, 190, 0.14)",
+    evening: "rgba(200, 130, 90, 0.1)",
+    lateNight: "rgba(80, 80, 120, 0.04)",
+  };
+
+  const STAR_BRIGHTNESS = {
+    earlyMorning: 0.6,
+    morning: 0.35,
+    afternoon: 0.25,
+    evening: 0.5,
+    lateNight: 0.9,
+  };
+
+  const starBright = STAR_BRIGHTNESS[mood] || 0.5;
+
+  // Stars -- bigger and brighter
+  const stars = useRef(
+    Array.from({ length: 80 }, (_, i) => ({
+      id: i, x: Math.random() * 100, y: Math.random() * 70,
+      size: Math.random() > 0.85 ? Math.random() * 3 + 3 : Math.random() * 2 + 1.5,
+      twinkleDur: Math.random() * 3 + 2,
+      twinkleDelay: Math.random() * 5,
+      brightness: Math.random() * 0.4 + 0.6,
+    }))
+  ).current;
+
+  // Motes near Glim -- bigger and glowier
+  const motes = useRef(
+    Array.from({ length: 12 }, (_, i) => ({
+      id: i, x: 30 + Math.random() * 40, y: 20 + Math.random() * 55,
+      size: Math.random() * 4 + 2, dur: Math.random() * 7 + 5,
+      delay: Math.random() * 6, opacity: Math.random() * 0.4 + 0.3,
+    }))
+  ).current;
+
+  // Shooting star
+  const [shootingStar, setShootingStar] = useState(null);
+  useEffect(() => {
+    const starTimer = { current: null };
+    const schedule = () => {
+      starTimer.current = setTimeout(() => {
+        setShootingStar({
+          id: Date.now(),
+          startX: Math.random() * 50 + 5,
+          startY: Math.random() * 25 + 3,
+          dur: Math.random() * 0.6 + 0.5,
+        });
+        setTimeout(() => setShootingStar(null), 2000);
+        schedule();
+      }, Math.random() * 25000 + 12000);
+    };
+    schedule();
+    return () => clearTimeout(starTimer.current);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+
+      {/* ===== SKY CROSSFADE LAYERS ===== */}
+      {Object.entries(SKY_GRADIENTS).map(([key, gradient]) => (
+        <div key={key} className="absolute inset-0" style={{
+          background: gradient,
+          opacity: mood === key ? 1 : 0,
+          transition: "opacity 120s ease",
+        }} />
+      ))}
+
+      {/* ===== HORIZON GLOW ===== */}
+      <div className="absolute" style={{
+        bottom: "18%", left: 0, right: 0, height: "25%",
+        background: `radial-gradient(ellipse at 50% 100%, ${HORIZON_GLOWS[mood]}, transparent 70%)`,
+        transition: "background 120s ease",
+      }} />
+
+      {/* ===== MOON (late night only) ===== */}
+      <div className="absolute" style={{
+        left: "75%", top: "12%", width: 28, height: 28, borderRadius: "50%",
+        backgroundColor: "#d0d8e8",
+        boxShadow: "0 0 20px rgba(200,210,230,0.3), 0 0 50px rgba(200,210,230,0.15)",
+        transform: "translate(-50%, -50%)",
+        opacity: mood === "lateNight" ? 1 : 0,
+        transition: "opacity 120s ease",
+      }} />
+
+      {/* ===== TWINKLING STARS ===== */}
+      {stars.map((st) => (
+        <div key={st.id} className="absolute rounded-full" style={{
+          left: `${st.x}%`, top: `${st.y}%`,
+          width: st.size, height: st.size,
+          backgroundColor: `hsla(${(h + (st.id % 4) * 20) % 360}, ${s - 10}%, 90%, ${st.brightness * starBright})`,
+          boxShadow: st.size > 3 ? `0 0 ${st.size * 2}px hsla(${(h + (st.id % 4) * 20) % 360}, ${s}%, 80%, ${0.4 * starBright})` : "none",
+          animation: `twinkle ${st.twinkleDur}s ease-in-out ${st.twinkleDelay}s infinite`,
+        }} />
+      ))}
+
+      {/* ===== SHOOTING STAR ===== */}
+      {shootingStar && (
+        <div key={shootingStar.id} className="absolute" style={{
+          left: `${shootingStar.startX}%`, top: `${shootingStar.startY}%`,
+          width: 4, height: 4, borderRadius: "50%",
+          backgroundColor: `hsla(${h2}, ${s}%, 95%, 1)`,
+          boxShadow: `0 0 6px 2px hsla(${h2}, ${s}%, 90%, 0.8), 0 0 15px hsla(${h2}, ${s}%, 85%, 0.5)`,
+          animation: `shootingStar ${shootingStar.dur}s linear forwards`,
+        }} />
+      )}
+
+      {/* ===== NEBULA WISPS ===== */}
+      <div className="absolute" style={{
+        left: "5%", top: "10%", width: "40%", height: "30%",
+        borderRadius: "50%",
+        background: `radial-gradient(ellipse, hsla(${h}, ${s}%, 50%, 0.18) 0%, hsla(${h}, ${s}%, 40%, 0.05) 50%, transparent 70%)`,
+        animation: "nebulaFloat1 25s ease-in-out infinite",
+        filter: "blur(40px)",
+      }} />
+      <div className="absolute" style={{
+        right: "0%", top: "20%", width: "35%", height: "25%",
+        borderRadius: "50%",
+        background: `radial-gradient(ellipse, hsla(${h2}, ${s}%, 55%, 0.15) 0%, hsla(${h2}, ${s}%, 45%, 0.04) 50%, transparent 70%)`,
+        animation: "nebulaFloat2 30s ease-in-out infinite",
+        filter: "blur(45px)",
+      }} />
+      <div className="absolute" style={{
+        left: "30%", top: "0%", width: "30%", height: "22%",
+        borderRadius: "50%",
+        background: `radial-gradient(ellipse, hsla(${h3}, ${s}%, 50%, 0.12) 0%, hsla(${h3}, ${s}%, 40%, 0.03) 50%, transparent 70%)`,
+        animation: "nebulaFloat3 35s ease-in-out infinite",
+        filter: "blur(35px)",
+      }} />
+
+      {/* ===== LANDSCAPE SILHOUETTE ===== */}
+      <svg className="absolute bottom-0 w-full" viewBox="0 0 800 200" preserveAspectRatio="none"
+        style={{ height: "28%" }}>
+        {/* Far mountains */}
+        <path d="M0,160 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
+          fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
+        {/* Near mountains */}
+        <path d="M0,170 L60,120 L120,145 L200,95 L280,130 L360,100 L420,140 L500,110 L580,135 L660,105 L740,130 L800,115 L800,200 L0,200 Z"
+          fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
+
+        {/* Tree line -- left cluster (pines, grounded) */}
+        {/* Pine 1 - medium */}
+        <path d="M28,175 L28,165 L18,165 L23,155 L15,155 L23,143 L17,143 L30,125 L43,143 L37,143 L45,155 L37,155 L42,165 L32,165 L32,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 2 - tall */}
+        <path d="M58,175 L58,163 L48,163 L53,152 L45,152 L52,140 L46,140 L53,128 L47,128 L60,108 L73,128 L67,128 L74,140 L68,140 L75,152 L67,152 L72,163 L62,163 L62,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 3 - short */}
+        <path d="M95,175 L95,166 L87,166 L91,157 L85,157 L97,142 L109,157 L103,157 L107,166 L99,166 L99,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 4 - medium */}
+        <path d="M122,175 L122,164 L114,164 L118,154 L112,154 L120,140 L114,140 L125,122 L136,140 L130,140 L138,154 L132,154 L136,164 L128,164 L128,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+
+        {/* Tree line -- right cluster */}
+        {/* Pine 5 - tall */}
+        <path d="M680,175 L680,163 L670,163 L675,152 L667,152 L674,140 L668,140 L675,128 L669,128 L682,108 L695,128 L689,128 L696,140 L690,140 L697,152 L689,152 L694,163 L684,163 L684,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 6 - medium */}
+        <path d="M710,175 L710,164 L702,164 L706,154 L700,154 L708,140 L702,140 L713,122 L724,140 L718,140 L726,154 L720,154 L724,164 L716,164 L716,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 7 - short */}
+        <path d="M740,175 L740,166 L733,166 L737,157 L731,157 L743,142 L755,157 L749,157 L753,166 L746,166 L746,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+        {/* Pine 8 - medium */}
+        <path d="M770,175 L770,165 L762,165 L766,155 L760,155 L768,142 L762,142 L773,125 L784,142 L778,142 L786,155 L780,155 L784,165 L776,165 L776,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+
+        {/* Scattered single pines */}
+        {/* Lone pine mid-left */}
+        <path d="M192,175 L192,166 L185,166 L189,157 L183,157 L195,142 L207,157 L201,157 L205,166 L198,166 L198,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+        {/* Tall pine center-left */}
+        <path d="M310,175 L310,165 L303,165 L307,155 L301,155 L308,143 L302,143 L313,126 L324,143 L318,143 L325,155 L319,155 L323,165 L316,165 L316,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+        {/* Small pine center */}
+        <path d="M450,175 L450,167 L445,167 L453,155 L461,167 L456,167 L456,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
+        {/* Pine mid-right */}
+        <path d="M565,175 L565,166 L558,166 L562,157 L556,157 L568,142 L580,157 L574,157 L578,166 L571,166 L571,175 Z"
+          fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
+
+        {/* Ground */}
+        <path d="M0,175 Q200,170 400,175 Q600,180 800,172 L800,200 L0,200 Z"
+          fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+      </svg>
+
+      {/* ===== FLOATING MOTES (near Glim) ===== */}
+      {motes.map((p) => (
+        <div key={`m${p.id}`} className="absolute rounded-full" style={{
+          left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
+          backgroundColor: `hsla(${hue}, ${sat}%, 85%, ${p.opacity})`,
+          boxShadow: `0 0 ${p.size * 2}px hsla(${hue}, ${sat}%, 80%, ${p.opacity * 0.5})`,
+          animation: `particleDrift ${p.dur}s ease-in-out ${p.delay}s infinite`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+//  Ambient bugs -- little glowing critters that fly around
+// ============================================================
+function AmbientBugs({ hue, chasedBugId }) {
+  const bugs = useRef(
+    Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      dur: Math.random() * 8 + 10,
+      delay: Math.random() * 5,
+      size: Math.random() * 2 + 3,
+      // Each bug gets a unique flight path via different animation
+      pathIndex: i % 5,
+    }))
+  ).current;
+
+  const bugHue = (hue + 90) % 360;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 5 }}>
+      {bugs.map((b) => (
+        <div key={b.id} className="absolute" style={{
+          width: b.size, height: b.size, borderRadius: "50%",
+          backgroundColor: `hsla(${bugHue + b.id * 15}, 70%, 75%, ${chasedBugId === b.id ? 1 : 0.7})`,
+          boxShadow: `0 0 ${b.size * 2}px hsla(${bugHue + b.id * 15}, 70%, 70%, ${chasedBugId === b.id ? 0.8 : 0.4})`,
+          animation: `bugPath${b.pathIndex} ${b.dur}s ease-in-out ${b.delay}s infinite`,
+          transition: "opacity 0.3s ease",
+          opacity: chasedBugId === b.id ? 1 : 0.8,
+          transform: chasedBugId === b.id ? "scale(1.5)" : "scale(1)",
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+//  Speech bubble
+// ============================================================
+function SpeechBubble({ text, visible, isWellness }) {
+  return (
+    <div className="absolute left-1/2 transition-all duration-500 pointer-events-none select-none"
+      style={{
+        bottom: "100%", marginBottom: "10px", transform: "translateX(-50%)",
+        opacity: visible ? 1 : 0, scale: visible ? "1" : "0.8", width: "max-content",
+      }}>
+      <div className="relative px-4 py-2 rounded-2xl text-center" style={{
+        maxWidth: 560, width: "max-content", whiteSpace: "normal", lineHeight: 1.4,
+        background: isWellness ? "rgba(100, 220, 180, 0.15)" : "rgba(255,255,255,0.1)",
+        backdropFilter: "blur(12px)",
+        border: isWellness ? "1px solid rgba(100, 220, 180, 0.3)" : "1px solid rgba(255,255,255,0.15)",
+        color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace",
+        fontSize: "13px", letterSpacing: "0.3px",
+      }}>
+        {isWellness && <span style={{ marginRight: 4, fontSize: 11, opacity: 0.7 }}>~</span>}
+        {text}
+        <div className="absolute left-1/2 -bottom-1.5" style={{
+          transform: "translateX(-50%) rotate(45deg)", width: 8, height: 8,
+          background: isWellness ? "rgba(100, 220, 180, 0.15)" : "rgba(255,255,255,0.1)",
+          border: isWellness ? "1px solid rgba(100, 220, 180, 0.3)" : "1px solid rgba(255,255,255,0.15)",
+          borderTop: "none", borderLeft: "none",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+//  The Creature
+// ============================================================
+function OwlMoth({ onClick, onDoubleClick,
+  squeezed, hue, sat, mood, isHappy, isPuffed, isPurring, isBlinking,
+  specialAnim, antennaPerk, wingTwitchSide, pupilOffset }) {
+
+  const sleepy = mood === "lateNight" || specialAnim === "sleep";
+  const h = hue, s = sat;
+  const h2 = (h + 30) % 360, h3 = (h + 60) % 360;
+
+  const isFlying = specialAnim === "flyAttempt";
+  const isChasing = specialAnim === "chaseBug";
+  const isSleeping = specialAnim === "sleep";
+  const isSecret = specialAnim === "secret";
+
+  // Pupil position from eye tracking
+  const px = pupilOffset.x * 3.5;
+  const py = pupilOffset.y * 2.5;
+
+  // Eye sizes - squish to line for sleep/purr/blink
+  const eyesClosed = isSleeping || isPurring || isBlinking;
+  const eyeRx = sleepy ? 8 : isHappy ? 14 : isPuffed ? 14 : 12;
+  const eyeRy = eyesClosed ? 1.5 : sleepy ? 8 : isHappy ? 14 : isPuffed ? 14 : 12;
+  const pupilRy = eyesClosed ? 0 : sleepy ? 3 : isPuffed ? 8 : 7;
+
+  // Body scale
+  let bodyTransform = "scale(1,1)";
+  let bodyAnim = "owlFloat 4s ease-in-out infinite";
+  if (squeezed) { bodyTransform = "scale(1.12, 0.86)"; bodyAnim = "none"; }
+  else if (isPuffed) { bodyTransform = "scale(1.18, 1.18)"; bodyAnim = "none"; }
+  else if (isPurring) { bodyTransform = "scale(1.04, 0.97)"; bodyAnim = "purrRock 1.2s ease-in-out infinite"; }
+  else if (isFlying) { bodyAnim = "flyAttempt 1.5s ease-in-out"; }
+  else if (isChasing) { bodyAnim = "chaseBug 3s ease-in-out"; }
+  else if (isSecret) { bodyAnim = "secretSpin 2s ease-in-out"; }
+  else if (isHappy) { bodyAnim = "owlBounce 0.5s ease-in-out 3"; }
+
+  return (
+    <svg viewBox="0 0 220 240" width="360" height="390"
+      onClick={onClick} onDoubleClick={onDoubleClick}
+      className="cursor-pointer select-none"
+      style={{
+        filter: `drop-shadow(0 0 ${isPuffed ? 25 : isPurring ? 22 : 18}px hsla(${h}, ${s}%, 65%, ${isPuffed ? 0.7 : 0.5})) drop-shadow(0 0 40px hsla(${h}, ${s}%, 55%, 0.2))`,
+        transition: "filter 0.5s ease",
+      }}>
+      <defs>
+        <radialGradient id="bodyG" cx="50%" cy="42%" r="48%">
+          <stop offset="0%" stopColor={`hsla(${h}, ${s}%, 82%, 0.95)`} />
+          <stop offset="50%" stopColor={`hsla(${h}, ${s - 5}%, 65%, 0.8)`} />
+          <stop offset="100%" stopColor={`hsla(${h}, ${s - 10}%, 48%, 0.6)`} />
+        </radialGradient>
+        <radialGradient id="glow" cx="50%" cy="38%" r="35%">
+          <stop offset="0%" stopColor={`hsla(${h}, ${s + 10}%, 90%, 0.5)`} />
+          <stop offset="100%" stopColor={`hsla(${h}, ${s}%, 80%, 0)`} />
+        </radialGradient>
+        <radialGradient id="belly" cx="50%" cy="55%" r="30%">
+          <stop offset="0%" stopColor={`hsla(${h2}, ${s - 10}%, 88%, 0.6)`} />
+          <stop offset="100%" stopColor={`hsla(${h2}, ${s - 10}%, 75%, 0)`} />
+        </radialGradient>
+        <radialGradient id="spec" cx="38%" cy="30%" r="22%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+      </defs>
+
+      <g style={{
+        transformOrigin: "110px 120px",
+        transform: bodyTransform,
+        transition: isPuffed || isPurring ? "transform 0.3s ease" : "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        animation: bodyAnim,
+      }}>
+        {/* Tail */}
+        <g style={{ animation: isPurring ? "tailPurr 0.8s ease-in-out infinite" : "tailCurl 3s ease-in-out infinite" }}>
+          <path d="M110,185 Q115,200 125,208 Q140,218 148,210 Q155,200 145,195 Q135,192 132,198"
+            stroke={`hsla(${h}, ${s - 5}%, 60%, 0.7)`} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <circle cx="132" cy="198" r="4" fill={`hsla(${h2}, ${s}%, 75%, 0.7)`}
+            style={{ animation: "softPulse 2.5s ease-in-out infinite" }} />
+        </g>
+
+        {/* Wing-arms */}
+        <g style={{
+          transformOrigin: "70px 130px",
+          animation: squeezed ? "wingFlapL 0.08s linear 8"
+            : isFlying ? "wingFlapL 0.06s linear 25"
+            : isHappy ? "wingFlapL 0.1s ease-in-out 12"
+            : wingTwitchSide === "left" ? "wingTwitchL 0.3s ease-in-out"
+            : "wingDriftL 4s ease-in-out infinite",
+        }}>
+          <ellipse cx="52" cy="125" rx="35" ry="22" fill={`hsla(${h}, ${s - 5}%, 62%, 0.55)`} transform="rotate(-10 52 125)" />
+          <ellipse cx="52" cy="125" rx="35" ry="22" fill="url(#spec)" transform="rotate(-10 52 125)" opacity="0.3" />
+          {/* Wing dots */}
+          <circle cx="40" cy="120" r="2.5" fill={`hsla(${h2}, ${s}%, 80%, 0.4)`} />
+          <circle cx="35" cy="127" r="1.8" fill={`hsla(${h3}, ${s}%, 78%, 0.3)`} />
+          <circle cx="45" cy="130" r="2" fill={`hsla(${h2}, ${s}%, 75%, 0.35)`} />
+          <circle cx="50" cy="118" r="3" fill={`hsla(${h3}, ${s}%, 80%, 0.25)`} />
+          <circle cx="30" cy="124" r="1.5" fill={`hsla(${h2}, ${s}%, 82%, 0.3)`} />
+        </g>
+        <g style={{
+          transformOrigin: "150px 130px",
+          animation: squeezed ? "wingFlapR 0.08s linear 8"
+            : isFlying ? "wingFlapR 0.06s linear 25"
+            : isHappy ? "wingFlapR 0.1s ease-in-out 12"
+            : wingTwitchSide === "right" ? "wingTwitchR 0.3s ease-in-out"
+            : "wingDriftR 4s ease-in-out infinite",
+        }}>
+          <ellipse cx="168" cy="125" rx="35" ry="22" fill={`hsla(${h}, ${s - 5}%, 62%, 0.55)`} transform="rotate(10 168 125)" />
+          <ellipse cx="168" cy="125" rx="35" ry="22" fill="url(#spec)" transform="rotate(10 168 125)" opacity="0.3" />
+          {/* Wing dots */}
+          <circle cx="180" cy="120" r="2.5" fill={`hsla(${h2}, ${s}%, 80%, 0.4)`} />
+          <circle cx="185" cy="127" r="1.8" fill={`hsla(${h3}, ${s}%, 78%, 0.3)`} />
+          <circle cx="175" cy="130" r="2" fill={`hsla(${h2}, ${s}%, 75%, 0.35)`} />
+          <circle cx="170" cy="118" r="3" fill={`hsla(${h3}, ${s}%, 80%, 0.25)`} />
+          <circle cx="190" cy="124" r="1.5" fill={`hsla(${h2}, ${s}%, 82%, 0.3)`} />
+        </g>
+
+        {/* Body */}
+        <ellipse cx="110" cy="130" rx={isPuffed ? 52 : 48} ry={isPuffed ? 58 : 55} fill="url(#bodyG)"
+          style={{ transition: "rx 0.3s ease, ry 0.3s ease" }} />
+        <ellipse cx="110" cy="130" rx="48" ry="55" fill="url(#glow)" />
+        <ellipse cx="110" cy="142" rx="28" ry="32" fill="url(#belly)" />
+
+        {/* Body dots -- scattered like a fawn */}
+        {/* Left side */}
+        <circle cx="82" cy="115" r="2.5" fill={`hsla(${h2}, ${s}%, 82%, 0.35)`} />
+        <circle cx="78" cy="128" r="1.8" fill={`hsla(${h3}, ${s}%, 80%, 0.25)`} />
+        <circle cx="85" cy="138" r="2" fill={`hsla(${h2}, ${s}%, 78%, 0.3)`} />
+        <circle cx="75" cy="142" r="1.5" fill={`hsla(${h3}, ${s}%, 82%, 0.2)`} />
+        <circle cx="88" cy="122" r="1.5" fill={`hsla(${h2}, ${s}%, 85%, 0.2)`} />
+        {/* Right side */}
+        <circle cx="138" cy="115" r="2.5" fill={`hsla(${h2}, ${s}%, 82%, 0.35)`} />
+        <circle cx="142" cy="128" r="1.8" fill={`hsla(${h3}, ${s}%, 80%, 0.25)`} />
+        <circle cx="135" cy="138" r="2" fill={`hsla(${h2}, ${s}%, 78%, 0.3)`} />
+        <circle cx="145" cy="142" r="1.5" fill={`hsla(${h3}, ${s}%, 82%, 0.2)`} />
+        <circle cx="132" cy="122" r="1.5" fill={`hsla(${h2}, ${s}%, 85%, 0.2)`} />
+        {/* Belly area */}
+        <circle cx="102" cy="145" r="1.8" fill={`hsla(${h2}, ${s - 5}%, 88%, 0.25)`} />
+        <circle cx="118" cy="143" r="2" fill={`hsla(${h3}, ${s}%, 85%, 0.2)`} />
+        <circle cx="110" cy="155" r="1.5" fill={`hsla(${h2}, ${s - 5}%, 86%, 0.2)`} />
+        <circle cx="105" cy="160" r="1.2" fill={`hsla(${h3}, ${s}%, 84%, 0.18)`} />
+        <circle cx="115" cy="158" r="1.8" fill={`hsla(${h2}, ${s}%, 87%, 0.22)`} />
+        {/* Upper body */}
+        <circle cx="95" cy="108" r="1.5" fill={`hsla(${h3}, ${s}%, 83%, 0.2)`} />
+        <circle cx="125" cy="108" r="1.5" fill={`hsla(${h3}, ${s}%, 83%, 0.2)`} />
+        <circle cx="100" cy="168" r="1" fill={`hsla(${h2}, ${s}%, 85%, 0.15)`} />
+        <circle cx="120" cy="166" r="1.2" fill={`hsla(${h3}, ${s}%, 84%, 0.15)`} />
+
+        {/* Feet */}
+        <ellipse cx="96" cy="182" rx="9" ry="5" fill={`hsla(${h}, ${s - 5}%, 70%, 0.7)`} />
+        <ellipse cx="124" cy="182" rx="9" ry="5" fill={`hsla(${h}, ${s - 5}%, 70%, 0.7)`} />
+
+        {/* Owl face disc */}
+        <ellipse cx="110" cy="98" rx="32" ry="28" fill={`hsla(${h2}, ${s - 15}%, 88%, 0.35)`} />
+
+        {/* Eyes with tracking */}
+        <g>
+          {/* Left eye */}
+          <ellipse cx="97" cy="95" rx={eyeRx} ry={eyeRy} fill="rgba(255,255,255,0.95)"
+            style={{ transition: "ry 0.25s ease, rx 0.3s ease" }} />
+          {!eyesClosed && <circle cx={97 + px} cy={95 + py} r={pupilRy}
+            fill={`hsl(${h + 40}, 40%, 15%)`}
+            style={{ transition: "cx 0.1s ease, cy 0.1s ease, r 0.2s ease" }} />}
+          {!eyesClosed && !isHappy && (
+            <circle cx={99 + px * 0.3} cy={92 + py * 0.3} r="2.5" fill="rgba(255,255,255,0.9)" />
+          )}
+
+          {/* Right eye */}
+          <ellipse cx="123" cy="95" rx={eyeRx} ry={eyeRy} fill="rgba(255,255,255,0.95)"
+            style={{ transition: "ry 0.25s ease, rx 0.3s ease" }} />
+          {!eyesClosed && <circle cx={123 + px} cy={95 + py} r={pupilRy}
+            fill={`hsl(${h + 40}, 40%, 15%)`}
+            style={{ transition: "cx 0.1s ease, cy 0.1s ease, r 0.2s ease" }} />}
+          {!eyesClosed && !isHappy && (
+            <circle cx={125 + px * 0.3} cy={92 + py * 0.3} r="2.5" fill="rgba(255,255,255,0.9)" />
+          )}
+        </g>
+
+        {/* Zzz when sleeping */}
+        {isSleeping && (
+          <g style={{ animation: "zzzFloat 2s ease-in-out infinite" }}>
+            <text x="145" y="75" fill={`hsla(${h}, ${s}%, 75%, 0.5)`} fontSize="14"
+              fontFamily="'Courier New', monospace">z</text>
+            <text x="155" y="60" fill={`hsla(${h}, ${s}%, 75%, 0.35)`} fontSize="11"
+              fontFamily="'Courier New', monospace">z</text>
+            <text x="162" y="48" fill={`hsla(${h}, ${s}%, 75%, 0.2)`} fontSize="9"
+              fontFamily="'Courier New', monospace">z</text>
+          </g>
+        )}
+
+        {/* Beak */}
+        <path d={isHappy ? "M106,106 L110,112 L114,106" : "M108,105 L110,109 L112,105"}
+          fill={`hsla(${h + 30}, ${s - 20}%, 65%, 0.8)`} style={{ transition: "d 0.3s ease" }} />
+
+        {/* Blush */}
+        <ellipse cx="85" cy="103" rx={isHappy || isPurring ? 8 : 6} ry={isHappy || isPurring ? 4 : 3}
+          fill={`hsla(${h3}, 60%, 72%, ${isHappy || isPurring ? 0.5 : 0.3})`}
+          style={{ transition: "all 0.3s ease" }} />
+        <ellipse cx="135" cy="103" rx={isHappy || isPurring ? 8 : 6} ry={isHappy || isPurring ? 4 : 3}
+          fill={`hsla(${h3}, 60%, 72%, ${isHappy || isPurring ? 0.5 : 0.3})`}
+          style={{ transition: "all 0.3s ease" }} />
+
+        {/* Antennae */}
+        <g style={{
+          animation: antennaPerk ? "antennaPerkL 0.4s ease-out" : "antennaL 3.5s ease-in-out infinite",
+        }}>
+          <path d="M98,75 Q92,55 88,42" stroke={`hsla(${h}, ${s}%, 70%, 0.6)`}
+            strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          <circle cx="88" cy="42" r="6" fill={`hsla(${h2}, ${s + 5}%, 78%, 0.85)`}
+            style={{ animation: "softPulse 2s ease-in-out infinite" }} />
+          <circle cx="88" cy="42" r="9" fill={`hsla(${h2}, ${s}%, 80%, 0.15)`}
+            style={{ animation: "softPulse 2s ease-in-out 0.3s infinite" }} />
+        </g>
+        <g style={{
+          animation: antennaPerk ? "antennaPerkR 0.4s ease-out" : "antennaR 3.5s ease-in-out infinite",
+        }}>
+          <path d="M122,75 Q128,55 132,42" stroke={`hsla(${h}, ${s}%, 70%, 0.6)`}
+            strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          <circle cx="132" cy="42" r="6" fill={`hsla(${h2}, ${s + 5}%, 78%, 0.85)`}
+            style={{ animation: "softPulse 2s ease-in-out 0.5s infinite" }} />
+          <circle cx="132" cy="42" r="9" fill={`hsla(${h2}, ${s}%, 80%, 0.15)`}
+            style={{ animation: "softPulse 2s ease-in-out 0.8s infinite" }} />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+// ============================================================
+//  Persistent Reminder
+// ============================================================
+function PersistentReminder({ text, type, onDismiss }) {
+  const bg = type === "move" ? "rgba(255, 180, 100, 0.15)" : "rgba(130, 180, 255, 0.15)";
+  const border = type === "move" ? "rgba(255, 180, 100, 0.35)" : "rgba(130, 180, 255, 0.35)";
+  return (
+    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
+      background: bg, border: `1px solid ${border}`, backdropFilter: "blur(10px)",
+      fontFamily: "'Courier New', monospace", fontSize: "13px", color: "rgba(255,255,255,0.9)",
+      animation: "reminderPulse 3s ease-in-out infinite", maxWidth: 560,
+    }}>
+      <div className="flex-1" style={{ lineHeight: 1.4 }}>{text}</div>
+      <button onClick={onDismiss} className="flex-shrink-0 px-3 py-1 rounded-xl cursor-pointer" style={{
+        background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+        color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace", fontSize: "12px",
+        letterSpacing: "0.5px", transition: "all 0.2s ease",
+      }}
+        onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.25)"; }}
+        onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.12)"; }}
+      >done!</button>
+    </div>
+  );
+}
+
+// ============================================================
+//  Main App
+// ============================================================
+function DesktopPet() {
+  const [message, setMessage] = useState("");
+  const [showBubble, setShowBubble] = useState(false);
+  const [isWellness, setIsWellness] = useState(false);
+  const [isHappy, setIsHappy] = useState(false);
+  const [squeezed, setSqueezed] = useState(false);
+  const [mood, setMood] = useState(getTimeOfDay);
+  const [colors, setColors] = useState(getColors);
+  const [clickCount, setClickCount] = useState(0);
+  const [moveReminder, setMoveReminder] = useState(null);
+  const [eyesReminder, setEyesReminder] = useState(null);
+
+  // ---- Personality state ----
+  const [isPuffed, setIsPuffed] = useState(false);
+  const [isPurring, setIsPurring] = useState(false);
+  const [specialAnim, setSpecialAnim] = useState(null);
+  const [antennaPerk, setAntennaPerk] = useState(false);
+  const [wingTwitchSide, setWingTwitchSide] = useState(null);
+  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
+  const [chasedBugId, setChasedBugId] = useState(null);
+  const [currentMsgType, setCurrentMsgType] = useState(null);
+
+  // ---- Drag state ----
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
+  const [isWandering, setIsWandering] = useState(false);
+  const dragStartRef = useRef(null);
+  const wanderTimerRef = useRef(null);
+  const wanderDriftRef = useRef(null);
+  const justDraggedRef = useRef(false);
+  const dragVelocityRef = useRef([]);
+  const shakeTimerRef = useRef(null);
+  const [isShaken, setIsShaken] = useState(false);
+  const [isBlinking, setIsBlinking] = useState(false);
+
+  // ---- Settings state ----
+  const [showSettings, setShowSettings] = useState(false);
+  const [wellnessInterval, setWellnessInterval] = useState(20);
+  const [moveInterval, setMoveInterval] = useState(45);
+  const [eyesInterval, setEyesInterval] = useState(20);
+
+  // ---- Journal state ----
+  const [showJournal, setShowJournal] = useState(false);
+  const [journalView, setJournalView] = useState("write"); // "write" | "past"
+  const [journalText, setJournalText] = useState("");
+  const [journalPrompt, setJournalPrompt] = useState(() => pickRandom(JOURNAL_PROMPTS));
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [journalLoading, setJournalLoading] = useState(true);
+
+  // ---- Refs ----
+  const bubbleTimer = useRef(null);
+  const idleTimer = useRef(null);
+  const wellnessTimer = useRef(null);
+  const happyTimer = useRef(null);
+  const moveTimer = useRef(null);
+  const eyesTimer = useRef(null);
+  const lastWellnessRef = useRef("");
+  const lastEncouragementRef = useRef("");
+  const clickTimesRef = useRef([]);
+  const lastInteractionRef = useRef(Date.now());
+  const holdTimerRef = useRef(null);
+  const creatureRef = useRef(null);
+  const puffTimerRef = useRef(null);
+  const specialTimerRef = useRef(null);
+  const isSleepingRef = useRef(false);
+
+  // ---- Time updates ----
+  useEffect(() => {
+    const iv = setInterval(() => { setMood(getTimeOfDay()); setColors(getColors()); }, 60000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Keep sleep ref in sync
+  useEffect(() => {
+    isSleepingRef.current = specialAnim === "sleep";
+  }, [specialAnim]);
+
+  // ---- Journal: load entries from persistent storage ----
+  useEffect(() => {
+    const loadEntries = async () => {
+      try {
+        const result = await window.storage.get("glim-journal");
+        if (result && result.value) {
+          setJournalEntries(JSON.parse(result.value));
+        }
+      } catch (e) {
+        // No entries yet or storage unavailable
+      }
+      setJournalLoading(false);
+    };
+    loadEntries();
+  }, []);
+
+  // ---- Poke count: load from persistent storage ----
+  useEffect(() => {
+    const loadPokes = async () => {
+      try {
+        const result = await window.storage.get("glim-pokes");
+        if (result && result.value) {
+          setClickCount(parseInt(result.value, 10) || 0);
+        }
+      } catch (e) {
+        // No saved pokes yet
+      }
+    };
+    loadPokes();
+  }, []);
+
+  // ---- Poke count: save when it changes ----
+  useEffect(() => {
+    if (clickCount > 0) {
+      window.storage.set("glim-pokes", String(clickCount)).catch(() => {});
+    }
+  }, [clickCount]);
+
+  // ---- Settings: load from persistent storage ----
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const result = await window.storage.get("glim-settings");
+        if (result && result.value) {
+          const s = JSON.parse(result.value);
+          if (s.wellnessInterval) setWellnessInterval(s.wellnessInterval);
+          if (s.moveInterval) setMoveInterval(s.moveInterval);
+          if (s.eyesInterval) setEyesInterval(s.eyesInterval);
+        }
+      } catch (e) {
+        // No saved settings yet - use defaults
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // ---- Settings: save when any interval changes ----
+  const settingsInitRef = useRef(false);
+  useEffect(() => {
+    // Skip the initial render to avoid overwriting storage with defaults
+    // before the load effect has a chance to run
+    if (!settingsInitRef.current) { settingsInitRef.current = true; return; }
+    window.storage.set("glim-settings", JSON.stringify({
+      wellnessInterval, moveInterval, eyesInterval,
+    })).catch(() => {});
+  }, [wellnessInterval, moveInterval, eyesInterval]);
+
+  // ---- Eye tracking ----
+  // Uses isSleepingRef so the callback is stable (no dep on specialAnim)
+  const handleMouseMove = useCallback((e) => {
+    if (!creatureRef.current || isSleepingRef.current) return;
+    const rect = creatureRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height * 0.4;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = 300;
+    const norm = Math.min(dist / maxDist, 1);
+    setPupilOffset({
+      x: (dx / (dist || 1)) * norm,
+      y: (dy / (dist || 1)) * norm,
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
+  // ---- Rare blink (every 45-90s, very infrequent) ----
+  // Uses isPurringRef to avoid stale closure; cleanup kills old chain on unmount
+  const isPurringRef = useRef(false);
+  useEffect(() => { isPurringRef.current = isPurring; }, [isPurring]);
+
+  useEffect(() => {
+    const blinkTimer = { current: null };
+    const scheduleBlink = () => {
+      blinkTimer.current = setTimeout(() => {
+        if (!isSleepingRef.current && !isPurringRef.current) {
+          setIsBlinking(true);
+          setTimeout(() => setIsBlinking(false), 250);
+        }
+        scheduleBlink();
+      }, Math.random() * 45000 + 45000);
+    };
+    scheduleBlink();
+    return () => clearTimeout(blinkTimer.current);
+  }, []);
+
+  // ---- Random wing twitches ----
+  useEffect(() => {
+    const twitchTimer = { current: null };
+    const scheduleTwitch = () => {
+      twitchTimer.current = setTimeout(() => {
+        const side = Math.random() > 0.5 ? "left" : "right";
+        setWingTwitchSide(side);
+        setTimeout(() => setWingTwitchSide(null), 350);
+        scheduleTwitch();
+      }, Math.random() * 12000 + 6000);
+    };
+    scheduleTwitch();
+    return () => clearTimeout(twitchTimer.current);
+  }, []);
+
+  // ---- Idle wandering ----
+  useEffect(() => {
+    const scheduleWander = () => {
+      const delay = Math.random() * 20000 + 15000; // every 15-35s
+      wanderTimerRef.current = setTimeout(() => {
+        if (!isDragging && !isReturning && !specialAnim) {
+          setIsWandering(true);
+          const wx = (Math.random() - 0.5) * 40;
+          const wy = (Math.random() - 0.5) * 25;
+          setDragPos({ x: wx, y: wy });
+          // Drift back slowly
+          wanderDriftRef.current = setTimeout(() => {
+            setDragPos({ x: 0, y: 0 });
+            wanderDriftRef.current = setTimeout(() => setIsWandering(false), 3000);
+          }, 2500);
+        }
+        scheduleWander();
+      }, delay);
+    };
+    scheduleWander();
+    return () => { clearTimeout(wanderTimerRef.current); clearTimeout(wanderDriftRef.current); };
+  }, [isDragging, isReturning, specialAnim]);
+
+  // ---- Antenna perk on message ----
+  useEffect(() => {
+    if (showBubble) {
+      setAntennaPerk(true);
+      const t = setTimeout(() => setAntennaPerk(false), 500);
+      return () => clearTimeout(t);
+    }
+  }, [showBubble]);
+
+  // ---- Unprompted behaviors ----
+  // Single weighted random draw so documented percentages are exact.
+  // Weights: secret 3%, sleep 3% (requires >15min idle), fly 20%,
+  //          chase 25%, discovery 30%, nothing 19%.  Total = 100%.
+  useEffect(() => {
+    const scheduleSpecial = () => {
+      const delay = Math.random() * 120000 + 90000; // every 90-210s
+      specialTimerRef.current = setTimeout(() => {
+        // If sleeping, don't do anything - just reschedule
+        if (isSleepingRef.current) {
+          scheduleSpecial();
+          return;
+        }
+
+        const timeSinceInteraction = Date.now() - lastInteractionRef.current;
+        const roll = Math.random() * 100;
+
+        // ---- Secret spin: 3% (roll 0-3) ----
+        if (roll < 3) {
+          setSpecialAnim("secret");
+          setTimeout(() => setSpecialAnim(null), 2200);
+
+        // ---- Sleep: 3% (roll 3-6), only if idle >15 min ----
+        } else if (roll < 6) {
+          if (timeSinceInteraction > 900000) {
+            setSpecialAnim("sleep");
+          }
+          // If not idle enough, effectively "nothing happens"
+
+        // ---- Fly attempt: 20% (roll 6-26) ----
+        } else if (roll < 26) {
+          setSpecialAnim("flyAttempt");
+          setTimeout(() => {
+            setSpecialAnim(null);
+            showMessage(pickRandom(MESSAGES.flyFail));
+          }, 1600);
+
+        // ---- Bug chase: 25% (roll 26-51) ----
+        } else if (roll < 51) {
+          const targetBug = Math.floor(Math.random() * 5);
+          setChasedBugId(targetBug);
+          setSpecialAnim("chaseBug");
+          showMessage(pickRandom([
+            "*eyes lock onto bug*", "...i see you.", "TARGET ACQUIRED",
+            "*pupils dilate*", "don't move don't move don't move",
+            "*predator mode activated*", "hoo... hoo...",
+          ]));
+          setTimeout(() => {
+            setChasedBugId(null);
+            setSpecialAnim(null);
+            // 60% catch, 40% miss
+            if (Math.random() < 0.6) {
+              showMessage(pickRandom([
+                "*got it!!*", "*CRUNCH* ...delicious", "hehe gotcha",
+                "*triumphant wing flap*", "too slow, little bug!",
+                "i'm a predator. a tiny glowing predator. fear me.",
+              ]));
+            } else {
+              showMessage(pickRandom([
+                "...it got away", "*dejected hoot*", "next time.",
+                "i wasn't even trying. (i was.)", "that bug is too fast and i respect it",
+                "what if they have a family. what am i doing.",
+              ]));
+            }
+          }, 3000);
+
+        // ---- Discovery: 30% (roll 51-81) ----
+        } else if (roll < 81) {
+          showMessage(pickRandom(DISCOVERIES));
+
+        // ---- Nothing: 19% (roll 81-100) ----
+        }
+
+        scheduleSpecial();
+      }, delay);
+    };
+    scheduleSpecial();
+    return () => clearTimeout(specialTimerRef.current);
+  }, []);
+
+  // ---- Message system ----
+  const showMessage = useCallback((text, wellness = false, msgType = null) => {
+    if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+    setMessage(text); setShowBubble(true); setIsWellness(wellness);
+    setCurrentMsgType(msgType);
+  }, []);
+
+  // Show a message without waking Glim (for sleep talk)
+  const showSleepMessage = useCallback((text) => {
+    if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+    setMessage(text); setShowBubble(true); setIsWellness(false);
+    setCurrentMsgType("sleep");
+  }, []);
+
+  // Explicitly wake Glim
+  const wakeUp = useCallback(() => {
+    if (isSleepingRef.current) {
+      setSpecialAnim(null);
+      isSleepingRef.current = false;
+    }
+  }, []);
+
+  const triggerHappy = useCallback(() => {
+    if (happyTimer.current) clearTimeout(happyTimer.current);
+    setIsHappy(true); happyTimer.current = setTimeout(() => setIsHappy(false), 2000);
+  }, []);
+
+  const pickUnique = useCallback((pool, lastRef) => {
+    let p = pickRandom(pool), a = 0;
+    while (p === lastRef.current && a < 5) { p = pickRandom(pool); a++; }
+    lastRef.current = p; return p;
+  }, []);
+
+  // ---- Journal save/delete ----
+  const saveJournalEntry = useCallback(async (text) => {
+    const entry = {
+      id: Date.now(),
+      text: text.trim(),
+      prompt: journalPrompt,
+      date: new Date().toISOString(),
+    };
+    const updated = [entry, ...journalEntries];
+    setJournalEntries(updated);
+    setJournalText("");
+    setJournalPrompt(pickRandom(JOURNAL_PROMPTS));
+    try {
+      await window.storage.set("glim-journal", JSON.stringify(updated));
+    } catch (e) {
+      console.error("Failed to save journal:", e);
+    }
+    triggerHappy();
+    showMessage(pickRandom([
+      "saved! your words matter.", "got it. that one's safe with me.",
+      "journaled! look at you being reflective.", "*tucks your entry away carefully*",
+      "written and stored. future-you will appreciate this.",
+      "that was good. you should do this more often.",
+      "entry saved. you're building a record of being alive. that's cool.",
+    ]));
+  }, [journalEntries, journalPrompt, triggerHappy, showMessage]);
+
+  const deleteJournalEntry = useCallback(async (id) => {
+    const updated = journalEntries.filter((e) => e.id !== id);
+    setJournalEntries(updated);
+    try {
+      await window.storage.set("glim-journal", JSON.stringify(updated));
+    } catch (e) {
+      console.error("Failed to update journal:", e);
+    }
+  }, [journalEntries]);
+
+  // ---- Wellness timer ----
+  useEffect(() => {
+    if (wellnessTimer.current) clearTimeout(wellnessTimer.current);
+    const baseMs = wellnessInterval * 60000;
+    const jitter = baseMs * 0.3;
+    const s = () => { wellnessTimer.current = setTimeout(() => {
+      if (!isSleepingRef.current) {
+        showMessage(pickUnique(MESSAGES.wellness, lastWellnessRef), true, "wellness");
+      }
+      s();
+    }, baseMs + Math.random() * jitter); }; s();
+    return () => clearTimeout(wellnessTimer.current);
+  }, [showMessage, pickUnique, wellnessInterval]);
+
+  // ---- Move reminder ----
+  useEffect(() => {
+    if (moveTimer.current) clearTimeout(moveTimer.current);
+    const schedule = () => {
+      moveTimer.current = setTimeout(() => {
+        if (!isSleepingRef.current) {
+          setMoveReminder(pickRandom(MOVE_REMINDERS));
+        } else {
+          schedule(); // try again later
+        }
+      }, moveInterval * 60000);
+    };
+    schedule();
+    return () => clearTimeout(moveTimer.current);
+  }, [moveInterval]);
+  const dismissMove = useCallback(() => {
+    wakeUp();
+    setMoveReminder(null); triggerHappy(); showMessage(pickRandom(MOVE_DONE_RESPONSES));
+    moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
+  }, [showMessage, triggerHappy, moveInterval, wakeUp]);
+
+  // ---- Eyes reminder ----
+  useEffect(() => {
+    if (eyesTimer.current) clearTimeout(eyesTimer.current);
+    const schedule = () => {
+      eyesTimer.current = setTimeout(() => {
+        if (!isSleepingRef.current) {
+          setEyesReminder(pickRandom(EYES_REMINDERS));
+        } else {
+          schedule();
+        }
+      }, eyesInterval * 60000);
+    };
+    schedule();
+    return () => clearTimeout(eyesTimer.current);
+  }, [eyesInterval]);
+  const dismissEyes = useCallback(() => {
+    wakeUp();
+    setEyesReminder(null); triggerHappy(); showMessage(pickRandom(EYES_DONE_RESPONSES));
+    eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
+  }, [showMessage, triggerHappy, eyesInterval, wakeUp]);
+
+  // ---- Idle chatter ----
+  useEffect(() => {
+    const s = () => {
+      const d = Math.random() * 25000 + 15000;
+      idleTimer.current = setTimeout(() => {
+        if (isSleepingRef.current) {
+          showSleepMessage(pickRandom(MESSAGES.sleepTalk));
+          s(); return;
+        }
+        const r = Math.random();
+        if (r < 0.16) {
+          triggerHappy();
+          showMessage(pickUnique(MESSAGES.encouragement, lastEncouragementRef), false, "encouragement");
+        } else if (r < 0.32) {
+          showMessage(pickRandom(MINDFULNESS), false, "mindfulness");
+        } else if (r < 0.37) {
+          showMessage(pickRandom(JOURNAL_NUDGES), false, "journal");
+        } else if (r < 0.45) {
+          showMessage(pickRandom(SCIENCE_FACTS), false, "science");
+        } else if (r < 0.65) {
+          showMessage(pickRandom(MESSAGES.idle), false, "idle");
+        } else {
+          showMessage(pickRandom(MESSAGES[mood]), false, "time");
+        }
+        s();
+      }, d);
+    }; s();
+    return () => clearTimeout(idleTimer.current);
+  }, [mood, showMessage, showSleepMessage, triggerHappy, pickUnique]);
+
+  // ---- Greeting ----
+  useEffect(() => {
+    const t = setTimeout(() => showMessage(pickRandom(MESSAGES[mood])), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ---- Click handling with rapid detection and startle ----
+  const handleClick = (e) => {
+    // Prevent double-click from also firing single click messages
+    if (e.detail > 1) return;
+    // Prevent click from firing after a drag release
+    if (justDraggedRef.current) return;
+    // Prevent click during purr (mouseup handles purr end)
+    if (isPurring) return;
+
+    lastInteractionRef.current = Date.now();
+
+    // Wake up if sleeping
+    if (specialAnim === "sleep") {
+      setSpecialAnim(null);
+      setIsPuffed(true);
+      showMessage(pickRandom(MESSAGES.startled));
+      if (puffTimerRef.current) clearTimeout(puffTimerRef.current);
+      puffTimerRef.current = setTimeout(() => setIsPuffed(false), 1500);
+      return;
+    }
+
+    setSqueezed(true);
+    setClickCount((c) => c + 1);
+    setTimeout(() => setSqueezed(false), 280);
+
+    // Track rapid clicks
+    const now = Date.now();
+    clickTimesRef.current.push(now);
+    clickTimesRef.current = clickTimesRef.current.filter((t) => now - t < 2000);
+
+    // Check if startled (first click after >5 min idle, 50% chance)
+    const timeSinceLast = now - (clickTimesRef.current[clickTimesRef.current.length - 2] || 0);
+    if (clickTimesRef.current.length === 1 && timeSinceLast > 300000 && Math.random() < 0.5) {
+      setIsPuffed(true);
+      showMessage(pickRandom(MESSAGES.startled));
+      if (puffTimerRef.current) clearTimeout(puffTimerRef.current);
+      puffTimerRef.current = setTimeout(() => setIsPuffed(false), 1500);
+      return;
+    }
+
+    // Rapid clicking (4+ clicks in 2s)
+    if (clickTimesRef.current.length >= 4) {
+      showMessage(pickRandom(MESSAGES.rapidClick));
+      return;
+    }
+
+    // Context-aware clicking (if a mindfulness message is showing)
+    if (currentMsgType === "mindfulness") {
+      showMessage(pickRandom(MESSAGES.mindfulClick));
+      return;
+    }
+
+    // Normal click
+    const r = Math.random();
+    if (r < 0.15) {
+      triggerHappy();
+      showMessage(pickUnique(MESSAGES.encouragement, lastEncouragementRef), false, "encouragement");
+    } else if (r < 0.25) {
+      showMessage(pickRandom(MESSAGES[mood]));
+    } else {
+      showMessage(pickRandom(MESSAGES.clicked));
+    }
+  };
+
+  // ---- Double-click: fly attempt ----
+  const handleDoubleClick = () => {
+    if (justDraggedRef.current) return;
+    lastInteractionRef.current = Date.now();
+    if (specialAnim) return;
+    setSpecialAnim("flyAttempt");
+    setTimeout(() => {
+      setSpecialAnim(null);
+      showMessage(pickRandom(MESSAGES.flyFail));
+    }, 1600);
+  };
+
+  // ---- Interaction: drag, purr, click all unified ----
+  const handleCreatureMouseDown = (e) => {
+    e.preventDefault();
+    lastInteractionRef.current = Date.now();
+    dragStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    // Start purr timer (cancelled if drag starts)
+    holdTimerRef.current = setTimeout(() => {
+      if (dragStartRef.current && !dragStartRef.current.moved) {
+        setIsPurring(true);
+        showMessage(pickRandom(MESSAGES.purr));
+      }
+    }, 500);
+  };
+
+  // Window-level move/up handles ALL drag logic
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      // Threshold before drag activates
+      if (!dragStartRef.current.moved && Math.sqrt(dx * dx + dy * dy) > 10) {
+        dragStartRef.current.moved = true;
+        setIsDragging(true);
+        setIsWandering(false);
+        clearTimeout(wanderDriftRef.current);
+        setIsPurring(false);
+        clearTimeout(holdTimerRef.current);
+      }
+      if (dragStartRef.current.moved) {
+        setDragPos({ x: dx, y: dy });
+        // Track velocity for shake detection
+        const now = Date.now();
+        dragVelocityRef.current.push({ x: e.clientX, y: e.clientY, t: now });
+        // Keep only last 500ms of movement
+        dragVelocityRef.current = dragVelocityRef.current.filter((p) => now - p.t < 500);
+        // Detect shake: 4+ direction changes in 500ms
+        if (dragVelocityRef.current.length >= 4) {
+          let dirChanges = 0;
+          for (let i = 2; i < dragVelocityRef.current.length; i++) {
+            const prevDx = dragVelocityRef.current[i-1].x - dragVelocityRef.current[i-2].x;
+            const currDx = dragVelocityRef.current[i].x - dragVelocityRef.current[i-1].x;
+            if ((prevDx > 0 && currDx < 0) || (prevDx < 0 && currDx > 0)) dirChanges++;
+          }
+          if (dirChanges >= 3 && !isShaken) {
+            setIsShaken(true);
+            showMessage(pickRandom(MESSAGES.shaken));
+            if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+            shakeTimerRef.current = setTimeout(() => setIsShaken(false), 2000);
+            dragVelocityRef.current = [];
+          }
+        }
+      }
+    };
+
+    const onUp = () => {
+      if (!dragStartRef.current) return;
+      clearTimeout(holdTimerRef.current);
+
+      if (dragStartRef.current.moved) {
+        // Was dragging - end drag with drift back
+        setIsDragging(false);
+        setIsReturning(true);
+        justDraggedRef.current = true;
+        dragVelocityRef.current = [];
+        setTimeout(() => { justDraggedRef.current = false; }, 300);
+
+        if (Math.random() < 0.6) {
+          showMessage(pickRandom([
+            "wheee!", "*drifts home*", "okay okay i'm going back",
+            "that was fun. do it again.", "i can find my way home. probably.",
+            "*floats back contentedly*", "you can't get rid of me that easy",
+            "weeeee... *thud*", "i belong in the middle and i know it",
+          ]));
+        }
+        // Wait one frame for transition to apply, THEN move to center
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setDragPos({ x: 0, y: 0 });
+          });
+        });
+        // isReturning cleared after animation (safe - transition no longer changes on clear)
+        setTimeout(() => setIsReturning(false), 3200);
+      } else {
+        // Was NOT dragging - stop purr if active
+        if (isPurring) setIsPurring(false);
+      }
+
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isPurring, isShaken, showMessage]);
+
+  const { hue, sat } = colors;
+
+  return (
+    <div className="relative flex flex-col items-center justify-center w-full overflow-hidden select-none"
+      style={{
+        minHeight: "100vh", fontFamily: "'Courier New', monospace",
+        background: "#040408",
+      }}>
+      <Background hue={hue} sat={sat} mood={mood} />
+
+      <div className="absolute rounded-full pointer-events-none" style={{
+        width: 420, height: 420,
+        border: `1px solid hsla(${hue}, ${sat}%, 55%, 0.07)`,
+        animation: "ringPulse 6s ease-in-out infinite",
+      }} />
+
+      <AmbientBugs hue={hue} chasedBugId={chasedBugId} />
+
+      <div className="relative" style={{
+        zIndex: 10,
+        transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+        transition: isDragging ? "none" : "transform 3s cubic-bezier(0.15, 0.6, 0.35, 1)",
+        animation: !isDragging && !isReturning ? (
+          specialAnim === "chaseBug" ? "creatureChase 3s ease-in-out"
+          : specialAnim === "flyAttempt" ? "creatureFly 1.5s ease-in-out"
+          : "none"
+        ) : "none",
+        cursor: isDragging ? "grabbing" : "grab",
+      }} ref={creatureRef} onMouseDown={handleCreatureMouseDown}>
+        <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
+        <OwlMoth
+          onClick={handleClick} onDoubleClick={handleDoubleClick}
+          squeezed={squeezed} hue={hue} sat={sat} mood={mood}
+          isHappy={isHappy} isPuffed={isPuffed}
+          isPurring={isPurring} isBlinking={isBlinking} specialAnim={specialAnim}
+          antennaPerk={antennaPerk} wingTwitchSide={wingTwitchSide}
+          pupilOffset={pupilOffset}
+        />
+      </div>
+
+      <div className="mt-1 text-center relative" style={{ zIndex: 10 }}>
+        <div style={{
+          color: `hsla(${hue}, ${sat}%, 75%, 0.8)`, fontSize: 14,
+          letterSpacing: "3px", textTransform: "uppercase",
+        }}>glim</div>
+        <div style={{
+          color: `hsla(${hue}, ${sat - 15}%, 55%, 0.4)`, fontSize: 10, marginTop: 3, letterSpacing: "1px",
+        }}>
+          click to say hi{clickCount > 0 && ` · poked ${clickCount} time${clickCount > 1 ? "s" : ""}`}
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          <button onClick={() => {
+            wakeUp();
+            lastInteractionRef.current = Date.now();
+            clearTimeout(moveTimer.current);
+            setMoveReminder(null);
+            moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
+            showMessage(pickRandom(["nice! timer reset.", "got it, you moved!", "noted. clock restarted."]));
+          }} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
+            fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
+            transition: "color 0.2s ease", padding: "2px 6px",
+          }}
+            onMouseEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+            onMouseLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+          >just moved</button>
+          <button onClick={() => {
+            wakeUp();
+            lastInteractionRef.current = Date.now();
+            clearTimeout(eyesTimer.current);
+            setEyesReminder(null);
+            eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
+            showMessage(pickRandom(["good! eye timer reset.", "eyes rested! clock restarted.", "noted. see you in a bit."]));
+          }} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
+            fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
+            transition: "color 0.2s ease", padding: "2px 6px",
+          }}
+            onMouseEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+            onMouseLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+          >eyes rested</button>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-3 mt-5 relative" style={{ minHeight: 20, zIndex: 10 }}>
+        {eyesReminder && <PersistentReminder text={eyesReminder} type="eyes" onDismiss={dismissEyes} />}
+        {moveReminder && <PersistentReminder text={moveReminder} type="move" onDismiss={dismissMove} />}
+      </div>
+
+      {/* ===== SETTINGS GEAR ===== */}
+      <button onClick={() => { setShowSettings(!showSettings); setShowJournal(false); }}
+        className="absolute cursor-pointer" style={{
+          top: 16, right: 16, zIndex: 50, width: 32, height: 32,
+          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+          color: "rgba(255,255,255,0.4)", fontSize: 16, transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+      >&#9881;</button>
+
+      {/* ===== SETTINGS PANEL ===== */}
+      {showSettings && (
+        <div className="absolute" style={{
+          top: 56, right: 16, zIndex: 50, padding: "16px 20px", borderRadius: 16,
+          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(15px)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          fontFamily: "'Courier New', monospace", color: "rgba(255,255,255,0.85)",
+          fontSize: 12, minWidth: 240,
+        }}>
+          <div style={{ marginBottom: 14, fontSize: 13, letterSpacing: "1px", opacity: 0.6 }}>settings</div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+              <span>wellness reminders</span>
+              <span style={{ opacity: 0.5 }}>{wellnessInterval} min</span>
+            </div>
+            <input type="range" min="10" max="60" value={wellnessInterval}
+              onChange={(e) => setWellnessInterval(Number(e.target.value))}
+              style={{ width: "100%", accentColor: `hsl(${hue}, ${sat}%, 65%)` }} />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+              <span>move reminders</span>
+              <span style={{ opacity: 0.5 }}>{moveInterval} min</span>
+            </div>
+            <input type="range" min="15" max="90" value={moveInterval}
+              onChange={(e) => setMoveInterval(Number(e.target.value))}
+              style={{ width: "100%", accentColor: `hsl(${hue}, ${sat}%, 65%)` }} />
+          </div>
+
+          <div style={{ marginBottom: 4 }}>
+            <div style={{ marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+              <span>eye break reminders</span>
+              <span style={{ opacity: 0.5 }}>{eyesInterval} min</span>
+            </div>
+            <input type="range" min="10" max="60" value={eyesInterval}
+              onChange={(e) => setEyesInterval(Number(e.target.value))}
+              style={{ width: "100%", accentColor: `hsl(${hue}, ${sat}%, 65%)` }} />
+          </div>
+        </div>
+      )}
+
+      {/* ===== JOURNAL BUTTON ===== */}
+      <button onClick={() => { setShowJournal(!showJournal); setShowSettings(false); }}
+        className="absolute cursor-pointer" style={{
+          top: 16, right: 56, zIndex: 50, width: 32, height: 32,
+          background: showJournal ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+          color: showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
+          fontSize: 15, transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = showJournal ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"; e.currentTarget.style.color = showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)"; }}
+      >&#9997;</button>
+
+      {/* ===== JOURNAL PANEL ===== */}
+      {showJournal && (
+        <div className="absolute" style={{
+          top: 56, right: 16, zIndex: 50, padding: "16px 20px", borderRadius: 16,
+          background: "rgba(0,0,0,0.75)", backdropFilter: "blur(15px)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          fontFamily: "'Courier New', monospace", color: "rgba(255,255,255,0.85)",
+          fontSize: 12, width: 340, maxHeight: "70vh", display: "flex", flexDirection: "column",
+        }}>
+          {/* Tab bar */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button onClick={() => setJournalView("write")} style={{
+              flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
+              background: journalView === "write" ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
+              border: `1px solid ${journalView === "write" ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.1)"}`,
+              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 12,
+              letterSpacing: "1px",
+            }}>write</button>
+            <button onClick={() => setJournalView("past")} style={{
+              flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
+              background: journalView === "past" ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
+              border: `1px solid ${journalView === "past" ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.1)"}`,
+              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 12,
+              letterSpacing: "1px",
+            }}>
+              past{journalEntries.length > 0 && ` (${journalEntries.length})`}
+            </button>
+          </div>
+
+          {/* Write view */}
+          {journalView === "write" && (
+            <div>
+              <div style={{
+                padding: "10px 12px", borderRadius: 10, marginBottom: 12,
+                background: `hsla(${hue}, ${sat}%, 50%, 0.1)`,
+                border: `1px solid hsla(${hue}, ${sat}%, 60%, 0.15)`,
+                fontSize: 12, lineHeight: 1.5, fontStyle: "italic",
+                color: `hsla(${hue}, ${sat - 10}%, 80%, 0.8)`,
+              }}>
+                {journalPrompt}
+              </div>
+              <button onClick={() => setJournalPrompt(pickRandom(JOURNAL_PROMPTS))}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 10,
+                  fontFamily: "'Courier New', monospace", padding: 0,
+                  transition: "color 0.2s ease",
+                }}
+                onMouseEnter={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; }}
+                onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.35)"; }}
+              >&#8635; different prompt</button>
+              <textarea
+                value={journalText}
+                onChange={(e) => setJournalText(e.target.value)}
+                placeholder="write here..."
+                style={{
+                  width: "100%", minHeight: 100, maxHeight: 200, padding: "10px 12px",
+                  borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.9)",
+                  fontFamily: "'Courier New', monospace", fontSize: 12,
+                  lineHeight: 1.5, resize: "vertical", outline: "none",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => { e.target.style.borderColor = `hsla(${hue}, ${sat}%, 60%, 0.4)`; }}
+                onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                <span style={{ opacity: 0.3, fontSize: 11 }}>
+                  {journalText.length > 0 && `${journalText.length} chars`}
+                </span>
+                <button
+                  onClick={() => { if (journalText.trim()) saveJournalEntry(journalText); }}
+                  disabled={!journalText.trim()}
+                  style={{
+                    padding: "6px 16px", borderRadius: 10, cursor: journalText.trim() ? "pointer" : "default",
+                    background: journalText.trim() ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${journalText.trim() ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.08)"}`,
+                    color: journalText.trim() ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
+                    fontFamily: "'Courier New', monospace", fontSize: 12,
+                    transition: "all 0.2s ease",
+                  }}
+                >save</button>
+              </div>
+            </div>
+          )}
+
+          {/* Past entries view */}
+          {journalView === "past" && (
+            <div style={{ overflowY: "auto", flex: 1, maxHeight: "55vh" }}>
+              {journalLoading ? (
+                <div style={{ opacity: 0.4, textAlign: "center", padding: 20 }}>loading...</div>
+              ) : journalEntries.length === 0 ? (
+                <div style={{ opacity: 0.4, textAlign: "center", padding: 20, lineHeight: 1.6 }}>
+                  no entries yet.<br />go write something!
+                </div>
+              ) : (
+                journalEntries.map((entry) => (
+                  <div key={entry.id} style={{
+                    padding: "12px 14px", borderRadius: 10, marginBottom: 10,
+                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ opacity: 0.4, fontSize: 11 }}>
+                        {new Date(entry.date).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "numeric", minute: "2-digit",
+                        })}
+                      </span>
+                      <button onClick={() => deleteJournalEntry(entry.id)} style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "0 2px",
+                        fontFamily: "'Courier New', monospace", transition: "color 0.2s",
+                      }}
+                        onMouseEnter={(e) => { e.target.style.color = "rgba(255,100,100,0.6)"; }}
+                        onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.2)"; }}
+                      >&#10005;</button>
+                    </div>
+                    {entry.prompt && (
+                      <div style={{
+                        fontSize: 11, fontStyle: "italic", opacity: 0.4, marginBottom: 6,
+                        lineHeight: 1.4,
+                      }}>{entry.prompt}</div>
+                    )}
+                    <div style={{ lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                      {entry.text}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.4); }
+        }
+        @keyframes shootingStar {
+          0% { transform: translateX(0) translateY(0); opacity: 1; }
+          70% { opacity: 1; }
+          100% { transform: translateX(300px) translateY(150px); opacity: 0; }
+        }
+        @keyframes nebulaFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -15px) scale(1.15); }
+          66% { transform: translate(-20px, 10px) scale(0.9); }
+        }
+        @keyframes nebulaFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          40% { transform: translate(-35px, 15px) scale(1.1); }
+          70% { transform: translate(15px, -10px) scale(0.9); }
+        }
+        @keyframes nebulaFloat3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(20px, 12px) scale(1.15); }
+        }
+        @keyframes owlFloat {
+          0%, 100% { transform: scale(1, 1) translateY(0); }
+          50% { transform: scale(1.01, 0.99) translateY(3px); }
+        }
+        @keyframes purrRock {
+          0%, 100% { transform: scale(1.04, 0.97) rotate(0deg); }
+          25% { transform: scale(1.04, 0.97) rotate(5deg); }
+          75% { transform: scale(1.04, 0.97) rotate(-5deg); }
+        }
+        @keyframes owlBounce {
+          0%, 100% { transform: scale(1, 1) translateY(0); }
+          20% { transform: scale(0.92, 1.12) translateY(-10px); }
+          40% { transform: scale(1.08, 0.9) translateY(0); }
+          60% { transform: scale(0.96, 1.06) translateY(-5px); }
+          80% { transform: scale(1.03, 0.97) translateY(0); }
+        }
+        @keyframes flyAttempt {
+          0%, 100% { transform: scale(1, 1); }
+          20% { transform: scale(1.05, 0.92); }
+          40% { transform: scale(0.95, 1.06); }
+          60% { transform: scale(1.03, 0.95); }
+          80% { transform: scale(0.97, 1.03); }
+        }
+        @keyframes chaseBug {
+          0%, 100% { transform: scale(1, 1); }
+          30% { transform: scale(1.05, 0.95); }
+          60% { transform: scale(0.97, 1.03); }
+        }
+        @keyframes creatureChase {
+          0% { transform: translateX(0) translateY(0); }
+          15% { transform: translateX(60px) translateY(-15px); }
+          30% { transform: translateX(-40px) translateY(10px); }
+          50% { transform: translateX(80px) translateY(-25px); }
+          65% { transform: translateX(30px) translateY(5px); }
+          80% { transform: translateX(-20px) translateY(-10px); }
+          100% { transform: translateX(0) translateY(0); }
+        }
+        @keyframes creatureFly {
+          0% { transform: translateY(0); }
+          25% { transform: translateY(-60px); }
+          40% { transform: translateY(-80px); }
+          55% { transform: translateY(-50px); }
+          75% { transform: translateY(-20px); }
+          85% { transform: translateY(8px); }
+          100% { transform: translateY(0); }
+        }
+        @keyframes secretSpin {
+          0% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(10deg) scale(1.1); }
+          50% { transform: rotate(0deg) scale(1.2); }
+          75% { transform: rotate(-10deg) scale(1.1); }
+          100% { transform: rotate(0deg) scale(1); }
+        }
+        @keyframes wingDriftL {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-4deg); }
+        }
+        @keyframes wingDriftR {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(4deg); }
+        }
+        @keyframes wingFlapL {
+          0% { transform: rotate(8deg); }
+          50% { transform: rotate(-12deg); }
+          100% { transform: rotate(8deg); }
+        }
+        @keyframes wingFlapR {
+          0% { transform: rotate(-8deg); }
+          50% { transform: rotate(12deg); }
+          100% { transform: rotate(-8deg); }
+        }
+        @keyframes wingTwitchL {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-8deg); }
+        }
+        @keyframes wingTwitchR {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(8deg); }
+        }
+        @keyframes tailCurl {
+          0%, 100% { transform: rotate(0deg) translateX(0); }
+          50% { transform: rotate(3deg) translateX(2px); }
+        }
+        @keyframes tailPurr {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(5deg); }
+          75% { transform: rotate(-3deg); }
+        }
+        @keyframes antennaL {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-4deg); }
+          75% { transform: rotate(3deg); }
+        }
+        @keyframes antennaR {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(4deg); }
+          75% { transform: rotate(-3deg); }
+        }
+        @keyframes antennaPerkL {
+          0% { transform: rotate(0deg); }
+          40% { transform: rotate(-12deg); }
+          100% { transform: rotate(0deg); }
+        }
+        @keyframes antennaPerkR {
+          0% { transform: rotate(0deg); }
+          40% { transform: rotate(12deg); }
+          100% { transform: rotate(0deg); }
+        }
+        @keyframes softPulse {
+          0%, 100% { opacity: 0.7; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        @keyframes particleDrift {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+          25% { transform: translateY(-18px) translateX(8px); opacity: 0.6; }
+          50% { transform: translateY(-10px) translateX(-7px); opacity: 0.3; }
+          75% { transform: translateY(-25px) translateX(5px); opacity: 0.5; }
+        }
+        @keyframes ringPulse {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.06); opacity: 0.15; }
+        }
+        @keyframes reminderPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.75; }
+        }
+        @keyframes bugPath0 {
+          0%, 100% { left: 15%; top: 35%; }
+          20% { left: 25%; top: 25%; }
+          40% { left: 35%; top: 40%; }
+          60% { left: 20%; top: 50%; }
+          80% { left: 10%; top: 30%; }
+        }
+        @keyframes bugPath1 {
+          0%, 100% { left: 75%; top: 30%; }
+          25% { left: 65%; top: 20%; }
+          50% { left: 80%; top: 45%; }
+          75% { left: 70%; top: 35%; }
+        }
+        @keyframes bugPath2 {
+          0%, 100% { left: 45%; top: 25%; }
+          15% { left: 55%; top: 18%; }
+          35% { left: 60%; top: 30%; }
+          55% { left: 50%; top: 40%; }
+          75% { left: 40%; top: 32%; }
+        }
+        @keyframes bugPath3 {
+          0%, 100% { left: 85%; top: 50%; }
+          30% { left: 75%; top: 38%; }
+          50% { left: 80%; top: 28%; }
+          70% { left: 90%; top: 42%; }
+        }
+        @keyframes bugPath4 {
+          0%, 100% { left: 25%; top: 55%; }
+          20% { left: 35%; top: 45%; }
+          45% { left: 30%; top: 35%; }
+          65% { left: 20%; top: 40%; }
+          85% { left: 15%; top: 50%; }
+        }
+        @keyframes zzzFloat {
+          0%, 100% { transform: translateY(0); opacity: 0.5; }
+          50% { transform: translateY(-8px); opacity: 0.8; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<DesktopPet />);
+  </script>
+</body>
+</html>
