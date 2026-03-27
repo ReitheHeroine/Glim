@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body, #root {
-  width: 100%;
-  height: 100%;
-  min-height: 100dvh;
-  overflow: hidden;
-  /* Extend background into iPhone notch/status bar area */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  background-color: #08081a;
-}
+/* Dark background on html fills the notch/status bar area on iPhone */
+html { background-color: #08081a; }
+html, body, #root { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; }
