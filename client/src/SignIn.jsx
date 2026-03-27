@@ -96,7 +96,7 @@ export default function SignIn() {
 
         {/* Icon */}
         <img
-          src="/glim-icon.svg"
+          src={`${import.meta.env.BASE_URL}glim-icon.svg`}
           alt="Glim"
           style={{ width: '80px', height: '80px', borderRadius: '20px' }}
         />
