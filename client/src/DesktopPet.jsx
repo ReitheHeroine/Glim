@@ -265,6 +265,12 @@ function Background({ hue, sat, mood }) {
           fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
       </svg>
 
+      {/* Safe-area gap fill -- matches ground color so no strip shows on iPhone */}
+      <div className="absolute bottom-0 left-0 right-0" style={{
+        height: "env(safe-area-inset-bottom, 0px)",
+        backgroundColor: `hsla(${h}, ${s - 15}%, 4%, 1)`,
+      }} />
+
       {/* ===== FLOATING MOTES (near Glim) ===== */}
       {motes.map((p) => (
         <div key={`m${p.id}`} className="absolute rounded-full" style={{
