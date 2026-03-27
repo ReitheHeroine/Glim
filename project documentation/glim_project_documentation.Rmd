@@ -215,9 +215,11 @@ Both desktop and mobile versions share the same codebase and the following featu
 
 **Mobile adaptations:**
 
-**[NOT IMPLEMENTED]** The following mobile adaptations are planned but do not exist in the current codebase as of 2026-03-24:
+**[NOT IMPLEMENTED]** The following mobile adaptations are planned but do not exist in the current codebase as of 2026-03-27:
 
-- Touch event handlers parallel to all mouse events (unified pointer system via `getPointerXY()` helper)
+- Pointer Events API migration: `onPointerDown`/`pointermove`/`pointerup`/`pointercancel` replaces all mouse-only handlers. See Section 4.2 for full spec.
+- Eye tracking on touch: eyes follow finger during contact, drift back to center over 1.5s ease-out on release. See Section 4.2.
+- Button hover effects replaced with `:active` press styles (touch has no hover concept).
 - Responsive layout: `isMobile` flag (screen width < 600px) scales creature, glow ring, and panels
 - Larger tap targets (44px minimum per Apple guidelines) for gear/journal buttons on mobile
 - `touch-action: none` to prevent browser default gestures during drag
@@ -284,19 +286,75 @@ const isMobile = winWidth < 600;
 
 ## 4.2 Interaction System
 
-All interactions currently use mouse events only. **[NOT IMPLEMENTED]** Touch/pointer unification (planned `getPointerXY()` helper) does not exist in the codebase yet.
+**[NOT IMPLEMENTED as of 2026-03-27]** All interactions currently use mouse events only. The migration plan below describes the target state using Pointer Events.
 
 | Interaction | Trigger | Response |
 |---|---|---|
 | Click/tap | Single click on Glim | Random clicked message; wakes from sleep with startled puff; context-aware during mindfulness |
 | Double-click/tap | Double click on Glim | Fly attempt (fails adorably with screen-level animation) |
 | Long press | Hold 500ms without moving | Purring with rocking animation and closed eyes; message from purr pool |
-| Drag | Move 10px+ after mousedown/touchstart | Glim follows pointer; window-level handlers ensure drag continues outside creature bounds |
+| Drag | Move 10px+ after pointerdown | Glim follows pointer; window-level handlers ensure drag continues outside creature bounds |
 | Shake | 3+ direction reversals in 500ms during drag | Shaken message with 2s cooldown |
 | Rapid click | 4+ clicks within 2s | Overwhelmed/flustered response |
 | Startled | First click after 5+ min idle (50% chance) | Puff-up animation with startled message |
 
 **Drag return:** When released, Glim drifts back to center with a 3s ease-out CSS transition. `requestAnimationFrame` double-buffering ensures the transition CSS applies before the position changes. `isReturning` flag prevents other interactions during the drift. `justDraggedRef` blocks clicks for 300ms after release.
+
+### Pointer Events Migration Plan (designed 2026-03-27)
+
+The migration uses the Pointer Events API (`pointerdown/pointermove/pointerup`) as a unified replacement for separate mouse and touch handlers. Pointer Events provide identical `clientX`/`clientY` coordinates regardless of input type and are supported in all modern browsers. No `getPointerXY()` helper is needed since the API is already unified (the helper was designed for the older dual-handler approach where mouse and touch events had different coordinate access patterns).
+
+**Four event systems to migrate:**
+
+**1. Creature interaction (drag/purr/shake).** The main handler. Changes: `onMouseDown` becomes `onPointerDown` on the creature element. Window-level `mousemove`/`mouseup` listeners become `pointermove`/`pointerup`/`pointercancel`. The `pointercancel` handler is critical for touch: it fires when a finger slides off the element or the browser takes over the gesture, preventing stuck purr/drag state. All handler internals stay the same since `e.clientX`/`e.clientY` work identically. Add `touch-action: none` on the creature container to prevent the browser from intercepting touch gestures for scrolling/zooming.
+
+```jsx
+<div style={{ touchAction: "none" }} onPointerDown={handleCreaturePointerDown}>
+```
+
+```javascript
+// Window-level listeners (in useEffect)
+window.addEventListener("pointermove", onMove);
+window.addEventListener("pointerup", onUp);
+window.addEventListener("pointercancel", onUp);  // handles finger sliding off
+```
+
+**2. Eye tracking.** Changes: `window.addEventListener("mousemove", ...)` becomes `window.addEventListener("pointermove", ...)`. Platform-specific behavior:
+
+- Desktop (mouse): Eyes track cursor position continuously. No change from current behavior.
+- Mobile (touch): Eyes track toward the active touch position during contact. On `pointerup`/`pointercancel` with `e.pointerType === "touch"`, eyes drift back to center over 1.5s using an ease-out cubic animation via `requestAnimationFrame`. The drift cancels immediately if a new touch starts. The drift does not run if Glim is sleeping or purring (eyes closed, pupils hidden).
+
+```javascript
+// Drift-to-center on touch release
+const driftToCenter = () => {
+  const duration = 1500;
+  const startOffset = { ...pupilOffset };
+  const startTime = Date.now();
+  const animate = () => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);  // ease-out cubic
+    setPupilOffset({
+      x: startOffset.x * (1 - eased),
+      y: startOffset.y * (1 - eased),
+    });
+    if (progress < 1) eyeDriftFrameRef.current = requestAnimationFrame(animate);
+  };
+  eyeDriftFrameRef.current = requestAnimationFrame(animate);
+};
+```
+
+Store the animation frame ID in `eyeDriftFrameRef` so new touches can cancel mid-drift via `cancelAnimationFrame(eyeDriftFrameRef.current)`.
+
+**3. Button hover effects.** Currently 8 instances of `onMouseEnter`/`onMouseLeave` inline handlers that brighten/dim buttons. These don't translate to touch (no hover concept). Replacement: CSS `:active` press styles or inline `onPointerDown`/`onPointerUp` style toggles. This provides visual feedback on both platforms (brighten while pressing). The effect is shorter-lived than hover (only during press, not while hovering) but works universally.
+
+**4. Click handlers.** `onClick` and `onDoubleClick` already work on both mouse and touch. No changes needed. The `touch-action: none` on the creature element eliminates the iOS Safari 300ms tap delay that would otherwise affect double-tap detection (subsumes `touch-action: manipulation`).
+
+**What does NOT need to change:**
+- `onClick` on all buttons (already cross-platform)
+- `cursor: grab`/`cursor: grabbing` (harmlessly ignored on touch)
+- CSS `select-none` (works on both platforms)
+- All handler internals (same coordinate system, same state logic)
 
 ## 4.3 Behavior System
 
@@ -526,7 +584,7 @@ Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main 
 
 **No data export for journal:** If localStorage is cleared or the browser changes, journal entries are lost. A JSON export/import feature has been discussed but not implemented.
 
-**No touch event support:** All interaction handlers are mouse-only (`onMouseDown`, `mousemove`, `mouseup`). Glim is non-functional on touch-only devices. This is the primary blocker for mobile deployment.
+**No touch event support:** All interaction handlers are mouse-only (`onMouseDown`, `mousemove`, `mouseup`). Glim is non-functional on touch-only devices. This is the primary blocker for mobile deployment. Migration plan: Pointer Events API (`pointerdown/pointermove/pointerup/pointercancel`), not dual mouse/touch handlers. Eye tracking on touch drifts back to center on finger lift. Button hover effects replaced with `:active` press styles. See Section 4.2 for full specification.
 
 **No responsive layout:** Creature size is hardcoded at 360x390px. No `isMobile` flag, no responsive sizing. UI panels are fixed-width and may overflow on small screens.
 
@@ -564,7 +622,7 @@ These items are prerequisite to or should be built alongside the feature work be
 
 | Feature | Status | Priority | Notes |
 |---|---|---|---|
-| Touch event support | Not started | **High** | Primary mobile blocker. Needs `getPointerXY()` helper, dual mouse/touch handlers |
+| Touch event support | Not started | **High** | Primary mobile blocker. Pointer Events API migration (not dual mouse/touch handlers). `getPointerXY()` helper not needed. See Section 4.2 for full spec. |
 | Responsive layout | Not started | **High** | `isMobile` flag, responsive creature sizing, panel widths, 44px+ tap targets |
 | Vite migration | **Done** (2026-03-25) | - | Migrated to Vite 8 + React 19. See Section 2.2 |
 | Zustand state management | Not started | **High** | Migrate 30+ useState calls from DesktopPet into Zustand shared stores. Organize by domain (creature, trackers, UI, settings). Prerequisite for multi-component architecture |
@@ -582,16 +640,46 @@ These items are prerequisite to or should be built alongside the feature work be
 | Off-screen adventure behavior | Not started | **Low** | Creature behavior: drift off-screen, return on pointer activity. Needs `isOffScreenRef`, `OFFSCREEN_RETURN` messages |
 | Remove Tailwind dependency | Not started | **Low** | Replace utility classes with inline styles. Eliminates CDN dependency and console warning |
 
+### 8.2.1 Feature Build Plan (designed 2026-03-27)
+
+Phased approach: build minimal scaffolding, then one feature at a time, growing the framework incrementally around real needs. This is inside-out development (industry standard for single-developer projects). Each phase validates the patterns the next phase depends on.
+
+**Phase 1: Minimal scaffolding (prerequisite infrastructure + nav shell)**
+
+Build just enough framework to hold one feature. This includes three prerequisite infrastructure items that must happen first:
+
+- Zustand state migration: move 30+ useState calls into domain stores (creature, trackers, UI, settings). Required for multi-component architecture.
+- File separation: split single 2460-line DesktopPet.jsx into separate component files (creature, background, panels, stores, reaction system). Enabled by Vite migration.
+- Touch events + responsive layout: `isMobile` detection, Pointer Events API migration (see Section 4.2), 44px+ tap targets, responsive creature sizing. Required for panels to work on phones.
+
+Then build the nav bar shell (with real icons but most slots disabled/placeholder) and the companion mode panel slide-up/dismiss mechanism. No focus mode, no mini-Glim, no routing yet.
+
+**Phase 2: Water tracker (proves the full pattern)**
+
+First real feature. Simplest data model, smallest UI surface. Exercises every layer: Zustand store, localStorage persistence, companion mode panel UI, progress ring widget on home screen, Glim reactions via `glimReact()`. By the end: a working companion-mode panel with real data flowing through all layers.
+
+**Phase 3: Second companion-mode tracker (validates generalization)**
+
+Steps or nutrition quick-add. Validates that the architecture from Phase 2 generalizes to a second tracker without significant refactoring. If adding a second tracker requires reworking Phase 2 patterns, that is expected and cheaper to discover with two features than with six.
+
+**Phase 4: First focus-mode feature (to-do list)**
+
+Forces building: focus mode transition (creature fades out, full-screen view fades in), mini-Glim in header, back navigation. To-do list has the most daily utility and is the most architecturally different from companion-mode panels. Includes recurring tasks (Approach 2).
+
+**Phase 5: Remaining features (any order)**
+
+By this point the framework handles both UI modes. Remaining features can be built in any order based on personal priority: nutrition library management, pomodoro/time tracking, workout logging, dashboard, settings expansion, and the remaining trackers. Each follows established patterns.
+
 ## 8.3 Daily Tracking
 
 Features that log daily data toward goals. These form the core of the mobile experience.
 
 | Feature | Status | Priority | Description |
 |---|---|---|---|
-| Water tracking | Not started | **High** | Log glasses/oz toward a configurable daily goal. Glim reacts to each log, celebrates hitting the goal, notices patterns over time. Data model: timestamped log events (not running totals) for sync-safe merging |
-| Step tracking | Not started | **Medium** | Log daily steps toward a goal. Manual entry only (HealthKit/Google Fit require native app wrapper + $99/year Apple Developer fee). Data model `source` field future-proofs for automatic import if Capacitor migration happens later. Glim cheers milestones |
-| Nutrition / food logging | Not started | **Medium** | Log meals with optional macros/calories. More complex data model - meals contain foods, foods have nutritional data. Scope needs narrowing before build (full macro tracking vs. simple meal logging) |
-| Exercise tracking | Not started | **Medium** | Log workouts - type, duration, notes. Connects to move reminders. Glim acknowledges specific activities |
+| Water tracking | Not started | **High** | Log glasses/oz toward a configurable daily goal. Glim reacts to each log, celebrates hitting the goal, notices patterns over time. Data model: timestamped log events (not running totals) for sync-safe merging. First feature to build (pattern-prover). |
+| Step tracking | Not started | **High** | Replace-style daily entry: user types their current pedometer total, latest entry for the day wins. Tier milestone goals at 2,500 / 5,000 / 7,500 / 10,000 (rather than a single target). Manual entry only. Companion mode panel with numpad-style input and progress ring. |
+| Nutrition tracking (hybrid) | Not started | **High** | Hybrid approach: personal food library with quick-add items that populate multiple counters simultaneously, PLUS a "raw add" mode for logging protein/fiber/servings directly without a food item. Tracks three goals: protein (grams), fiber (grams), fruit servings, veggie servings. Fruit and veggie are tracked separately in the nutrition panel but shown as a combined "fruit + veg" widget on the home screen. No calorie tracking for v1. No starter food library (user builds their own). New storage key: `glim-nutrition-library`. See Section 8.8 for schemas. |
+| Exercise / workout tracking | Not started | **Medium** | Log workouts with predefined categories (cardio, strength, flexibility, sports, other) and custom types within each category. Duration + intensity (light/moderate/vigorous) + notes per entry. No distance/sets/reps for v1. Goals are weekly/daily minutes, configurable per exercise type and intensity level (e.g., "150 min moderate cardio/week" separate from "60 min resistance training/week"). Category-aware Glim reactions. Focus mode UI. |
 | Sleep tracking | Not started | **Medium** | Log bedtime and wake time. Connects to existing late-night messages. Glim notices patterns ("you've been staying up past midnight three days in a row") |
 | Mood tracking | Not started | **Medium** | Daily mood check-in (emoji or scale). Glim responds to mood, notices trends, connects mood to other tracked data over time |
 | Medication / supplement reminders | Not started | **Low** | Timed reminders for specific items with quick "done" buttons. Similar to existing wellness reminders but user-configurable per item |
@@ -602,8 +690,8 @@ Features for task management and focus.
 
 | Feature | Status | Priority | Description |
 |---|---|---|---|
-| To-do lists | Not started | **High** | Tasks with completion tracking. Glim reacts to checking things off. Needs: add, complete, delete, reorder. Persistent across sessions |
-| Pomodoro timer | Not started | **Medium** | 25-min work sessions with break announcements. Glim counts down, announces breaks, tracks completed sessions per day. Integrates with existing wellness reminder system |
+| To-do lists | Not started | **High** | Tasks with completion tracking. Recurring tasks use Approach 2 (definitions + daily completion logs, same architecture as habits) and are pinned at top of list. One-off tasks below. Completed tasks move to a collapsible "done (N)" section after 500ms with checkmark animation. Tapping a completed task un-completes it. No subtasks for v1. No daily goals integration for v1. Focus mode UI. |
+| Pomodoro / time tracking | Not started | **High** | Pomodoro timer as primary time tracking mechanism. Custom work categories (e.g., "academic," "housework," "creative") so time is tracked per category. Manual session add for retroactive logging including partial sessions. Each completed timer session auto-logs with `source: "timer"`. Configurable session/break durations. Not integrated with daily goals system yet. Focus mode UI. New storage key: `glim-pomodoro`. |
 | Quick capture / brain dump | Not started | **Low** | Fast text box for stray thoughts, timestamped and saved. Different from journaling - no prompt, no reflection, just capture. Glim can reference past captures in idle chatter |
 
 ## 8.5 Reflection and Wellbeing
@@ -673,12 +761,14 @@ This flow pattern is universal. Only the specific message pool, animation, and e
 | `glim-pokes` | Counter with delta tracking | Additive deltas | No |
 | `glim-journal` | Event log (entries array) | Merge + dedupe by ID | Yes |
 | `glim-water` | Event log (logs array) | Merge + dedupe by ID | Yes |
-| `glim-todos` | Event log (items array) | Merge + dedupe by ID | Yes |
-| `glim-steps` | Event log (logs array) | Merge + dedupe by ID | Yes |
-| `glim-exercise` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-todos` | Definitions (recurring) + items (one-off) | Merge + dedupe by ID | Yes |
+| `glim-steps` | Event log (logs array, replace-style) | Merge + dedupe by ID | Slowly |
+| `glim-exercise` | Event log (logs array) + categories | Merge + dedupe by ID | Yes |
 | `glim-mood` | Event log (logs array) | Merge + dedupe by ID | Slowly |
 | `glim-sleep` | Event log (logs array) | Merge + dedupe by ID | Slowly |
 | `glim-nutrition` | Event log (logs array) | Merge + dedupe by ID | Yes |
+| `glim-nutrition-library` | Item definitions (personal food library) | Merge + dedupe by ID | Slowly |
+| `glim-pomodoro` | Event log (logs array) + settings | Merge + dedupe by ID | Yes |
 | `glim-habits` | Definitions + event log | Merge both arrays by ID | Yes |
 | `glim-gratitude` | Event log (logs array) | Merge + dedupe by ID | Slowly |
 | `glim-captures` | Event log (entries array) | Merge + dedupe by ID | Yes |
@@ -698,8 +788,22 @@ No events, no history. Last-write-wins on sync.
   eyesInterval: 20,
   goals: {
     water: { amount: 8, unit: "glass" },        // "glass" | "oz" | "ml"
-    steps: { amount: 10000 },
+    steps: {                                     // Tier milestones, not single target
+      tiers: [2500, 5000, 7500, 10000],
+    },
     sleep: { targetHours: 8 },
+    nutrition: {
+      protein: 80,                              // grams
+      fiber: 25,                                // grams
+      fruitServings: 5,                         // servings
+      vegServings: 5,                           // servings
+    },
+    exercise: {                                  // Weekly/daily minutes, per type+intensity
+      goals: [
+        { category: "cardio", intensity: "moderate", minutesPerWeek: 150 },
+        { category: "strength", intensity: null, minutesPerWeek: 60 },
+      ],
+    },
   },
   dayBoundary: "midnight",                      // Future: configurable hour
   lastModified: "2026-03-25T14:30:00.000Z",
@@ -772,6 +876,7 @@ Goal lives in `glim-settings.goals.water`, not duplicated here.
 
 ```javascript
 {
+  // One-off tasks
   items: [
     {
       id: "m3n4o5p6-...",
@@ -783,14 +888,38 @@ Goal lives in `glim-settings.goals.water`, not duplicated here.
       sortOrder: 0,                             // For manual reordering
     },
   ],
+  // Recurring task definitions (Approach 2: same architecture as habits)
+  recurring: [
+    {
+      id: "r1s2t3u4-...",
+      text: "take vitamin D",
+      frequency: "daily",                       // "daily" | "weekdays" | "weekly" | "custom"
+      customDays: null,                         // For "custom": [1,3,5] = Mon/Wed/Fri
+      createdAt: "2026-03-25T09:00:00.000Z",
+      archivedAt: null,                         // Soft archive (stop showing without losing history)
+      sortOrder: 0,
+    },
+  ],
+  // Recurring task completion logs (one per definition per day)
+  recurringLogs: [
+    {
+      id: "v5w6x7y8-...",
+      recurringId: "r1s2t3u4-...",              // References the definition
+      date: "2026-03-25",
+      completedAt: "2026-03-25T08:30:00.000Z",
+      deletedAt: null,
+    },
+  ],
 }
 ```
 
+Recurring tasks are pinned at the top of the to-do list. They reappear as unchecked each day because there is no completion log for the current date. Completed one-off tasks move to a collapsible "done (N)" section after a 500ms checkmark animation. Tapping a completed task un-completes it (clears `completedAt`).
+
 `completedAt` is a timestamp (not boolean) to record when the task was finished. Feeds into daily summaries, productivity trend analysis, and undo (clear timestamp to un-complete).
 
-**Derived values:** Active count, completed today, completion rate.
+**Derived values:** Active count (one-off), completed today (one-off + recurring), recurring completion rate.
 
-**Glim reactions:** `task_completed` ("checked off! [n] down, [m] to go"), `all_tasks_done`, `task_created`.
+**Glim reactions:** `task_completed` ("checked off! that's 3 done today"), `all_tasks_done` (all one-off + today's recurring), `task_created`, `recurring_streak` (completed a recurring task N days in a row).
 
 #### Steps (`glim-steps`)
 
@@ -799,7 +928,7 @@ Goal lives in `glim-settings.goals.water`, not duplicated here.
   logs: [
     {
       id: "u1v2w3x4-...",
-      count: 3200,
+      count: 7100,                              // Current pedometer total (replace-style)
       source: "manual",                         // "manual" | future: "healthkit" | "google_fit"
       createdAt: "2026-03-25T18:00:00.000Z",
       date: "2026-03-25",
@@ -809,11 +938,13 @@ Goal lives in `glim-settings.goals.water`, not duplicated here.
 }
 ```
 
-`source` field future-proofs for automatic pedometer imports. Initial version is manual entry only.
+**Replace-style entry:** User types their current pedometer total. If multiple entries exist for the same date, the latest `createdAt` wins (not summed). This matches how people naturally read a pedometer: "I'm at 7,100 now." `source` field future-proofs for automatic pedometer imports.
 
-**Derived values:** Today's total, goal progress, streak, weekly/monthly averages.
+**Tier milestone goals:** Instead of a single target, steps uses tier milestones at 2,500 / 5,000 / 7,500 / 10,000. The progress ring fills through tiers (25% at 2,500, 50% at 5,000, etc.). Goal tiers are configurable in `glim-settings.goals.steps.tiers`.
 
-**Glim reactions:** `steps_logged`, `steps_goal_met`, `steps_streak`.
+**Derived values:** Today's count (latest entry for today), current tier reached, all-time milestones hit, streak (days reaching at least tier 1), weekly average.
+
+**Glim reactions:** `steps_logged`, `steps_tier_reached` ("5,000! halfway there"), `steps_milestone` (first time ever reaching 5k/10k/15k/20k), `steps_streak`, steps-aware idle chatter ("you've averaged 7,800 steps this week, that's up from last week").
 
 #### Exercise (`glim-exercise`)
 
@@ -822,23 +953,37 @@ Goal lives in `glim-settings.goals.water`, not duplicated here.
   logs: [
     {
       id: "y5z6a7b8-...",
-      type: "walk",                             // Free text or from recentTypes
-      durationMinutes: 30,
-      notes: "walked around campus between classes",
-      createdAt: "2026-03-25T12:30:00.000Z",
+      category: "cardio",                       // From WORKOUT_CATEGORIES
+      type: "running",                          // Specific type within category
+      durationMinutes: 35,
+      intensity: "moderate",                    // "light" | "moderate" | "vigorous" | null
+      notes: "trail run, felt good",
+      createdAt: "2026-03-25T07:30:00.000Z",
       date: "2026-03-25",
       deletedAt: null,
     },
   ],
-  recentTypes: ["walk", "yoga", "dance", "improv warm-up"],
+  customTypes: {
+    cardio: ["dance"],                          // User-added types per category
+    strength: ["climbing"],
+    flexibility: [],
+    sports: ["volleyball"],
+    other: ["improv warm-up"],
+  },
 }
 ```
 
-`recentTypes` auto-populated from past `type` values for quick-select UI buttons.
+**Predefined categories:** cardio (running, walking, cycling, swimming, hiking), strength (weights, bodyweight, resistance bands), flexibility (yoga, stretching, pilates), sports (basketball, tennis, soccer), other (user-added only). Users can add custom types to any category.
 
-**Derived values:** Workouts this week, total duration this week, most common type, streak (days with at least one exercise).
+**No distance/sets/reps for v1.** Duration + intensity + notes is sufficient. Type-specific metrics can be added later without breaking the schema.
 
-**Glim reactions:** `exercise_logged` (resets move timer), `exercise_streak`, type-specific commentary ("improv warm-up counts as exercise and i will die on this hill").
+**Goals:** Configurable weekly/daily minutes per category and intensity level, stored in `glim-settings.goals.exercise`. Example: "150 min moderate cardio/week" and "60 min resistance training/week" as separate goals.
+
+`customTypes` auto-populated from past entries. `recentTypes` was renamed to `customTypes` organized by category.
+
+**Derived values:** Workouts this week, total duration this week (overall and per category), most common type, streak (days with at least one workout), minutes toward each goal.
+
+**Glim reactions:** `exercise_logged` (resets move timer), `exercise_streak`, `exercise_goal_met` (per category/intensity goal), category-aware commentary ("three cardio days in a row, maybe mix in some stretching?"), cross-tracker awareness ("between the run and the 12,000 steps, your legs earned a rest day").
 
 #### Mood (`glim-mood`)
 
@@ -895,9 +1040,29 @@ Numeric 1-5 scale enables trend analysis and cross-tracker correlation. UI maps 
   logs: [
     {
       id: "k7l8m9n0-...",
-      meal: "lunch",                            // "breakfast" | "lunch" | "dinner" | "snack"
-      description: "leftover pasta, side salad", // Free text
-      createdAt: "2026-03-25T12:45:00.000Z",
+      itemId: "library-egg-001",                // Reference to library item, or null for raw add
+      name: "egg",                              // Denormalized for display
+      quantity: 2,
+      protein: 12,                              // Grams (computed: quantity * item.protein)
+      fiber: 0,                                 // Grams
+      fruitServings: 0,
+      vegServings: 0,
+      meal: "breakfast",                        // Optional: "breakfast" | "lunch" | "dinner" | "snack" | null
+      createdAt: "2026-03-25T08:30:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+    {
+      id: "r2s3t4u5-...",
+      itemId: null,                             // Raw add (no library item)
+      name: null,
+      quantity: null,
+      protein: 20,                              // Direct entry
+      fiber: 0,
+      fruitServings: 0,
+      vegServings: 0,
+      meal: null,
+      createdAt: "2026-03-25T13:00:00.000Z",
       date: "2026-03-25",
       deletedAt: null,
     },
@@ -905,11 +1070,74 @@ Numeric 1-5 scale enables trend analysis and cross-tracker correlation. UI maps 
 }
 ```
 
-v1 is simple meal logging (what you ate, free text). No calorie/macro tracking initially. Schema can add optional `calories`, `protein`, `carbs`, `fat` fields later without breaking anything.
+Nutritional values are denormalized (stored on the log entry, not just referenced from the library) so that editing a library item's values later doesn't retroactively change historical logs. `meal` is optional since some people care about meal grouping and some don't. `quantity` enables logging "3 eggs" in one tap. Raw adds have `itemId: null` and only the relevant nutrient fields populated.
 
-**Derived values:** Meals logged today, meals this week, patterns (skipping breakfast?).
+Fruit and veggie servings are tracked separately in the nutrition panel but shown as a combined "fruit + veg" summary widget on the home screen.
 
-**Glim reactions:** `meal_logged`, `meal_skipped` (no breakfast by 11 AM), pattern-aware ("you've logged breakfast every day this week").
+**Derived values:** Today's totals (protein, fiber, fruit servings, veggie servings), progress toward each goal, weekly averages.
+
+**Glim reactions:** `nutrition_logged` ("ooh, protein boost!"), `nutrition_goal_met` (per nutrient), `nutrition_nudge` (low protein/fiber by evening), pattern-aware ("you've hit your fiber goal 5 days in a row").
+
+#### Nutrition Library (`glim-nutrition-library`)
+
+```javascript
+{
+  items: [
+    {
+      id: "library-egg-001",
+      name: "egg",
+      protein: 6,                               // Per unit
+      fiber: 0,
+      fruitServings: 0,
+      vegServings: 0,
+      unit: "egg",                              // Display label: "1 egg", "2 eggs"
+      hidden: false,                            // Hideable without deleting
+      usageCount: 47,                           // For sorting by frequency
+      lastUsed: "2026-03-25",
+      createdAt: "2026-03-20T10:00:00.000Z",
+      deletedAt: null,
+    },
+  ],
+}
+```
+
+No starter library. User builds their own from scratch. Items they log frequently float to the top of the quick-add panel via `usageCount` sorting. Long-pressing a quick-add item allows changing the quantity before logging. The "raw add" button opens a form for entering nutrients directly (e.g., "+20g protein") without creating a library entry.
+
+**UI flow (companion mode panel):** Progress rings for protein/fiber/fruit/veg at top. Scrollable grid of frequent library items below. "Raw add" and "New food" buttons at bottom.
+
+#### Pomodoro / Time Tracking (`glim-pomodoro`)
+
+```javascript
+{
+  logs: [
+    {
+      id: "p1q2r3s4-...",
+      durationMinutes: 25,                      // Standard pomodoro, or custom/partial
+      source: "timer",                          // "timer" | "manual"
+      category: "academic",                     // Custom work category
+      label: "thesis methods section",          // Optional: what you were working on
+      createdAt: "2026-03-25T14:25:00.000Z",
+      date: "2026-03-25",
+      deletedAt: null,
+    },
+  ],
+  categories: ["academic", "housework", "creative", "admin"],  // User-defined
+  settings: {
+    sessionMinutes: 25,                         // Configurable
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    sessionsBeforeLongBreak: 4,
+    dailyGoalSessions: null,                    // null = no goal, number = target
+    dailyGoalMinutes: null,                     // Alternative: goal in minutes
+  },
+}
+```
+
+When the pomodoro timer completes a session, it auto-logs with `source: "timer"`. Manual entry (via "add session" button) allows retroactive logging of any duration, including partial sessions. The daily total is `sum(durationMinutes)` regardless of source. Time is tracked per work category so the user can see where their time goes.
+
+**Derived values:** Sessions today, total minutes today (overall and per category), streak (consecutive days with at least one session), weekly totals per category.
+
+**Glim reactions:** `pomodoro_completed` ("that's session 4! take a real break"), `pomodoro_streak`, `pomodoro_manual_added` ("retroactive credit, i respect the honesty"), `break_start`, `break_over`, category-aware ("you've put in 3 hours of academic work today").
 
 #### Habits (`glim-habits`)
 
@@ -1262,19 +1490,21 @@ Glim uses a hybrid navigation system with two modes, chosen per-feature based on
 | Feature | Mode | Reason |
 |---|---|---|
 | Water tracking | Companion | One-tap logging, small progress display |
+| Step logging | Companion | Replace-style number entry, progress ring |
+| Nutrition quick-add | Companion | Tap library items or raw-add nutrients |
 | Mood tracking | Companion | One-tap emoji, minimal display |
 | Habit check-offs | Companion | Tap to check, short list |
 | Gratitude log | Companion | One line of text, minimal display |
-| Step logging | Companion | One-tap or number entry |
 | Quick capture | Companion | One text field, tap to save |
 | Social check-in | Companion | Quick who + how entry |
-| Pomodoro timer | Companion | Timer display + start/stop |
 | Countdowns | Companion | Simple list, minimal interaction |
-| To-do lists | Focus | Scrollable list, reordering, multiple actions |
+| To-do lists | Focus | Scrollable list, recurring + one-off sections, reordering |
+| Pomodoro / time tracking | Focus | Timer, work category selection, session history |
 | Journal writing | Focus | Text area needs keyboard space, past entries scroll |
-| Nutrition logging | Focus | Multiple fields per entry |
-| Exercise logging | Focus | Type, duration, notes fields |
+| Nutrition library management | Focus | Add/edit food items, multiple fields per item |
+| Exercise / workout logging | Focus | Category, type, duration, intensity, notes fields |
 | Sleep logging | Focus | Bedtime/waketime entry, quality rating |
+| Dashboard | Focus | All trackers summary, data-dense |
 | Trends/charts | Focus | Data-dense charts need full width |
 | Settings | Focus | Multiple sections, sliders, goal config |
 
@@ -1282,13 +1512,33 @@ Glim uses a hybrid navigation system with two modes, chosen per-feature based on
 
 A persistent bottom nav bar appears in both modes, identical in position and behavior. Provides consistent navigation regardless of current mode.
 
-**Customizable slots.** The user picks 4 most-used features for quick access. A 5th "more" icon opens a grid/list of all remaining features grouped by category. The default 4 slots could be: water, tasks, journal, and mood (adjustable in settings).
+**Fixed home + 3 customizable slots + more.** The home icon is fixed (always present, returns to companion mode). The user picks 3 features for quick access. A 5th "more" icon opens a grid of all remaining features grouped by category.
 
 ```
-| [slot 1]  [slot 2]  [slot 3]  [slot 4]  [more] |
+| [home]  [slot 1]  [slot 2]  [slot 3]  [more] |
 ```
 
-Active feature is highlighted (teal). Inactive features are dimmed. Tapping any icon navigates to that feature. Tapping "home" (or the creature icon) returns to companion mode with no panel open.
+**Nav bar order:** home, focus (pomodoro), tasks, nutrition, more. This is the default; slots are user-customizable in settings.
+
+**Nav bar icon candidates (to be finalized):**
+- Home: nest icon (cozy, fits Glim's character)
+- Nutrition: leaf icon
+- Tasks: clipboard/list icon
+- Focus/pomodoro: clock icon
+- More: three dots
+
+Active feature is highlighted (teal). Inactive features are dimmed. Tapping home returns to companion mode with no panel open.
+
+### Home screen summary widgets
+
+The home screen shows Glim at large size in the upper portion with summary widgets near the bottom, above the nav bar. The widgets are glanceable at-a-glance progress indicators. Tapping any widget opens that tracker's panel or focus screen.
+
+**Widget row (3 widgets):**
+- Steps: progress ring with current count (fills through tier milestones)
+- Water: progress ring with current/goal count
+- Tasks: checkmark icon with total completed today (no fraction, just "3 done")
+
+The nutrition trackers (protein, fiber, fruit, veg), work time, and workout status are accessible via the nutrition and focus nav icons, not shown as home screen widgets. This keeps the home screen clean and Glim-focused. The full dashboard (focus mode) shows all trackers together.
 
 ### Companion mode details
 
@@ -1611,6 +1861,41 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Alternatives considered:** (1) Capacitor - wraps the existing web app in a native shell with plugin access to HealthKit, push via APNs, and App Store distribution. ~95% code reuse, but adds $99/year Apple fee, Xcode dependency, and native config maintenance. Best escalation path if PWA limitations become blocking. (2) React Native - truly native rendering, but requires rewriting all visual components (~2460 lines), losing CSS transitions/gradients/SVG rendering approach, and abandoning the desktop browser version. ~30% code reuse (logic only). Not justified given Glim's UI is not performance-constrained. (3) Full native (Swift/Kotlin) - maximum platform access but requires learning new languages, maintaining two separate codebases, and discarding the entire existing investment. No advantages over Capacitor for Glim's use case.
 **Impact:** Mobile deployment continues as Netlify-hosted PWA. Service worker and Web Push implementation are now on the critical path for mobile parity. Step tracking ships as manual entry. Capacitor migration deferred indefinitely but documented as the fallback if a concrete native API need arises.
 
+### 2026-03-27 - Hybrid nutrition tracking (library + raw add)
+
+**Decision:** Nutrition tracking uses a hybrid approach: a personal food library where quick-add items populate multiple nutrient counters simultaneously, plus a "raw add" mode for logging nutrients directly without a food item. Tracks protein (grams), fiber (grams), fruit servings, and veggie servings as separate goals. Fruit and veggie are tracked separately in the nutrition panel but combined on the home screen widget. No calorie tracking for v1. No starter food library (user builds their own).
+**Rationale:** Three options evaluated: (1) unified meal logger with multiple fields per entry, (2) separate simple counters per nutrient, (3) hybrid with food library + raw add. Option 1 is accurate but high-friction (multiple fields every meal). Option 2 is fast per-tap but means opening four trackers after each meal. The hybrid combines the speed of tap-to-log with the data connectivity of a unified system. The raw add mode prevents the library from being a bottleneck: you can always just type "+20g protein" without creating a food entry.
+**Alternatives considered:** (1) Full meal logging with macros (MyFitnessPal style) - rejected as too clinical and high-friction for Glim's personality. (2) Separate counter per nutrient - rejected because logging four things per meal is more annoying than one tap on a library item.
+**Impact:** Two new storage keys (`glim-nutrition` redesigned, `glim-nutrition-library` added). Nutrition quick-add is a companion-mode panel. Library management is a focus-mode screen.
+
+### 2026-03-27 - Pomodoro-based time tracking with work categories
+
+**Decision:** Pomodoro timer is the primary time tracking mechanism, with manual session logging as a backup. Custom work categories (e.g., "academic," "housework") allow tracking time per category. Not integrated with daily goals system yet.
+**Rationale:** Collapses two roadmap features (pomodoro timer + time worked tracking) into one. The timer provides accurate tracking without requiring the user to remember start/stop times. Manual add covers retroactive logging. Work categories answer "where does my time go?" without overcomplicating the UI.
+**Alternatives considered:** (1) Separate pomodoro timer and time tracker - rejected as redundant. (2) Simple manual time log without timer - rejected because the timer is the core value of pomodoro methodology. (3) Timer only without manual add - rejected because forgetting to start the timer shouldn't mean losing the data.
+**Impact:** New storage key `glim-pomodoro`. Focus mode UI. Pomodoro gets a default nav bar slot ("focus").
+
+### 2026-03-27 - Recurring tasks via definition + completion logs (Approach 2)
+
+**Decision:** Recurring tasks are implemented as definitions (like habits) with daily completion logs, not by generating new task instances each day. Recurring tasks are pinned at the top of the to-do list, above one-off tasks.
+**Rationale:** Approach 2 (definitions + logs) is cleaner for storage, sync-safe (each completion is its own event with its own ID), and architecturally identical to the habits tracker. Approach 1 (generate new instances daily) creates many redundant entries over time and requires a day-boundary job to spawn them. Approach 2's "reappears unchecked because no log exists for today" behavior is simpler and doesn't require background processing.
+**Alternatives considered:** Approach 1 (generate new instances daily) - simpler mental model but generates excessive storage, requires day-boundary processing, and the same entry pattern already exists in habits.
+**Impact:** `glim-todos` schema expanded with `recurring` and `recurringLogs` arrays alongside `items`.
+
+### 2026-03-27 - Steps use replace-style entry with tier milestones
+
+**Decision:** Step tracking uses replace-style entry (user types current pedometer total, latest entry for the day wins) with tier milestone goals at 2,500 / 5,000 / 7,500 / 10,000 rather than a single target.
+**Rationale:** Replace-style matches how people naturally read a pedometer ("I'm at 7,100"). No mental math required (unlike additive mode where you'd subtract your last entry). Tier milestones provide multiple achievement points throughout the day rather than a single pass/fail threshold, which is more encouraging and matches how step counts actually accumulate.
+**Alternatives considered:** (1) Single daily entry at end of day - simplest but no mid-day feedback. (2) Additive entries - requires subtraction, error-prone. (3) Single goal (e.g., 10,000) - binary pass/fail, less motivating.
+**Impact:** `glim-steps` uses latest-entry-wins logic. `glim-settings.goals.steps` stores tier array instead of single amount.
+
+### 2026-03-27 - Inside-out feature build order (incremental framework growth)
+
+**Decision:** Build features one at a time, growing the framework incrementally around real needs, rather than building the full navigation/panel framework first. Phased: (1) minimal scaffolding + prerequisites, (2) water tracker as pattern-prover, (3) second companion tracker, (4) first focus-mode feature (to-do list), (5) everything else.
+**Rationale:** Industry standard for single-developer projects. Building framework in isolation means making decisions without feedback from real feature needs. The first real feature (water) will reveal patterns and problems that can't be predicted from abstract architecture. Each subsequent feature validates and extends the framework.
+**Alternatives considered:** (1) Framework-first (build full nav shell, panel system, focus mode, routing, then fill in features) - rejected because it front-loads speculative architecture that inevitably needs revision once real features are built. (2) All features simultaneously - rejected as overwhelming and prevents learning from each feature.
+**Impact:** See Section 8.2.1 for detailed build plan. Prerequisite infrastructure (Zustand, file separation, touch/responsive) must happen first.
+
 ---
 
 # 10. Project Log
@@ -1787,6 +2072,20 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 - The existing data model already accommodates manual step entry (`source: "manual"`) as a fallback for the absence of HealthKit.
 **Decisions made:** Enhanced PWA over native app (see Decision Register 2026-03-26).
 **Next steps identified:** Finish service worker (offline support). Implement Web Push notifications (Firebase Cloud Function backend). Complete touch event support and responsive layout (existing pending tasks, prerequisites for usable mobile experience).
+
+### 2026-03-27 - Feature design brainstorm and build plan
+
+**Work performed:** (Claude.ai session.) Designed the full tracker feature suite: nutrition hybrid system (food library + raw add for protein/fiber/fruit/veggie tracking), pomodoro-based time tracking with custom work categories, to-do list with recurring tasks (Approach 2), replace-style step tracking with tier milestones, and category-based workout logging with per-type goals. Designed the home screen layout with summary widgets and nav bar (home/focus/tasks/nutrition/more). Mockupped companion mode panels and home screen variations. Established the inside-out feature build plan (5 phases). Also designed and finalized the multi-hue app icon (accurate Glim creature from DesktopPet.jsx) and splash screen with randomized taglines.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Sections 8.2.1 build plan, 8.3 daily tracking, 8.4 productivity, 8.8 data models for todos/steps/exercise/nutrition/pomodoro, 8.10 nav system updates, 6 decision register entries, project log). Updated `glim_handoff.Rmd` (task queue restructured by build phase, session log, resolved questions). `glim-icon-multihue.svg`, `SplashScreen.jsx`, `icon-splash-handoff.md` (implementation files for Claude Code).
+**Key findings:**
+- Hybrid nutrition approach (library + raw add) balances data quality with low friction. Raw add prevents the library from being a bottleneck.
+- Recurring tasks share architecture with habits (definitions + completion logs), avoiding redundant patterns.
+- Pomodoro timer + time tracking collapse into one feature. Work categories answer "where does my time go?" cheaply.
+- Replace-style step entry matches pedometer mental model better than additive logging.
+- Inside-out build order (one feature at a time, growing framework incrementally) is standard practice and avoids speculative architecture.
+- Home screen works best with Glim large and just 3 summary widgets (steps ring, water ring, tasks done count). Full detail lives in panels and dashboard.
+**Decisions made:** See Decision Register entries for 2026-03-27 (6 entries: hybrid nutrition, pomodoro time tracking, recurring tasks Approach 2, replace-style steps, inside-out build order, and nav bar design).
+**Next steps identified:** Begin Phase 1 (Zustand migration, file separation, touch/responsive, nav shell). Then Phase 2 (water tracker as pattern-prover).
 
 ---
 
