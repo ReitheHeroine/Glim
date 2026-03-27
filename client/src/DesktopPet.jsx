@@ -1251,9 +1251,9 @@ function DesktopPet() {
   const { hue, sat } = colors;
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full overflow-hidden select-none"
+    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden select-none"
       style={{
-        minHeight: "100vh", fontFamily: "'Courier New', monospace",
+        fontFamily: "'Courier New', monospace",
         background: "#040408",
       }}>
       <Background hue={hue} sat={sat} mood={mood} />
