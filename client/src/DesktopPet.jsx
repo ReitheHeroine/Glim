@@ -19,6 +19,8 @@
 //   - Default export: DesktopPet component
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { signOut } from 'firebase/auth';
+import { auth } from './firebase';
 import {
   MESSAGES, MOVE_REMINDERS, EYES_REMINDERS, MOVE_DONE_RESPONSES,
   EYES_DONE_RESPONSES, MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS,
@@ -1410,6 +1412,16 @@ function DesktopPet() {
               onChange={(e) => setEyesInterval(Number(e.target.value))}
               style={{ width: "100%", accentColor: `hsl(${hue}, ${sat}%, 65%)` }} />
           </div>
+
+          <button onClick={() => signOut(auth)} style={{
+            marginTop: 14, width: "100%", padding: "6px 0", borderRadius: 8, cursor: "pointer",
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            color: "rgba(255,255,255,0.4)", fontFamily: "'Courier New', monospace", fontSize: 11,
+            letterSpacing: "0.5px", transition: "all 0.2s ease",
+          }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+          >sign out</button>
         </div>
       )}
 
