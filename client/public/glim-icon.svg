@@ -1,67 +1,120 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Dark background -->
-  <rect width="512" height="512" fill="#0d0820" rx="80"/>
-
-  <!-- Outer glow -->
-  <circle cx="256" cy="256" r="180" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.3"/>
-  <circle cx="256" cy="256" r="160" fill="none" stroke="#7c3aed" stroke-width="3" opacity="0.4"/>
-
-  <!-- Body glow -->
-  <ellipse cx="256" cy="270" rx="110" ry="120" fill="#1e0a3c" opacity="0.9"/>
-  <ellipse cx="256" cy="270" rx="100" ry="110" fill="url(#bodyGrad)"/>
-
-  <!-- Wings -->
-  <ellipse cx="148" cy="280" rx="70" ry="45" fill="#4c1d95" opacity="0.7" transform="rotate(-20 148 280)"/>
-  <ellipse cx="364" cy="280" rx="70" ry="45" fill="#4c1d95" opacity="0.7" transform="rotate(20 364 280)"/>
-
-  <!-- Wing glow edges -->
-  <ellipse cx="148" cy="280" rx="70" ry="45" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.5" transform="rotate(-20 148 280)"/>
-  <ellipse cx="364" cy="280" rx="70" ry="45" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.5" transform="rotate(20 364 280)"/>
-
-  <!-- Face disc -->
-  <circle cx="256" cy="235" r="75" fill="#2d1060" opacity="0.95"/>
-  <circle cx="256" cy="235" r="72" fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-
-  <!-- Eyes -->
-  <circle cx="228" cy="228" r="22" fill="#0d0820"/>
-  <circle cx="284" cy="228" r="22" fill="#0d0820"/>
-  <circle cx="228" cy="228" r="18" fill="#5eead4"/>
-  <circle cx="284" cy="228" r="18" fill="#5eead4"/>
-  <circle cx="228" cy="228" r="10" fill="#0d0820"/>
-  <circle cx="284" cy="228" r="10" fill="#0d0820"/>
-  <!-- Eye shine -->
-  <circle cx="233" cy="222" r="4" fill="white" opacity="0.9"/>
-  <circle cx="289" cy="222" r="4" fill="white" opacity="0.9"/>
-
-  <!-- Antennae -->
-  <line x1="240" y1="163" x2="220" y2="125" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"/>
-  <line x1="272" y1="163" x2="292" y2="125" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="220" cy="122" r="6" fill="#a78bfa"/>
-  <circle cx="292" cy="122" r="6" fill="#a78bfa"/>
-
-  <!-- Beak -->
-  <polygon points="256,248 248,262 264,262" fill="#fbbf24" opacity="0.9"/>
-
-  <!-- Blush -->
-  <ellipse cx="210" cy="250" rx="14" ry="8" fill="#f472b6" opacity="0.4"/>
-  <ellipse cx="302" cy="250" rx="14" ry="8" fill="#f472b6" opacity="0.4"/>
-
-  <!-- Body dots -->
-  <circle cx="245" cy="295" r="4" fill="#8b5cf6" opacity="0.7"/>
-  <circle cx="260" cy="308" r="3" fill="#8b5cf6" opacity="0.6"/>
-  <circle cx="270" cy="292" r="4" fill="#8b5cf6" opacity="0.7"/>
-
-  <!-- Overall glow overlay -->
-  <circle cx="256" cy="250" r="170" fill="url(#glowGrad)" opacity="0.15"/>
-
   <defs>
-    <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#4c1d95"/>
-      <stop offset="100%" stop-color="#1e0a3c"/>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0%" stop-color="#0d1028"/>
+      <stop offset="30%" stop-color="#10103a"/>
+      <stop offset="65%" stop-color="#150d32"/>
+      <stop offset="100%" stop-color="#0d0820"/>
+    </linearGradient>
+    <radialGradient id="bodyGrad" cx="48%" cy="40%" r="48%">
+      <stop offset="0%" stop-color="#b0c0e0" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#8098c8" stop-opacity="0.85"/>
+      <stop offset="65%" stop-color="#7870b8" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#4838a0" stop-opacity="0.6"/>
     </radialGradient>
-    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#0d0820" stop-opacity="0"/>
+    <radialGradient id="glowGrad" cx="50%" cy="38%" r="35%">
+      <stop offset="0%" stop-color="#c8d8f0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#8090c0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bellyGrad" cx="50%" cy="55%" r="30%">
+      <stop offset="0%" stop-color="#c8d0e8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#a0b0d8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="faceGrad" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#d0d4e8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#98a0c8" stop-opacity="0.2"/>
     </radialGradient>
   </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGrad)" rx="80"/>
+
+  <!-- Stars (five time-of-day colors: green, teal, periwinkle, lavender, pink) -->
+  <!-- Large stars with halos -->
+  <circle cx="108" cy="78" r="3" fill="#86efac" opacity="0.45"/>
+  <circle cx="110" cy="78" r="6" fill="#86efac" opacity="0.08"/>
+  <circle cx="400" cy="65" r="2.5" fill="#5eead4" opacity="0.5"/>
+  <circle cx="401" cy="65" r="5" fill="#5eead4" opacity="0.08"/>
+  <circle cx="438" cy="148" r="3" fill="#c4b5fd" opacity="0.5"/>
+  <circle cx="439" cy="148" r="6" fill="#c4b5fd" opacity="0.08"/>
+  <circle cx="82" cy="320" r="2.5" fill="#f9a8d4" opacity="0.35"/>
+  <circle cx="83" cy="320" r="5" fill="#f9a8d4" opacity="0.06"/>
+  <circle cx="428" cy="270" r="2.5" fill="#5eead4" opacity="0.5"/>
+  <circle cx="429" cy="270" r="5" fill="#5eead4" opacity="0.08"/>
+  <circle cx="130" cy="432" r="2.5" fill="#a5b4fc" opacity="0.4"/>
+  <circle cx="131" cy="432" r="5" fill="#a5b4fc" opacity="0.07"/>
+  <circle cx="330" cy="82" r="2.5" fill="#c4b5fd" opacity="0.4"/>
+  <circle cx="331" cy="82" r="5" fill="#c4b5fd" opacity="0.08"/>
+  <circle cx="190" cy="95" r="2.5" fill="#a5b4fc" opacity="0.5"/>
+  <circle cx="191" cy="95" r="5" fill="#a5b4fc" opacity="0.08"/>
+  <!-- Small stars -->
+  <circle cx="70" cy="180" r="2" fill="#a5b4fc" opacity="0.45"/>
+  <circle cx="430" cy="285" r="2" fill="#5eead4" opacity="0.4"/>
+  <circle cx="392" cy="418" r="2" fill="#86efac" opacity="0.3"/>
+  <circle cx="335" cy="82" r="2" fill="#c4b5fd" opacity="0.4"/>
+  <circle cx="450" cy="230" r="1.5" fill="#f9a8d4" opacity="0.28"/>
+  <circle cx="65" cy="255" r="1.5" fill="#a5b4fc" opacity="0.35"/>
+  <circle cx="310" cy="442" r="2" fill="#86efac" opacity="0.28"/>
+  <circle cx="452" cy="220" r="2" fill="#86efac" opacity="0.4"/>
+
+  <!-- Creature (scaled from actual 220x240 viewBox) -->
+  <g transform="translate(256,262) scale(2.15)">
+    <g transform="translate(-110,-125)">
+
+      <!-- Tail (exact bezier from DesktopPet.jsx, curls right) -->
+      <path d="M110,185 Q115,200 125,208 Q140,218 148,210 Q155,200 145,195 Q135,192 132,198"
+        stroke="#5870a8" stroke-opacity="0.7" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <circle cx="132" cy="198" r="3.5" fill="#a898d8" opacity="0.7"/>
+
+      <!-- Wings (teal left, purple right for multi-hue) -->
+      <ellipse cx="52" cy="125" rx="35" ry="22" fill="#507898" opacity="0.55" transform="rotate(-10 52 125)"/>
+      <ellipse cx="168" cy="125" rx="35" ry="22" fill="#6860a0" opacity="0.55" transform="rotate(10 168 125)"/>
+
+      <!-- Body -->
+      <ellipse cx="110" cy="130" rx="48" ry="55" fill="url(#bodyGrad)"/>
+      <ellipse cx="110" cy="130" rx="48" ry="55" fill="url(#glowGrad)"/>
+      <ellipse cx="110" cy="142" rx="28" ry="32" fill="url(#bellyGrad)"/>
+
+      <!-- Body dots (fawn markings) -->
+      <circle cx="82" cy="115" r="2.2" fill="#90b0d8" opacity="0.28"/>
+      <circle cx="78" cy="128" r="1.6" fill="#9898d0" opacity="0.2"/>
+      <circle cx="85" cy="138" r="1.8" fill="#90b0d8" opacity="0.22"/>
+      <circle cx="138" cy="115" r="2.2" fill="#a090d0" opacity="0.28"/>
+      <circle cx="142" cy="128" r="1.6" fill="#9898d0" opacity="0.2"/>
+      <circle cx="135" cy="138" r="1.8" fill="#a090d0" opacity="0.22"/>
+      <circle cx="102" cy="145" r="1.6" fill="#b0c0e0" opacity="0.18"/>
+      <circle cx="118" cy="143" r="1.8" fill="#a8b0d8" opacity="0.16"/>
+
+      <!-- Feet -->
+      <ellipse cx="96" cy="182" rx="9" ry="5" fill="#7088b8" opacity="0.6"/>
+      <ellipse cx="124" cy="182" rx="9" ry="5" fill="#7088b8" opacity="0.6"/>
+
+      <!-- Face disc -->
+      <ellipse cx="110" cy="98" rx="32" ry="28" fill="url(#faceGrad)"/>
+
+      <!-- Eyes (white with dark pupils, matching actual DesktopPet.jsx) -->
+      <ellipse cx="97" cy="95" rx="12" ry="12" fill="rgba(255,255,255,0.95)"/>
+      <circle cx="97" cy="96" r="7" fill="#1a1530"/>
+      <circle cx="99" cy="92" r="2.5" fill="rgba(255,255,255,0.9)"/>
+      <ellipse cx="123" cy="95" rx="12" ry="12" fill="rgba(255,255,255,0.95)"/>
+      <circle cx="123" cy="96" r="7" fill="#1a1530"/>
+      <circle cx="125" cy="92" r="2.5" fill="rgba(255,255,255,0.9)"/>
+
+      <!-- Beak -->
+      <path d="M108,105 L110,109 L112,105" fill="#9080b8" opacity="0.8"/>
+
+      <!-- Blush -->
+      <ellipse cx="85" cy="103" rx="6" ry="3" fill="#d088c8" opacity="0.28"/>
+      <ellipse cx="135" cy="103" rx="6" ry="3" fill="#d088c8" opacity="0.28"/>
+
+      <!-- Antennae (curved beziers from DesktopPet.jsx, teal left bobble, lavender right) -->
+      <path d="M98,75 Q92,55 88,42" stroke="#6890b0" stroke-opacity="0.6" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="88" cy="42" r="5.5" fill="#98c0d8" opacity="0.85"/>
+      <circle cx="88" cy="42" r="8" fill="#98c0d8" opacity="0.15"/>
+      <path d="M122,75 Q128,55 132,42" stroke="#8068b0" stroke-opacity="0.6" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="132" cy="42" r="5.5" fill="#c0a8e0" opacity="0.85"/>
+      <circle cx="132" cy="42" r="8" fill="#c0a8e0" opacity="0.15"/>
+
+    </g>
+  </g>
 </svg>

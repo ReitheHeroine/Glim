@@ -20,6 +20,7 @@ import { auth, db } from './firebase';
 import { startSync, stopSync } from './sync';
 import DesktopPet from './DesktopPet.jsx';
 import SignIn from './SignIn.jsx';
+import SplashScreen from './SplashScreen.jsx';
 
 // --- Create user document on first sign-in ---
 // Uses getDoc check so createdAt is only written once, not overwritten on every login.
@@ -57,9 +58,9 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Loading: auth state not resolved yet - blank dark screen to avoid flash
+  // Loading: auth state not resolved yet - show splash screen
   if (user === undefined) {
-    return <div style={{ width: '100vw', height: '100vh', background: '#020108' }} />;
+    return <SplashScreen />;
   }
 
   if (!user) {
