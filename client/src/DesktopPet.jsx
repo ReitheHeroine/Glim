@@ -18,7 +18,7 @@
 // outputs:
 //   - Default export: DesktopPet component
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import {
