@@ -12,7 +12,7 @@ output:
 
 # Glim -- Handoff File
 
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-03-27
 
 **Purpose:** Operational coordination between Claude instances and across sessions. Tracks what happened recently, what needs to happen next, and how to work in this project's environment. Updated every session.
 
@@ -198,6 +198,21 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 > - [Decisions made - reference Project Docs Decision Register if significant]
 > - [Issues encountered or flagged]
 
+### 2026-03-27 (Claude Code) - Touch events (Pointer Events API migration)
+
+**Pointer Events migration (DesktopPet.jsx, SettingsPanel.jsx, JournalPanel.jsx, PersistentReminder.jsx)**
+- Replaced `mousemove`/`mouseup` drag listeners with `pointermove`/`pointerup`/`pointercancel` on window
+- Added `pointercancel` handler: ends drag/purr state cleanly without triggering the return-to-center animation (fires when browser intercepts touch gesture, e.g. incoming call)
+- Renamed `handleCreatureMouseDown` → `handleCreaturePointerDown`; `onMouseDown` → `onPointerDown` on creature div
+- Added `touchAction: "none"` inline style on creature div (prevents browser intercepting drag for scroll/zoom)
+- Replaced `handleMouseMove` with `handlePointerMove`: identical offset math, but cancels any in-flight eye drift animation when a new pointer contact arrives
+- Added `handleEyePointerUp`: on `pointerType === "touch"` release, drifts eyes back to center over 1.5s ease-out cubic via `requestAnimationFrame` loop (skipped for mouse - cursor stays in place so eyes don't drift)
+- Added `eyeDriftFrameRef` (animation frame handle) and `pupilOffsetRef` (synced from Zustand via `useEffect`) to refs block
+- Eye tracking `useEffect` now registers `pointermove`, `pointerup`, and `pointercancel` on window
+- Replaced `onMouseEnter`/`onMouseLeave` with `onPointerEnter`/`onPointerLeave` across all components (~8 instances)
+- Build clean; pushed to GitHub Pages; confirmed working on phone after CDN propagation (~2-3 min)
+- Note: CDN propagation lag caused a brief outage after deploy - resolved without intervention. For future: wait a few minutes after the Actions run completes before testing on phone.
+
 ### 2026-03-27 (Claude Code) - Zustand migration, hosting migration, icon/splash, file separation
 
 **Hosting migration (Netlify -> GitHub Pages)**
@@ -367,19 +382,12 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 ### PHASE 1: Minimal scaffolding (prerequisites + nav shell)
 
-#### Implement touch event support
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (prerequisite for mobile panels)
-- **Description:** Add Pointer Events API support. Create `getPointerXY()` helper that extracts coordinates from either mouse or touch events. Attach pointer handlers on all interactive elements. Add `touch-action: none` on draggable elements. Primary blocker for mobile deployment.
-- **Context/References:** [See Project Docs Section 3.4.2: Where Code Differs Between Platforms]
-- **Acceptance criteria:** All interactions (click, double-click, long press, drag, shake) work on both mouse and touch. Eye tracking follows touch/pointer position.
-
 #### Implement responsive layout
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
 - **Priority:** High (prerequisite for mobile panels)
 - **Description:** Add `isMobile` flag based on `window.innerWidth < 600` with resize listener. Scale creature size, glow ring, panel widths, and button sizes. Ensure tap targets meet 44px minimum on mobile. Settings and journal panels expand to near-full-width on small screens.
 - **Context/References:** [See Project Docs Section 3.4.5: Implementation Status]
-- **Acceptance criteria:** Glim renders correctly on screens from 320px to 1920px+. Panels don't overflow on small screens. Tap targets are 44px+ on mobile.
+- **Acceptance criteria:** Glim renders correctly on screens from 320px to 1920px+. Panels don't overflow on small screens. Tap targets are 44px+ on mobile. Test on real phone via GitHub Pages after deployment.
 
 #### Build nav bar shell
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
@@ -497,7 +505,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 - **Assigned to:** Claude Code
 - **Priority:** Medium
 - **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Also prerequisite for Web Push notifications.
-- **Context/References:** [See Project Docs Section 6.2: Netlify PWA]
+- **Context/References:** [See Project Docs Section 6.2: PWA]
 - **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit.
 
 #### Implement Web Push notifications
@@ -528,7 +536,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 > Items that need browser verification. Include file paths, what to look for.
 
 ### 2026-03-25 iPhone installation
-- **How to test:** Open Netlify URL in Safari on iPhone → Share → Add to Home Screen
+- **How to test:** Open https://reitheheroine.github.io/Glim/ in Safari on iPhone → Share → Add to Home Screen
 - **What to verify:**
   - Glim icon appears on home screen (purple/teal creature, not a blank page screenshot)
   - App opens full screen with no browser chrome
@@ -547,6 +555,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
+- Touch events (Pointer Events API migration) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/JournalPanel.jsx`, `client/src/components/PersistentReminder.jsx`; live on GitHub Pages
 - File separation (DesktopPet.jsx -> 9 files) - 2026-03-27 - `client/src/components/` (7 files), `client/src/glim-animations.css`; live on GitHub Pages
 - Zustand state migration - 2026-03-27 - `client/src/stores/` (6 stores + index), `client/src/utils.js`; live on GitHub Pages
 - Hosting migration to GitHub Pages - 2026-03-27 - `.github/workflows/deploy.yml`, `client/vite.config.js` (base path), `client/public/manifest.json` (updated paths), `client/src/SignIn.jsx` (BASE_URL fix); live at https://reitheheroine.github.io/Glim/
@@ -642,7 +651,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 **Last updated:** 2026-03-27
 
-**Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. Netlify project still exists but is no longer active. `glim.html` kept as legacy reference.
+**Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. `glim.html` kept as legacy reference.
 
 **Current structure:**
 
