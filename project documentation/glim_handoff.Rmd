@@ -198,6 +198,28 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 > - [Decisions made - reference Project Docs Decision Register if significant]
 > - [Issues encountered or flagged]
 
+### 2026-03-26 (Claude.ai) - Mobile platform strategy evaluation
+- Evaluated four mobile deployment options: enhanced PWA, Capacitor (WebView wrapper), React Native, full native (Swift/Kotlin)
+- Analyzed native API requirements vs. PWA capabilities. Only meaningful gap: HealthKit/Google Fit (requires $99/year Apple Developer Program on iOS)
+- Confirmed Web Push notifications work on iOS for home-screen PWAs (since iOS 16.4, clunky onboarding but functional)
+- Confirmed React Native would require rewriting all visual components (~70% of codebase), not justified
+- Decision: stay on enhanced PWA path, Capacitor as documented fallback if native API need arises [See Project Docs Decision Register 2026-03-26: Enhanced PWA over native app]
+- Updated Project Documentation: platform strategy (Section 8.1), decision register entry, project log entry
+- Updated Handoff: new Web Push notification task (Medium priority), bumped service worker task from Low to Medium, added session log
+- No code changes this session
+
+### 2026-03-26 (Claude Code) - Firebase setup and Google auth flow
+- Installed `firebase` npm package (v11.x) in `client/`
+- Added `.env.local` (gitignored) with all Firebase config vars as `VITE_FIREBASE_*`
+- Added `.env.example` (committed, no secrets) as template for config vars
+- Updated `.gitignore` to exclude `.env.local` and `.env.*.local`
+- Created `client/src/firebase.js` - initializes Firebase app, exports `db` (Firestore), `auth` (Firebase Auth), `googleProvider` (GoogleAuthProvider)
+- Created `firestore.rules` - restricts all reads/writes to authenticated user's own `users/{userId}/**` path; deployed to Firebase Console
+- Created `client/src/SignIn.jsx` - full-screen twilight-aesthetic sign-in screen with Google sign-in button; handles popup errors and loading state
+- Updated `client/src/App.jsx` - auth gate: undefined=loading (blank dark screen), null=show SignIn, user object=show DesktopPet; creates Firestore `users/{userId}` document on first sign-in (name, email, createdAt) using getDoc check so createdAt is never overwritten
+- Checks: `npm run build` clean (628KB JS / 194KB gzip - Firebase adds ~100KB gzip); sign-in flow tested locally at localhost:5174; Firestore user document created on first login; pushed to Netlify and confirmed live
+- Notes: Google sign-in provider must be enabled in Firebase Console > Security > Authentication > Sign-in method. JS bundle is now over Vite's 500KB warning threshold - cosmetic only, no action needed now.
+
 ### 2026-03-25 (Claude.ai)
 - Full line-by-line codebase audit of `glim.html` against Project Documentation
 - Fixed 6 bugs: timer memory leaks in scheduleBlink/scheduleTwitch/shootingStar, wander drift orphan cleanup, behavior system rewrite (cascading draws to weighted random), eye tracking callback stabilization
@@ -275,33 +297,12 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 ## 3.1 Pending Tasks
 
-### Firebase project setup and SDK installation
-- **Assigned to:** Claude Code (with user doing Firebase Console steps)
-- **Priority:** High (prerequisite for auth and sync)
-- **Description:** Create Firebase project in Firebase Console. Enable Firestore database. Enable Google sign-in in Firebase Auth. Install Firebase SDK (`npm install firebase`). Create Firebase config file in the Vite project. Initialize Firebase app on startup.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Firestore schema design]
-- **Acceptance criteria:** Firebase project exists. `firebase` npm package installed. App initializes Firebase on load without errors. Firestore and Auth are enabled in the console.
-
-### Auth flow implementation (Google sign-in)
-- **Assigned to:** Claude Code + Claude.ai (UI design)
-- **Priority:** High (prerequisite for sync, blocks all Firestore reads/writes)
-- **Description:** Implement Google sign-in as the required auth method on first launch. Build sign-in screen UI. Handle auth state persistence (Firebase Auth remembers sessions by default). Gate all app functionality behind auth (user must be signed in to see Glim). Store basic user metadata (name, email, createdAt) on the `users/{userId}` Firestore document on first sign-in.
-- **Context/References:** [See Handoff Session Log 2026-03-26: decided Google sign-in, required on first launch]
-- **Acceptance criteria:** User sees a sign-in screen on first visit. Google sign-in completes and persists across page reloads. User document created in Firestore on first sign-in. App only renders Glim after successful auth.
-
 ### Sync service implementation (background sync module)
 - **Assigned to:** Claude.ai (architecture) + Claude Code (implementation)
 - **Priority:** High (after auth flow works)
 - **Description:** Build the background sync service that pushes local events to Firestore and pulls remote events. Approach 2 architecture: localStorage remains primary read/write layer, sync service runs on a timer and on `visibilitychange` events. Implement for current 3 domains: journal (merge + dedupe by UUID), pokes (Firestore `increment()` when online), settings (last-write-wins by `lastModified`). Design the module so future trackers plug in by registering their domain and sync strategy.
 - **Context/References:** [See Handoff Session Log 2026-03-26: Approach 2 confirmed], [See Project Docs Section 8.8: Storage Key Map for sync strategies]
 - **Acceptance criteria:** Events created on one device appear on the other after sync. Offline writes queue and push when connectivity returns. No data loss during normal usage. Adding a new tracker domain requires minimal sync service changes.
-
-### Firestore security rules
-- **Assigned to:** Claude Code
-- **Priority:** High (must be in place before any real data is written)
-- **Description:** Write Firestore security rules that restrict each user to reading/writing only their own data. Path pattern: `users/{userId}/**` where `{userId}` matches the authenticated user's UID.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Firestore schema uses `users/{userId}/` as root]
-- **Acceptance criteria:** Authenticated users can read/write their own subcollections. Users cannot access other users' data. Unauthenticated requests are rejected.
 
 ### Expand Firestore schemas as trackers are built
 - **Assigned to:** Claude.ai
@@ -354,10 +355,17 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 ### Add service worker for offline support
 - **Assigned to:** Claude Code
-- **Priority:** Low
-- **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Currently Glim requires an internet connection on every load. A service worker would cache assets after first load so Glim works offline.
-- **Context/References:** [See Project Docs Section 6.2: Netlify PWA]
-- **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit.
+- **Priority:** Medium (elevated from Low, now part of PWA-first mobile strategy)
+- **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Currently Glim requires an internet connection on every load. A service worker would cache assets after first load so Glim works offline. Also prerequisite for Web Push notifications (push events are handled by the service worker).
+- **Context/References:** [See Project Docs Section 6.2: Netlify PWA], [See Project Docs Decision Register 2026-03-26: Enhanced PWA over native app]
+- **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit. Service worker handles `fetch` events for asset caching.
+
+### Implement Web Push notifications
+- **Assigned to:** Claude.ai (architecture) + Claude Code (implementation)
+- **Priority:** Medium (after service worker, part of PWA-first mobile strategy)
+- **Description:** Add push notification support using the Web Push API. Requires: (1) service worker to handle `push` events (depends on service worker task above), (2) client-side subscription flow using the Push API (`PushManager.subscribe()`), (3) store push subscription endpoints in Firestore under the user's document, (4) Firebase Cloud Function (or equivalent server-side handler) to send notifications via the Web Push protocol. Use cases: wellness reminders (water, move, eye break) when Glim tab/app is not active, streak-at-risk warnings, daily summary nudges. On iOS, requires the PWA to be installed via Add to Home Screen and opened from there (not Safari).
+- **Context/References:** [See Project Docs Decision Register 2026-03-26: Enhanced PWA over native app], [See Project Docs Section 6.2: Netlify PWA]
+- **Acceptance criteria:** Push notification permission prompt appears on first relevant interaction (not on app open). Notifications fire for at least one use case (e.g., wellness reminder). Works on Android Chrome. Works on iOS Safari home-screen PWA (best-effort, may be flaky). Subscription endpoint stored in Firestore. Cloud Function sends push via web-push library.
 
 ## 3.2 Changes for Testing
 
@@ -383,6 +391,8 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
+- Firebase setup and Google auth flow - 2026-03-26 - `client/src/firebase.js`, `client/src/SignIn.jsx`, `client/src/App.jsx` (auth gate), `firestore.rules`, `client/.env.local`, `client/.env.example`; live on Netlify
+- Firebase project setup (Console steps) - 2026-03-26 - Firestore database created, Google sign-in enabled, security rules deployed
 - Firestore schema design (current domains) - 2026-03-26 - Schema for journal, pokes, settings finalized. Pattern A (subcollections per domain). Auth model and pre-auth behavior decided. Documented in `glim_handoff.Rmd` (Session Log, Resolved Questions, Task Queue)
 - PWA setup and iPhone installation - 2026-03-25 - `client/public/manifest.json`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `glim-icon.svg`, `_redirects`; `client/index.html` updated
 - Netlify hosting - 2026-03-25 - auto-deploys from `main`, live URL in Netlify dashboard
@@ -442,6 +452,8 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 **Q:** How should pokes be stored in Firestore? **A:** Single counter document at `users/{userId}/pokes/counters` with `total` and `lastPoke` fields. Not an event log. Use Firestore `increment()` when online. Losing a few pokes during offline conflicts is acceptable. (2026-03-26)
 
 **Q:** Should Firestore schemas be designed for all 15 planned trackers upfront? **A:** No. Design only for current domains (journal, pokes, settings). Add schemas incrementally as each tracker is built. Subcollection-per-domain pattern makes additions trivial. (2026-03-26)
+
+**Q:** Should Glim be wrapped in a native app for mobile, or stay as a PWA? **A:** Stay as an enhanced PWA. The only meaningful capability gap is HealthKit/Google Fit (requires $99/year Apple Developer Program). Step tracking ships as manual entry instead. Web Push notifications available on both platforms (iOS requires home-screen install, supported since 16.4). If native API needs arise later, Capacitor (WebView wrapper, ~95% code reuse) is the documented escalation path. React Native and full native rejected due to massive rewrite cost for marginal benefit. See Project Docs Decision Register 2026-03-26. (2026-03-26)
 
 ---
 

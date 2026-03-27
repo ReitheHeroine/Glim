@@ -6,7 +6,8 @@
 // Last Modified: 2026-03-26
 // Purpose:     Root application component. Gates the app behind Firebase Auth.
 //              Listens for auth state changes and routes to SignIn or DesktopPet.
-//              Creates the Firestore user document on first sign-in.
+//              Creates the Firestore user document on first sign-in. Starts and
+//              stops the background sync service with the auth lifecycle.
 // Inputs:      Firebase auth, db from firebase.js
 // Outputs:     Renders SignIn (unauthenticated), DesktopPet (authenticated),
 //              or a blank loading screen while auth state resolves.
@@ -16,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { startSync, stopSync } from './sync';
 import DesktopPet from './DesktopPet.jsx';
 import SignIn from './SignIn.jsx';
 
@@ -46,6 +48,9 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         await ensureUserDocument(currentUser);
+        startSync(currentUser.uid);
+      } else {
+        stopSync();
       }
       setUser(currentUser ?? null);
     });

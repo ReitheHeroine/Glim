@@ -662,36 +662,34 @@ function DesktopPet() {
     isSleepingRef.current = specialAnim === "sleep";
   }, [specialAnim]);
 
-  // ---- Journal: load entries from persistent storage ----
-  useEffect(() => {
-    const loadEntries = async () => {
-      try {
-        const result = await window.storage.get("glim-journal");
-        if (result && result.value) {
-          setJournalEntries(JSON.parse(result.value));
-        }
-      } catch (e) {
-        // No entries yet or storage unavailable
+  // ---- Journal: load/reload entries (called on mount and by sync service) ----
+  const reloadJournal = useCallback(async () => {
+    try {
+      const result = await window.storage.get("glim-journal");
+      if (result && result.value) {
+        setJournalEntries(JSON.parse(result.value));
       }
-      setJournalLoading(false);
-    };
-    loadEntries();
+    } catch {
+      // No entries yet or storage unavailable
+    }
+    setJournalLoading(false);
   }, []);
 
-  // ---- Poke count: load from persistent storage ----
-  useEffect(() => {
-    const loadPokes = async () => {
-      try {
-        const result = await window.storage.get("glim-pokes");
-        if (result && result.value) {
-          setClickCount(parseInt(result.value, 10) || 0);
-        }
-      } catch (e) {
-        // No saved pokes yet
+  useEffect(() => { reloadJournal(); }, [reloadJournal]);
+
+  // ---- Poke count: load/reload from persistent storage ----
+  const reloadPokes = useCallback(async () => {
+    try {
+      const result = await window.storage.get("glim-pokes");
+      if (result && result.value) {
+        setClickCount(parseInt(result.value, 10) || 0);
       }
-    };
-    loadPokes();
+    } catch {
+      // No saved pokes yet
+    }
   }, []);
+
+  useEffect(() => { reloadPokes(); }, [reloadPokes]);
 
   // ---- Poke count: save when it changes ----
   useEffect(() => {
@@ -700,23 +698,22 @@ function DesktopPet() {
     }
   }, [clickCount]);
 
-  // ---- Settings: load from persistent storage ----
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const result = await window.storage.get("glim-settings");
-        if (result && result.value) {
-          const s = JSON.parse(result.value);
-          if (s.wellnessInterval) setWellnessInterval(s.wellnessInterval);
-          if (s.moveInterval) setMoveInterval(s.moveInterval);
-          if (s.eyesInterval) setEyesInterval(s.eyesInterval);
-        }
-      } catch (e) {
-        // No saved settings yet - use defaults
+  // ---- Settings: load/reload (called on mount and by sync service) ----
+  const reloadSettings = useCallback(async () => {
+    try {
+      const result = await window.storage.get("glim-settings");
+      if (result && result.value) {
+        const s = JSON.parse(result.value);
+        if (s.wellnessInterval) setWellnessInterval(s.wellnessInterval);
+        if (s.moveInterval) setMoveInterval(s.moveInterval);
+        if (s.eyesInterval) setEyesInterval(s.eyesInterval);
       }
-    };
-    loadSettings();
+    } catch {
+      // No saved settings yet - use defaults
+    }
   }, []);
+
+  useEffect(() => { reloadSettings(); }, [reloadSettings]);
 
   // ---- Settings: save when any interval changes ----
   const settingsInitRef = useRef(false);
@@ -726,8 +723,20 @@ function DesktopPet() {
     if (!settingsInitRef.current) { settingsInitRef.current = true; return; }
     window.storage.set("glim-settings", JSON.stringify({
       wellnessInterval, moveInterval, eyesInterval,
+      lastModified: new Date().toISOString(),
     })).catch(() => {});
   }, [wellnessInterval, moveInterval, eyesInterval]);
+
+  // ---- Listen for sync service updates (cross-device data arriving) ----
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.domains?.includes('journal')) reloadJournal();
+      if (e.detail?.domains?.includes('pokes')) reloadPokes();
+      if (e.detail?.domains?.includes('settings')) reloadSettings();
+    };
+    window.addEventListener('glim-data-updated', handler);
+    return () => window.removeEventListener('glim-data-updated', handler);
+  }, [reloadJournal, reloadPokes, reloadSettings]);
 
   // ---- Eye tracking ----
   // Uses isSleepingRef so the callback is stable (no dep on specialAnim)
@@ -935,7 +944,7 @@ function DesktopPet() {
   // ---- Journal save/delete ----
   const saveJournalEntry = useCallback(async (text) => {
     const entry = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       text: text.trim(),
       prompt: journalPrompt,
       date: new Date().toISOString(),
@@ -960,7 +969,10 @@ function DesktopPet() {
   }, [journalEntries, journalPrompt, triggerHappy, showMessage]);
 
   const deleteJournalEntry = useCallback(async (id) => {
-    const updated = journalEntries.filter((e) => e.id !== id);
+    // Soft delete: mark deletedAt rather than removing, so sync can propagate deletions
+    const updated = journalEntries.map((e) =>
+      e.id === id ? { ...e, deletedAt: new Date().toISOString() } : e
+    );
     setJournalEntries(updated);
     try {
       await window.storage.set("glim-journal", JSON.stringify(updated));
@@ -1421,7 +1433,7 @@ function DesktopPet() {
               color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 12,
               letterSpacing: "1px",
             }}>
-              past{journalEntries.length > 0 && ` (${journalEntries.length})`}
+              past{journalEntries.filter(e => !e.deletedAt).length > 0 && ` (${journalEntries.filter(e => !e.deletedAt).length})`}
             </button>
           </div>
 
@@ -1487,12 +1499,12 @@ function DesktopPet() {
             <div style={{ overflowY: "auto", flex: 1, maxHeight: "55vh" }}>
               {journalLoading ? (
                 <div style={{ opacity: 0.4, textAlign: "center", padding: 20 }}>loading...</div>
-              ) : journalEntries.length === 0 ? (
+              ) : journalEntries.filter(e => !e.deletedAt).length === 0 ? (
                 <div style={{ opacity: 0.4, textAlign: "center", padding: 20, lineHeight: 1.6 }}>
                   no entries yet.<br />go write something!
                 </div>
               ) : (
-                journalEntries.map((entry) => (
+                journalEntries.filter(e => !e.deletedAt).map((entry) => (
                   <div key={entry.id} style={{
                     padding: "12px 14px", borderRadius: 10, marginBottom: 10,
                     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
