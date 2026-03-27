@@ -18,7 +18,7 @@
 // outputs:
 //   - Default export: DesktopPet component
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import {
@@ -27,26 +27,12 @@ import {
   JOURNAL_NUDGES, SCIENCE_FACTS
 } from './messages.js';
 import './storage.js';
+import { pickRandom } from './utils';
+import {
+  useCreatureStore, useMessageStore, useSettingsStore,
+  useUIStore, useJournalStore, usePokesStore,
+} from './stores';
 
-function getTimeOfDay() {
-  const h = new Date().getHours();
-  if (h < 6) return "lateNight";
-  if (h < 9) return "earlyMorning";
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  if (h < 21) return "evening";
-  return "lateNight";
-}
-function getColors() {
-  const h = new Date().getHours();
-  if (h < 6)  return { hue: 310, sat: 65 };
-  if (h < 9)  return { hue: 150, sat: 60 };
-  if (h < 12) return { hue: 175, sat: 65 };
-  if (h < 17) return { hue: 220, sat: 65 };
-  if (h < 21) return { hue: 270, sat: 60 };
-  return { hue: 310, sat: 65 };
-}
-function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ============================================================
 //  Background -- Glim's world
@@ -606,54 +592,47 @@ function PersistentReminder({ text, type, onDismiss }) {
 //  Main App
 // ============================================================
 function DesktopPet() {
-  const [message, setMessage] = useState("");
-  const [showBubble, setShowBubble] = useState(false);
-  const [isWellness, setIsWellness] = useState(false);
-  const [isHappy, setIsHappy] = useState(false);
-  const [squeezed, setSqueezed] = useState(false);
-  const [mood, setMood] = useState(getTimeOfDay);
-  const [colors, setColors] = useState(getColors);
-  const [clickCount, setClickCount] = useState(0);
-  const [moveReminder, setMoveReminder] = useState(null);
-  const [eyesReminder, setEyesReminder] = useState(null);
+  // ---- Store reads ----
+  const {
+    mood, hue, sat,
+    isHappy, squeezed, isPuffed, isPurring, specialAnim,
+    antennaPerk, wingTwitchSide, isBlinking, isShaken,
+    pupilOffset, chasedBugId,
+    dragPos, isDragging, isReturning,
+    updateTime, setIsHappy, setSqueezed, setIsPuffed, setIsPurring,
+    setSpecialAnim, setAntennaPerk, setWingTwitchSide, setIsBlinking,
+    setIsShaken, setPupilOffset, setChasedBugId,
+    setDragPos, setIsDragging, setIsReturning, setIsWandering,
+  } = useCreatureStore();
 
-  // ---- Personality state ----
-  const [isPuffed, setIsPuffed] = useState(false);
-  const [isPurring, setIsPurring] = useState(false);
-  const [specialAnim, setSpecialAnim] = useState(null);
-  const [antennaPerk, setAntennaPerk] = useState(false);
-  const [wingTwitchSide, setWingTwitchSide] = useState(null);
-  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
-  const [chasedBugId, setChasedBugId] = useState(null);
-  const [currentMsgType, setCurrentMsgType] = useState(null);
+  const {
+    message, showBubble, isWellness, currentMsgType, moveReminder, eyesReminder,
+    setMessage, setShowBubble, setIsWellness, setCurrentMsgType,
+    setMoveReminder, setEyesReminder,
+  } = useMessageStore();
 
-  // ---- Drag state ----
-  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isReturning, setIsReturning] = useState(false);
-  const [isWandering, setIsWandering] = useState(false);
+  const { wellnessInterval, moveInterval, eyesInterval,
+    setWellnessInterval, setMoveInterval, setEyesInterval,
+    reload: reloadSettings,
+  } = useSettingsStore();
+
+  const { showSettings, showJournal, journalView, journalText, journalPrompt,
+    setShowSettings, setShowJournal, setJournalView, setJournalText, setJournalPrompt,
+  } = useUIStore();
+
+  const { entries: journalEntries, loading: journalLoading,
+    reload: reloadJournal, addEntry: addJournalEntry, deleteEntry: deleteJournalEntryInStore,
+  } = useJournalStore();
+
+  const { total: clickCount, increment: setClickCount, reload: reloadPokes } = usePokesStore();
+
+  // ---- Drag refs ----
   const dragStartRef = useRef(null);
   const wanderTimerRef = useRef(null);
   const wanderDriftRef = useRef(null);
   const justDraggedRef = useRef(false);
   const dragVelocityRef = useRef([]);
   const shakeTimerRef = useRef(null);
-  const [isShaken, setIsShaken] = useState(false);
-  const [isBlinking, setIsBlinking] = useState(false);
-
-  // ---- Settings state ----
-  const [showSettings, setShowSettings] = useState(false);
-  const [wellnessInterval, setWellnessInterval] = useState(20);
-  const [moveInterval, setMoveInterval] = useState(45);
-  const [eyesInterval, setEyesInterval] = useState(20);
-
-  // ---- Journal state ----
-  const [showJournal, setShowJournal] = useState(false);
-  const [journalView, setJournalView] = useState("write"); // "write" | "past"
-  const [journalText, setJournalText] = useState("");
-  const [journalPrompt, setJournalPrompt] = useState(() => pickRandom(JOURNAL_PROMPTS));
-  const [journalEntries, setJournalEntries] = useState([]);
-  const [journalLoading, setJournalLoading] = useState(true);
 
   // ---- Refs ----
   const bubbleTimer = useRef(null);
@@ -674,7 +653,7 @@ function DesktopPet() {
 
   // ---- Time updates ----
   useEffect(() => {
-    const iv = setInterval(() => { setMood(getTimeOfDay()); setColors(getColors()); }, 60000);
+    const iv = setInterval(() => { updateTime(); }, 60000);
     return () => clearInterval(iv);
   }, []);
 
@@ -683,70 +662,9 @@ function DesktopPet() {
     isSleepingRef.current = specialAnim === "sleep";
   }, [specialAnim]);
 
-  // ---- Journal: load/reload entries (called on mount and by sync service) ----
-  const reloadJournal = useCallback(async () => {
-    try {
-      const result = await window.storage.get("glim-journal");
-      if (result && result.value) {
-        setJournalEntries(JSON.parse(result.value));
-      }
-    } catch {
-      // No entries yet or storage unavailable
-    }
-    setJournalLoading(false);
-  }, []);
-
-  useEffect(() => { reloadJournal(); }, [reloadJournal]);
-
-  // ---- Poke count: load/reload from persistent storage ----
-  const reloadPokes = useCallback(async () => {
-    try {
-      const result = await window.storage.get("glim-pokes");
-      if (result && result.value) {
-        setClickCount(parseInt(result.value, 10) || 0);
-      }
-    } catch {
-      // No saved pokes yet
-    }
-  }, []);
-
-  useEffect(() => { reloadPokes(); }, [reloadPokes]);
-
-  // ---- Poke count: save when it changes ----
-  useEffect(() => {
-    if (clickCount > 0) {
-      window.storage.set("glim-pokes", String(clickCount)).catch(() => {});
-    }
-  }, [clickCount]);
-
-  // ---- Settings: load/reload (called on mount and by sync service) ----
-  const reloadSettings = useCallback(async () => {
-    try {
-      const result = await window.storage.get("glim-settings");
-      if (result && result.value) {
-        const s = JSON.parse(result.value);
-        if (s.wellnessInterval) setWellnessInterval(s.wellnessInterval);
-        if (s.moveInterval) setMoveInterval(s.moveInterval);
-        if (s.eyesInterval) setEyesInterval(s.eyesInterval);
-      }
-    } catch {
-      // No saved settings yet - use defaults
-    }
-  }, []);
-
-  useEffect(() => { reloadSettings(); }, [reloadSettings]);
-
-  // ---- Settings: save when any interval changes ----
-  const settingsInitRef = useRef(false);
-  useEffect(() => {
-    // Skip the initial render to avoid overwriting storage with defaults
-    // before the load effect has a chance to run
-    if (!settingsInitRef.current) { settingsInitRef.current = true; return; }
-    window.storage.set("glim-settings", JSON.stringify({
-      wellnessInterval, moveInterval, eyesInterval,
-      lastModified: new Date().toISOString(),
-    })).catch(() => {});
-  }, [wellnessInterval, moveInterval, eyesInterval]);
+  // ---- Load journal and pokes on mount ----
+  useEffect(() => { reloadJournal(); }, []);
+  useEffect(() => { reloadPokes(); }, []);
 
   // ---- Listen for sync service updates (cross-device data arriving) ----
   useEffect(() => {
@@ -963,22 +881,15 @@ function DesktopPet() {
   }, []);
 
   // ---- Journal save/delete ----
-  const saveJournalEntry = useCallback(async (text) => {
-    const entry = {
+  const saveJournalEntry = useCallback((text) => {
+    addJournalEntry({
       id: crypto.randomUUID(),
       text: text.trim(),
       prompt: journalPrompt,
       date: new Date().toISOString(),
-    };
-    const updated = [entry, ...journalEntries];
-    setJournalEntries(updated);
+    });
     setJournalText("");
     setJournalPrompt(pickRandom(JOURNAL_PROMPTS));
-    try {
-      await window.storage.set("glim-journal", JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to save journal:", e);
-    }
     triggerHappy();
     showMessage(pickRandom([
       "saved! your words matter.", "got it. that one's safe with me.",
@@ -987,20 +898,11 @@ function DesktopPet() {
       "that was good. you should do this more often.",
       "entry saved. you're building a record of being alive. that's cool.",
     ]));
-  }, [journalEntries, journalPrompt, triggerHappy, showMessage]);
+  }, [journalPrompt, addJournalEntry, setJournalText, setJournalPrompt, triggerHappy, showMessage]);
 
-  const deleteJournalEntry = useCallback(async (id) => {
-    // Soft delete: mark deletedAt rather than removing, so sync can propagate deletions
-    const updated = journalEntries.map((e) =>
-      e.id === id ? { ...e, deletedAt: new Date().toISOString() } : e
-    );
-    setJournalEntries(updated);
-    try {
-      await window.storage.set("glim-journal", JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to update journal:", e);
-    }
-  }, [journalEntries]);
+  const deleteJournalEntry = useCallback((id) => {
+    deleteJournalEntryInStore(id);
+  }, [deleteJournalEntryInStore]);
 
   // ---- Wellness timer ----
   useEffect(() => {
@@ -1116,7 +1018,7 @@ function DesktopPet() {
     }
 
     setSqueezed(true);
-    setClickCount((c) => c + 1);
+    setClickCount();
     setTimeout(() => setSqueezed(false), 280);
 
     // Track rapid clicks
@@ -1268,8 +1170,6 @@ function DesktopPet() {
       window.removeEventListener("mouseup", onUp);
     };
   }, [isPurring, isShaken, showMessage]);
-
-  const { hue, sat } = colors;
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden select-none"
