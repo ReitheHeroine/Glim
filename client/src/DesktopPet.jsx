@@ -88,6 +88,8 @@ export default function DesktopPet() {
   const puffTimerRef = useRef(null);
   const specialTimerRef = useRef(null);
   const isSleepingRef = useRef(false);
+  const eyeDriftFrameRef = useRef(null);
+  const pupilOffsetRef = useRef({ x: 0, y: 0 });
 
   // ---- Time updates ----
   useEffect(() => {
@@ -99,6 +101,11 @@ export default function DesktopPet() {
   useEffect(() => {
     isSleepingRef.current = specialAnim === "sleep";
   }, [specialAnim]);
+
+  // Keep pupilOffsetRef current so drift-to-center callback captures latest value
+  useEffect(() => {
+    pupilOffsetRef.current = pupilOffset;
+  }, [pupilOffset]);
 
   // ---- Load journal and pokes on mount ----
   useEffect(() => { reloadJournal(); }, []);
@@ -116,9 +123,14 @@ export default function DesktopPet() {
   }, [reloadJournal, reloadPokes, reloadSettings]);
 
   // ---- Eye tracking ----
-  // Uses isSleepingRef so the callback is stable (no dep on specialAnim)
-  const handleMouseMove = useCallback((e) => {
+  // Uses isSleepingRef so the callback is stable (no dep on specialAnim).
+  // Cancels any in-progress drift animation when a new pointer contact arrives.
+  const handlePointerMove = useCallback((e) => {
     if (!creatureRef.current || isSleepingRef.current) return;
+    if (eyeDriftFrameRef.current) {
+      cancelAnimationFrame(eyeDriftFrameRef.current);
+      eyeDriftFrameRef.current = null;
+    }
     const rect = creatureRef.current.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height * 0.4;
@@ -133,10 +145,42 @@ export default function DesktopPet() {
     });
   }, []);
 
+  // On touch lift, drift eyes back to center over 1.5s (ease-out cubic).
+  // Mouse releases are ignored - mouse cursor stays in place and continues driving eyes.
+  const handleEyePointerUp = useCallback((e) => {
+    if (e.pointerType !== "touch") return;
+    if (isSleepingRef.current || isPurringRef.current) return;
+    if (eyeDriftFrameRef.current) cancelAnimationFrame(eyeDriftFrameRef.current);
+    const startOffset = { ...pupilOffsetRef.current };
+    const duration = 1500;
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setPupilOffset({
+        x: startOffset.x * (1 - eased),
+        y: startOffset.y * (1 - eased),
+      });
+      if (progress < 1) {
+        eyeDriftFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        eyeDriftFrameRef.current = null;
+      }
+    };
+    eyeDriftFrameRef.current = requestAnimationFrame(animate);
+  }, []);
+
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [handleMouseMove]);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handleEyePointerUp);
+    window.addEventListener("pointercancel", handleEyePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handleEyePointerUp);
+      window.removeEventListener("pointercancel", handleEyePointerUp);
+    };
+  }, [handlePointerMove, handleEyePointerUp]);
 
   // ---- Rare blink (every 45-90s, very infrequent) ----
   // Uses isPurringRef to avoid stale closure; cleanup kills old chain on unmount
@@ -507,7 +551,7 @@ export default function DesktopPet() {
   };
 
   // ---- Interaction: drag, purr, click all unified ----
-  const handleCreatureMouseDown = (e) => {
+  const handleCreaturePointerDown = (e) => {
     e.preventDefault();
     lastInteractionRef.current = Date.now();
     dragStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
@@ -597,11 +641,26 @@ export default function DesktopPet() {
       dragStartRef.current = null;
     };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    const onCancel = () => {
+      // Touch cancelled by browser (scroll takeover, incoming call, etc.)
+      // End drag/purr state cleanly without triggering return animation.
+      if (!dragStartRef.current) return;
+      clearTimeout(holdTimerRef.current);
+      if (dragStartRef.current.moved) {
+        setIsDragging(false);
+        setDragPos({ x: 0, y: 0 });
+      }
+      if (isPurring) setIsPurring(false);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
     };
   }, [isPurring, isShaken, showMessage]);
 
@@ -631,7 +690,8 @@ export default function DesktopPet() {
           : "none"
         ) : "none",
         cursor: isDragging ? "grabbing" : "grab",
-      }} ref={creatureRef} onMouseDown={handleCreatureMouseDown}>
+        touchAction: "none",
+      }} ref={creatureRef} onPointerDown={handleCreaturePointerDown}>
         <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
         <OwlMoth
           onClick={handleClick} onDoubleClick={handleDoubleClick}
@@ -667,8 +727,8 @@ export default function DesktopPet() {
             fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
             transition: "color 0.2s ease", padding: "2px 6px",
           }}
-            onMouseEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
-            onMouseLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+            onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+            onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
           >just moved</button>
           <button onClick={() => {
             wakeUp();
@@ -683,8 +743,8 @@ export default function DesktopPet() {
             fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
             transition: "color 0.2s ease", padding: "2px 6px",
           }}
-            onMouseEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
-            onMouseLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+            onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+            onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
           >eyes rested</button>
         </div>
       </div>

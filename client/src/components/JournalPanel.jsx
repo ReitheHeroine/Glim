@@ -41,8 +41,8 @@ export default function JournalPanel({ onSave }) {
           color: showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
           fontSize: 15, transition: "all 0.2s ease",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = showJournal ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"; e.currentTarget.style.color = showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)"; }}
+        onPointerEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+        onPointerLeave={(e) => { e.currentTarget.style.background = showJournal ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"; e.currentTarget.style.color = showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)"; }}
       >&#9997;</button>
 
       {/* ===== JOURNAL PANEL ===== */}
@@ -93,8 +93,8 @@ export default function JournalPanel({ onSave }) {
                   fontFamily: "'Courier New', monospace", padding: 0,
                   transition: "color 0.2s ease",
                 }}
-                onMouseEnter={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; }}
-                onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.35)"; }}
+                onPointerEnter={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; }}
+                onPointerLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.35)"; }}
               >&#8635; different prompt</button>
               <textarea
                 value={journalText}
@@ -158,8 +158,8 @@ export default function JournalPanel({ onSave }) {
                         color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "0 2px",
                         fontFamily: "'Courier New', monospace", transition: "color 0.2s",
                       }}
-                        onMouseEnter={(e) => { e.target.style.color = "rgba(255,100,100,0.6)"; }}
-                        onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.2)"; }}
+                        onPointerEnter={(e) => { e.target.style.color = "rgba(255,100,100,0.6)"; }}
+                        onPointerLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.2)"; }}
                       >&#10005;</button>
                     </div>
                     {entry.prompt && (

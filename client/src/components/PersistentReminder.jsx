@@ -26,8 +26,8 @@ export default function PersistentReminder({ text, type, onDismiss }) {
         color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace", fontSize: "12px",
         letterSpacing: "0.5px", transition: "all 0.2s ease",
       }}
-        onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.25)"; }}
-        onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.12)"; }}
+        onPointerEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.25)"; }}
+        onPointerLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.12)"; }}
       >done!</button>
     </div>
   );

@@ -37,8 +37,8 @@ export default function SettingsPanel() {
           borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
           color: "rgba(255,255,255,0.4)", fontSize: 16, transition: "all 0.2s ease",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+        onPointerEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+        onPointerLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
       >&#9881;</button>
 
       {/* ===== SETTINGS PANEL ===== */}
@@ -88,8 +88,8 @@ export default function SettingsPanel() {
             color: "rgba(255,255,255,0.4)", fontFamily: "'Courier New', monospace", fontSize: 11,
             letterSpacing: "0.5px", transition: "all 0.2s ease",
           }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+            onPointerEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+            onPointerLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
           >sign out</button>
         </div>
       )}
