@@ -198,8 +198,8 @@ function Background({ hue, sat, mood }) {
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
       <svg className="absolute bottom-0 w-full" viewBox="0 0 800 200" preserveAspectRatio="none"
         style={{ height: "34%" }}>
-        {/* Far mountains - leftmost peak centered so it doesn't lean right */}
-        <path d="M0,120 L50,70 L110,115 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
+        {/* Far mountains */}
+        <path d="M0,90 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
           fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
         {/* Near mountains */}
         <path d="M0,120 L60,120 L120,145 L200,95 L280,130 L360,100 L420,140 L500,110 L580,135 L660,105 L740,130 L800,115 L800,200 L0,200 Z"
