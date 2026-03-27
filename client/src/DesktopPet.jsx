@@ -197,7 +197,7 @@ function Background({ hue, sat, mood }) {
 
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
       <svg className="absolute bottom-0 w-full" viewBox="0 0 800 200" preserveAspectRatio="none"
-        style={{ height: "28%" }}>
+        style={{ height: "34%" }}>
         {/* Far mountains - left edge raised so silhouette fills left side on narrow screens */}
         <path d="M0,90 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
           fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
@@ -208,55 +208,55 @@ function Background({ hue, sat, mood }) {
         {/* Tree line -- left cluster (pines, grounded) */}
         {/* Each tree scaled 1.5x wider from its center so they read on narrow phone screens */}
         {/* Pine 1 - medium */}
-        <path transform="translate(29,0) scale(1.5,1) translate(-29,0)"
+        <path transform="translate(29,175) scale(1.5,0.8) translate(-29,-175)"
           d="M28,175 L28,165 L18,165 L23,155 L15,155 L23,143 L17,143 L30,125 L43,143 L37,143 L45,155 L37,155 L42,165 L32,165 L32,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 2 - tall */}
-        <path transform="translate(60,0) scale(1.5,1) translate(-60,0)"
+        <path transform="translate(60,175) scale(1.5,0.8) translate(-60,-175)"
           d="M58,175 L58,163 L48,163 L53,152 L45,152 L52,140 L46,140 L53,128 L47,128 L60,108 L73,128 L67,128 L74,140 L68,140 L75,152 L67,152 L72,163 L62,163 L62,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 3 - short */}
-        <path transform="translate(97,0) scale(1.5,1) translate(-97,0)"
+        <path transform="translate(97,175) scale(1.5,0.8) translate(-97,-175)"
           d="M95,175 L95,166 L87,166 L91,157 L85,157 L97,142 L109,157 L103,157 L107,166 L99,166 L99,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 4 - medium */}
-        <path transform="translate(125,0) scale(1.5,1) translate(-125,0)"
+        <path transform="translate(125,175) scale(1.5,0.8) translate(-125,-175)"
           d="M122,175 L122,164 L114,164 L118,154 L112,154 L120,140 L114,140 L125,122 L136,140 L130,140 L138,154 L132,154 L136,164 L128,164 L128,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
 
         {/* Tree line -- right cluster */}
         {/* Pine 5 - tall */}
-        <path transform="translate(682,0) scale(1.5,1) translate(-682,0)"
+        <path transform="translate(682,175) scale(1.5,0.8) translate(-682,-175)"
           d="M680,175 L680,163 L670,163 L675,152 L667,152 L674,140 L668,140 L675,128 L669,128 L682,108 L695,128 L689,128 L696,140 L690,140 L697,152 L689,152 L694,163 L684,163 L684,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 6 - medium */}
-        <path transform="translate(713,0) scale(1.5,1) translate(-713,0)"
+        <path transform="translate(713,175) scale(1.5,0.8) translate(-713,-175)"
           d="M710,175 L710,164 L702,164 L706,154 L700,154 L708,140 L702,140 L713,122 L724,140 L718,140 L726,154 L720,154 L724,164 L716,164 L716,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 7 - short */}
-        <path transform="translate(743,0) scale(1.5,1) translate(-743,0)"
+        <path transform="translate(743,175) scale(1.5,0.8) translate(-743,-175)"
           d="M740,175 L740,166 L733,166 L737,157 L731,157 L743,142 L755,157 L749,157 L753,166 L746,166 L746,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
         {/* Pine 8 - medium */}
-        <path transform="translate(773,0) scale(1.5,1) translate(-773,0)"
+        <path transform="translate(773,175) scale(1.5,0.8) translate(-773,-175)"
           d="M770,175 L770,165 L762,165 L766,155 L760,155 L768,142 L762,142 L773,125 L784,142 L778,142 L786,155 L780,155 L784,165 L776,165 L776,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
 
         {/* Scattered single pines */}
         {/* Lone pine mid-left */}
-        <path transform="translate(195,0) scale(1.5,1) translate(-195,0)"
+        <path transform="translate(195,175) scale(1.5,0.8) translate(-195,-175)"
           d="M192,175 L192,166 L185,166 L189,157 L183,157 L195,142 L207,157 L201,157 L205,166 L198,166 L198,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
         {/* Tall pine center-left */}
-        <path transform="translate(313,0) scale(1.5,1) translate(-313,0)"
+        <path transform="translate(313,175) scale(1.5,0.8) translate(-313,-175)"
           d="M310,175 L310,165 L303,165 L307,155 L301,155 L308,143 L302,143 L313,126 L324,143 L318,143 L325,155 L319,155 L323,165 L316,165 L316,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
         {/* Small pine center */}
-        <path transform="translate(453,0) scale(1.5,1) translate(-453,0)"
+        <path transform="translate(453,175) scale(1.5,0.8) translate(-453,-175)"
           d="M450,175 L450,167 L445,167 L453,155 L461,167 L456,167 L456,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
         {/* Pine mid-right */}
-        <path transform="translate(568,0) scale(1.5,1) translate(-568,0)"
+        <path transform="translate(568,175) scale(1.5,0.8) translate(-568,-175)"
           d="M565,175 L565,166 L558,166 L562,157 L556,157 L568,142 L580,157 L574,157 L578,166 L571,166 L571,175 Z"
           fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
 
