@@ -213,11 +213,15 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - `useUIStore.js`: added `activeNav`, `activePanel`, `setActiveNav`, `setActivePanel`
 - `OwlMoth.jsx`: added `width`/`height` props with defaults
 
-**Background responsive fix (in progress -- needs design input from Claude.ai)**
-- Root cause identified: `preserveAspectRatio="none"` stretches the landscape SVG differently on mobile (squished narrow) vs desktop (wide and flat) because horizontal and vertical scale factors diverge
-- Attempted fix 1: two separate SVGs (800-unit mobile, 1600-unit desktop) conditioned on `isMobile` prop -- user reported no improvement
-- Attempted fix 2: single 1600-unit panorama with `preserveAspectRatio="xMidYMax slice"` at fixed `height: 200px` -- user reported no improvement; brainstorming with Claude.ai for better solution
-- Current state: fix 2 is deployed. Claude.ai should design a better approach before Claude Code attempts further changes.
+**Background landscape (iterative, still in progress)**
+- Root cause identified: `preserveAspectRatio="none"` stretches the SVG differently on mobile vs desktop
+- Attempted fix 1: two separate SVGs (800-unit mobile, 1600-unit desktop) with `isMobile` -- no improvement reported
+- Attempted fix 2: single 1600-unit panorama with `preserveAspectRatio="xMidYMax slice"` + `height: 200px` -- no improvement
+- Claude.ai designed new spec: jagged alpine mountains (24-vertex far, 17-vertex near), 28 triangle pine trees in 5 clusters + 8 lone trees, `viewBox 1600x400`, `height: 28vh`
+- Switched back to two independent SVGs (mobile: 800x400, desktop: 1600x400) so each can be tweaked without affecting the other
+- Desktop tweak: raised near mountain valley floors (y=380→y=336-342) and scaled tree heights to ~60%. User reported no visible change -- likely a GitHub Pages CDN propagation delay, or the change was too subtle
+- **Current state:** Two independent SVGs in `client/src/components/Background.jsx`. Mobile SVG: `viewBox="0 0 800 400"`. Desktop SVG: `viewBox="0 0 1600 400"`. Both use `preserveAspectRatio="xMidYMax slice"`, `height: 28vh`. `isMobile` prop passed from `DesktopPet.jsx`.
+- **Known issues on desktop:** mountains appear cut off at bottom, trees too tall. Next Claude Code session should verify the last commit is actually live before re-tweaking.
 
 ---
 
@@ -396,12 +400,12 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 ### PHASE 1: Minimal scaffolding (prerequisites + nav shell)
 
-#### Fix background landscape rendering (mobile and desktop)
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (visual quality blocker)
-- **Description:** Background SVG landscape looks distorted on both mobile (squished/narrow) and desktop (wide/flat). Two approaches were attempted by Claude Code (separate mobile/desktop SVGs; single panorama with `preserveAspectRatio="xMidYMax slice"` + fixed 200px height) and neither resolved the issue. Claude.ai should diagnose the root cause and design a solution before Claude Code makes further changes. Current deployed state: single 1600-unit viewBox, `preserveAspectRatio="xMidYMax slice"`, `height: 200px`, in `client/src/components/Background.jsx`.
-- **Context/References:** Session log 2026-03-27 (background fix attempts), `client/src/components/Background.jsx`
-- **Acceptance criteria:** Landscape silhouette looks proportional and undistorted on both iPhone (390px wide) and desktop (~1440px wide). Mountains and trees maintain natural proportions. No letterboxing or overflow.
+#### Fix background landscape rendering (desktop)
+- **Assigned to:** Claude Code (implementation, design spec complete)
+- **Priority:** Medium (visual polish)
+- **Description:** Desktop landscape has two issues: mountains appear cut off at the bottom, trees are too tall. A fix was pushed (near mountain valleys raised, trees scaled to 60%) but user reported no visible change -- possibly CDN propagation delay. Verify the fix is live before attempting further changes. If the fix didn't land, re-apply. Mobile landscape is separate and currently acceptable. Current deployed state: two independent SVGs in `client/src/components/Background.jsx` conditioned on `isMobile`. Desktop: `viewBox="0 0 1600 400"`, `preserveAspectRatio="xMidYMax slice"`, `height: 28vh`. Mobile: `viewBox="0 0 800 400"`, same scaling.
+- **Context/References:** Session log 2026-03-27 (background fix attempts), `client/src/components/Background.jsx` (desktop SVG is the `: (...)` branch of the `isMobile` ternary, around line 232)
+- **Acceptance criteria:** Desktop mountains look grounded (not truncated). Trees are proportional to mountains. Mobile unchanged.
 
 ---
 
