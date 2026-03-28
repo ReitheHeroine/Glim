@@ -49,7 +49,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
   // Stars -- bigger and brighter
   const stars = useRef(
     Array.from({ length: 80 }, (_, i) => ({
-      id: i, x: Math.random() * 100, y: Math.random() * 70,
+      id: i, x: Math.random() * 100, y: Math.random() * 88,
       size: Math.random() > 0.85 ? Math.random() * 3 + 3 : Math.random() * 2 + 1.5,
       twinkleDur: Math.random() * 3 + 2,
       twinkleDelay: Math.random() * 5,
@@ -100,8 +100,8 @@ export default function Background({ hue, sat, mood, isMobile }) {
 
       {/* ===== HORIZON GLOW ===== */}
       <div className="absolute" style={{
-        bottom: "18%", left: 0, right: 0, height: "25%",
-        background: `radial-gradient(ellipse at 50% 100%, ${HORIZON_GLOWS[mood]}, transparent 70%)`,
+        bottom: "10%", left: 0, right: 0, height: "35%",
+        background: `radial-gradient(ellipse at 50% 100%, ${HORIZON_GLOWS[mood]}, transparent 90%)`,
         transition: "background 120s ease",
       }} />
 
@@ -158,6 +158,13 @@ export default function Background({ hue, sat, mood, isMobile }) {
         background: `radial-gradient(ellipse, hsla(${h3}, ${s}%, 50%, 0.12) 0%, hsla(${h3}, ${s}%, 40%, 0.03) 50%, transparent 70%)`,
         animation: "nebulaFloat3 35s ease-in-out infinite",
         filter: "blur(35px)",
+      }} />
+      <div className="absolute" style={{
+        left: "15%", top: "55%", width: "50%", height: "25%",
+        borderRadius: "50%",
+        background: `radial-gradient(ellipse, hsla(${h2}, ${s}%, 45%, 0.10) 0%, hsla(${h2}, ${s}%, 35%, 0.03) 50%, transparent 70%)`,
+        animation: "nebulaFloat2 28s ease-in-out infinite",
+        filter: "blur(40px)",
       }} />
 
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
