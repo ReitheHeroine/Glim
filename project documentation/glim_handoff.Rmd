@@ -198,20 +198,28 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 > - [Decisions made - reference Project Docs Decision Register if significant]
 > - [Issues encountered or flagged]
 
-### 2026-03-27 (Claude Code) - Touch events (Pointer Events API migration)
+### 2026-03-27 (Claude Code) - Touch events, Phase 1 scaffolding, background responsive fix attempt
 
-**Pointer Events migration (DesktopPet.jsx, SettingsPanel.jsx, JournalPanel.jsx, PersistentReminder.jsx)**
-- Replaced `mousemove`/`mouseup` drag listeners with `pointermove`/`pointerup`/`pointercancel` on window
-- Added `pointercancel` handler: ends drag/purr state cleanly without triggering the return-to-center animation (fires when browser intercepts touch gesture, e.g. incoming call)
-- Renamed `handleCreatureMouseDown` → `handleCreaturePointerDown`; `onMouseDown` → `onPointerDown` on creature div
-- Added `touchAction: "none"` inline style on creature div (prevents browser intercepting drag for scroll/zoom)
-- Replaced `handleMouseMove` with `handlePointerMove`: identical offset math, but cancels any in-flight eye drift animation when a new pointer contact arrives
-- Added `handleEyePointerUp`: on `pointerType === "touch"` release, drifts eyes back to center over 1.5s ease-out cubic via `requestAnimationFrame` loop (skipped for mouse - cursor stays in place so eyes don't drift)
-- Added `eyeDriftFrameRef` (animation frame handle) and `pupilOffsetRef` (synced from Zustand via `useEffect`) to refs block
-- Eye tracking `useEffect` now registers `pointermove`, `pointerup`, and `pointercancel` on window
-- Replaced `onMouseEnter`/`onMouseLeave` with `onPointerEnter`/`onPointerLeave` across all components (~8 instances)
-- Build clean; pushed to GitHub Pages; confirmed working on phone after CDN propagation (~2-3 min)
-- Note: CDN propagation lag caused a brief outage after deploy - resolved without intervention. For future: wait a few minutes after the Actions run completes before testing on phone.
+**Touch events (Pointer Events API migration)**
+- Migrated all mouse-only handlers to Pointer Events API across 5 files
+- `DesktopPet.jsx`: renamed `handleMouseMove` -> `handlePointerMove` (also cancels in-flight drift); renamed `handleCreatureMouseDown` -> `handleCreaturePointerDown`; added `eyeDriftFrameRef` + `pupilOffsetRef` refs; added `handleEyePointerUp` callback (touch-only, animates pupils back to center over 1500ms ease-out cubic via rAF); updated eye useEffect to use `pointermove`/`pointerup`/`pointercancel`; added `pointercancel` to drag useEffect; added `touch-action: none` on creature div; converted all `onPointerEnter`/`onPointerLeave` on hover buttons
+- `SettingsPanel.jsx`, `JournalPanel.jsx`, `PersistentReminder.jsx`: all `onMouseEnter`/`onMouseLeave` -> `onPointerEnter`/`onPointerLeave`
+- Confirmed working on phone
+
+**Phase 1 scaffolding (responsive layout, nav bar, companion panel)**
+- `DesktopPet.jsx`: added `isMobile` state with resize listener (`window.innerWidth < 600`); layout restructured from `items-center justify-center` to `flex flex-col`; creature area uses `flex: 1`; creature wrapper gets `scaleY(0.9)` compress when panel open; glow ring and OwlMoth sizes keyed to `isMobile`; button padding bumped to `minHeight: 44`; added `<NavBar />` and `<CompanionPanel />` to return; added `activePanel` from `useUIStore`
+- `client/src/components/NavBar.jsx` (new): 5 SVG icon components using `currentColor`; NAV_ITEMS config; home clears panel, focus/tasks/nutrition open corresponding panel, more is no-op; safe area padding; 44px `minHeight` on buttons
+- `client/src/components/CompanionPanel.jsx` (new): slide-up panel from bottom; `useEffect` + `requestAnimationFrame` for enter animation; `dismiss()` with 300ms exit delay; drag handle with `setPointerCapture`; drag >80px triggers dismiss; transparent backdrop closes on tap; placeholder content per panel type
+- `useUIStore.js`: added `activeNav`, `activePanel`, `setActiveNav`, `setActivePanel`
+- `OwlMoth.jsx`: added `width`/`height` props with defaults
+
+**Background responsive fix (in progress -- needs design input from Claude.ai)**
+- Root cause identified: `preserveAspectRatio="none"` stretches the landscape SVG differently on mobile (squished narrow) vs desktop (wide and flat) because horizontal and vertical scale factors diverge
+- Attempted fix 1: two separate SVGs (800-unit mobile, 1600-unit desktop) conditioned on `isMobile` prop -- user reported no improvement
+- Attempted fix 2: single 1600-unit panorama with `preserveAspectRatio="xMidYMax slice"` at fixed `height: 200px` -- user reported no improvement; brainstorming with Claude.ai for better solution
+- Current state: fix 2 is deployed. Claude.ai should design a better approach before Claude Code attempts further changes.
+
+---
 
 ### 2026-03-27 (Claude Code) - Zustand migration, hosting migration, icon/splash, file separation
 
@@ -270,12 +278,18 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - Brainstormed and designed feature suite: nutrition (hybrid library + raw add), pomodoro/time tracking (with work categories), to-do list (recurring via Approach 2, done section), step tracking (replace-style, tier milestones), workout logging (categories, intensity, per-type goals)
 - Designed home screen layout: big Glim + 3 summary widgets (steps ring, water ring, tasks done) + nav bar (home/focus/tasks/nutrition/more)
 - Mockupped companion mode panels (nutrition quick-add) and home screen variations (rings-only vs all-widgets, chose rings-only)
-- Designed nav bar icons: nest (home), leaf (nutrition), clipboard (tasks), clock (focus), three dots (more)
+- Finalized nav bar icons: mountains+stars (home), clock (focus), double checkmarks (tasks), leaf with vein (nutrition), three dots (more)
 - Established 5-phase inside-out build plan: (1) scaffolding + prerequisites, (2) water tracker, (3) second companion tracker, (4) to-do list (first focus mode), (5) everything else
 - Designed and finalized multi-hue app icon (accurate Glim from DesktopPet.jsx bezier paths) and splash screen with "oh hi, welcome back!" randomized taglines
-- Output files for Claude Code: `glim-icon-multihue.svg`, `SplashScreen.jsx`, `icon-splash-handoff.md`
-- Updated Project Documentation: Sections 8.2.1, 8.3, 8.4, 8.8, 8.10, 6 decision register entries, project log
-- Updated Handoff: task queue restructured by build phase, session log, resolved questions
+- Designed Pointer Events migration spec for touch support (4 systems: creature interaction, eye tracking with drift-to-center, button hover replacement, click handlers)
+- Output files for Claude Code:
+  - `glim-icon-multihue.svg` - app icon source SVG
+  - `SplashScreen.jsx` - auth-loading splash screen component
+  - `icon-splash-handoff.md` - implementation instructions for icon + splash
+  - `nav-icons-reference.md` - all 5 nav icon SVGs with React component code and color specs
+  - `glim-homescreen-mockup.html` - pixel-accurate home screen mockup (open in browser), includes embedded implementation notes with every measurement, color value, SVG path, and behavioral spec
+- Updated Project Documentation: Sections 2.1, 2.3, 3.3, 4.2, 6.2, 6.3, 8.2, 8.2.1, 8.3, 8.4, 8.8, 8.10, 6 decision register entries, project log
+- Updated Handoff: task queue restructured by build phase with mockup references, session log, resolved questions, file system map
 
 ### 2026-03-26 (Claude.ai) - Mobile platform strategy evaluation
 - Evaluated four mobile deployment options: enhanced PWA, Capacitor (WebView wrapper), React Native, full native (Swift/Kotlin)
@@ -382,26 +396,12 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 ### PHASE 1: Minimal scaffolding (prerequisites + nav shell)
 
-#### Implement responsive layout
+#### Fix background landscape rendering (mobile and desktop)
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (prerequisite for mobile panels)
-- **Description:** Add `isMobile` flag based on `window.innerWidth < 600` with resize listener. Scale creature size, glow ring, panel widths, and button sizes. Ensure tap targets meet 44px minimum on mobile. Settings and journal panels expand to near-full-width on small screens.
-- **Context/References:** [See Project Docs Section 3.4.5: Implementation Status]
-- **Acceptance criteria:** Glim renders correctly on screens from 320px to 1920px+. Panels don't overflow on small screens. Tap targets are 44px+ on mobile. Test on real phone via GitHub Pages after deployment.
-
-#### Build nav bar shell
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (enables feature panels)
-- **Description:** Implement the persistent bottom nav bar with 5 slots: home (fixed, nest icon), focus (clock), tasks (clipboard), nutrition (leaf), more (three dots). Home returns to companion mode. Other slots are placeholders for now (show "coming soon" or do nothing). Active slot highlighted in teal. Nav bar appears in both companion and focus modes.
-- **Context/References:** [See Project Docs Section 8.10: Bottom navigation bar]
-- **Acceptance criteria:** Nav bar renders on both desktop and mobile. Home icon returns to creature view. Active state visually indicated. Bar is persistent across mode transitions.
-
-#### Build companion mode panel mechanism
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (enables tracker panels)
-- **Description:** Build the slide-up panel system for companion mode. Panel slides up from bottom over 300ms, drag handle to dismiss, tap-outside to dismiss, creature compresses to ~90% when panel open, smooth transition between panels. Only one panel open at a time. Panel height ~40% of screen.
-- **Context/References:** [See Project Docs Section 8.10: Companion mode details]
-- **Acceptance criteria:** A test panel can be opened and dismissed via nav bar tap, drag-down, and tap-outside. Creature compresses and expands smoothly. Works on both mouse and touch.
+- **Priority:** High (visual quality blocker)
+- **Description:** Background SVG landscape looks distorted on both mobile (squished/narrow) and desktop (wide/flat). Two approaches were attempted by Claude Code (separate mobile/desktop SVGs; single panorama with `preserveAspectRatio="xMidYMax slice"` + fixed 200px height) and neither resolved the issue. Claude.ai should diagnose the root cause and design a solution before Claude Code makes further changes. Current deployed state: single 1600-unit viewBox, `preserveAspectRatio="xMidYMax slice"`, `height: 200px`, in `client/src/components/Background.jsx`.
+- **Context/References:** Session log 2026-03-27 (background fix attempts), `client/src/components/Background.jsx`
+- **Acceptance criteria:** Landscape silhouette looks proportional and undistorted on both iPhone (390px wide) and desktop (~1440px wide). Mountains and trees maintain natural proportions. No letterboxing or overflow.
 
 ---
 
@@ -422,11 +422,11 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 - **Acceptance criteria:** User can log water, see progress ring fill, and see Glim react. Data persists across refresh. Home screen widget shows current progress. Panel works on desktop and mobile.
 
 #### Add home screen summary widgets
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
+- **Assigned to:** Claude Code (implementation, design is complete)
 - **Priority:** High (part of water tracker delivery)
-- **Description:** Implement the 3-widget row on the home screen (above nav bar, below creature): steps ring, water ring, tasks done count. Initially only water is functional; steps and tasks show placeholder state. Tapping a widget opens the corresponding panel or focus screen.
-- **Context/References:** [See Project Docs Section 8.10: Home screen summary widgets]
-- **Acceptance criteria:** Three widgets render below Glim. Water widget reflects live data. Tapping water widget opens the water panel.
+- **Description:** Implement the 3-widget row on the home screen (above nav bar, below creature): steps ring (teal #5eead4), water ring (blue #60a5fa), tasks done count with checkmark (purple #a78bfa, shows "N done" not a fraction). Initially only water is functional; steps and tasks show placeholder state. Tapping a widget opens the corresponding panel or focus screen. Ring SVG technique: two overlapping circles (track + progress via stroke-dasharray). Widget containers: rgba(255,255,255,0.06) bg, 12px border-radius.
+- **Context/References:** [See Project Docs Section 8.10: Home screen summary widgets], `glim-homescreen-mockup.html` (exact colors, sizes, SVG technique)
+- **Acceptance criteria:** Three widgets render below Glim. Water widget reflects live data. Tapping water widget opens the water panel. Layout matches mockup.
 
 ---
 
@@ -505,7 +505,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 - **Assigned to:** Claude Code
 - **Priority:** Medium
 - **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Also prerequisite for Web Push notifications.
-- **Context/References:** [See Project Docs Section 6.2: PWA]
+- **Context/References:** [See Project Docs Section 6.2: Netlify PWA]
 - **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit.
 
 #### Implement Web Push notifications
@@ -536,7 +536,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 > Items that need browser verification. Include file paths, what to look for.
 
 ### 2026-03-25 iPhone installation
-- **How to test:** Open https://reitheheroine.github.io/Glim/ in Safari on iPhone → Share → Add to Home Screen
+- **How to test:** Open Netlify URL in Safari on iPhone → Share → Add to Home Screen
 - **What to verify:**
   - Glim icon appears on home screen (purple/teal creature, not a blank page screenshot)
   - App opens full screen with no browser chrome
@@ -555,7 +555,10 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
-- Touch events (Pointer Events API migration) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/JournalPanel.jsx`, `client/src/components/PersistentReminder.jsx`; live on GitHub Pages
+- Touch events (Pointer Events API migration) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/JournalPanel.jsx`, `client/src/components/PersistentReminder.jsx`; confirmed working on phone
+- Responsive layout (`isMobile` flag, creature/ring sizing, 44px tap targets) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/OwlMoth.jsx`; live on GitHub Pages
+- Nav bar shell (5 slots, SVG icons, active state, safe area padding) - 2026-03-27 - `client/src/components/NavBar.jsx` (new); live on GitHub Pages
+- Companion mode panel mechanism (slide-up, drag-to-dismiss, tap-outside, creature compress) - 2026-03-27 - `client/src/components/CompanionPanel.jsx` (new), `client/src/stores/useUIStore.js`; live on GitHub Pages
 - File separation (DesktopPet.jsx -> 9 files) - 2026-03-27 - `client/src/components/` (7 files), `client/src/glim-animations.css`; live on GitHub Pages
 - Zustand state migration - 2026-03-27 - `client/src/stores/` (6 stores + index), `client/src/utils.js`; live on GitHub Pages
 - Hosting migration to GitHub Pages - 2026-03-27 - `.github/workflows/deploy.yml`, `client/vite.config.js` (base path), `client/public/manifest.json` (updated paths), `client/src/SignIn.jsx` (BASE_URL fix); live at https://reitheheroine.github.io/Glim/
@@ -639,7 +642,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 **Q:** Should features be built framework-first or feature-driven? **A:** Inside-out (feature-driven). Build minimal scaffolding, then one feature at a time, growing the framework incrementally. 5 phases: (1) prerequisites + nav shell, (2) water tracker, (3) second companion tracker, (4) to-do list, (5) everything else. See Project Docs Section 8.2.1 and Decision Register 2026-03-27. (2026-03-27)
 
-**Q:** What should the nav bar layout be? **A:** Home (fixed, nest icon) + 3 customizable slots + more. Default order: home, focus (pomodoro), tasks, nutrition, more. Home returns to companion mode. (2026-03-27)
+**Q:** What should the nav bar layout be? **A:** Home (fixed, mountains+stars icon) + 3 customizable slots + more. Default order: home, focus (clock), tasks (double checkmarks), nutrition (leaf), more (dots). Home returns to companion mode. See `nav-icons-reference.md` for SVG paths and `glim-homescreen-mockup.html` for visual reference. (2026-03-27)
 
 **Q:** What summary widgets should appear on the home screen? **A:** Three widgets only (rings-only layout): steps progress ring, water progress ring, tasks completed count (checkmark + "N done", not a fraction). Keeps home screen clean with Glim large. Full detail lives in panels and the dashboard focus screen. (2026-03-27)
 
@@ -651,7 +654,7 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 **Last updated:** 2026-03-27
 
-**Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. `glim.html` kept as legacy reference.
+**Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. Netlify project still exists but is no longer active. `glim.html` kept as legacy reference.
 
 **Current structure:**
 
@@ -667,6 +670,8 @@ glim/
 +-- package.json                       # Root package.json (stub, not the active one)
 +-- tater.html                         # (reference artifact)
 +-- icon-splash-handoff.md             # Handoff doc from Claude.ai for icon/splash work (done)
++-- nav-icons-reference.md             # Nav bar icon SVGs + React component structure (from Claude.ai)
++-- glim-homescreen-mockup.html        # Pixel-accurate home screen mockup (open in browser for visual reference)
 +-- project documentation/
 |   +-- glim_handoff.Rmd               # This file
 |   +-- glim_project_documentation.Rmd # Project documentation source
