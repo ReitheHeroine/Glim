@@ -680,7 +680,7 @@ export default function DesktopPet() {
         fontFamily: "'Courier New', monospace",
         background: "#040408",
       }}>
-      <Background hue={hue} sat={sat} mood={mood} />
+      <Background hue={hue} sat={sat} mood={mood} isMobile={isMobile} />
 
       <div className="absolute rounded-full pointer-events-none" style={{
         width: isMobile ? 280 : 420, height: isMobile ? 280 : 420,
