@@ -184,7 +184,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
 
           {/* Far mountains — interior y values: original -30 then +25 = net -5 */}
-          <path d="M0,349 L35,313 L70,331 L105,289 L140,316 L175,270 L209,305 L244,255 L279,297 L314,248 L349,293 L383,243 L418,243 L453,293 L488,248 L522,297 L557,255 L592,305 L627,270 L662,316 L697,289 L732,331 L766,313 L800,349 L800,400 L0,400 Z"
+          <path d="M0,349 L35,313 L70,331 L105,289 L140,316 L175,270 L209,305 L244,255 L279,297 L314,248 L349,293 L400,243 L453,293 L488,248 L522,297 L557,255 L592,305 L627,270 L662,316 L697,289 L732,331 L766,313 L800,349 L800,400 L0,400 Z"
             fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
 
           {/* Near mountains — valleys at y=320, peaks unchanged */}
@@ -250,7 +250,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
 
           {/* Far mountains — interior y values: original -30 then +25 = net -5 */}
-          <path d="M0,349 L70,313 L139,331 L209,289 L278,316 L348,270 L417,305 L487,255 L557,297 L626,248 L696,293 L765,243 L835,243 L904,293 L974,248 L1043,297 L1113,255 L1183,305 L1252,270 L1322,316 L1391,289 L1461,331 L1530,313 L1600,349 L1600,400 L0,400 Z"
+          <path d="M0,349 L70,313 L139,331 L209,289 L278,316 L348,270 L417,305 L487,255 L557,297 L626,248 L696,293 L800,243 L904,293 L974,248 L1043,297 L1113,255 L1183,305 L1252,270 L1322,316 L1391,289 L1461,331 L1530,313 L1600,349 L1600,400 L0,400 Z"
             fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
 
           {/* Near mountains — valleys at y=320, peaks unchanged */}
