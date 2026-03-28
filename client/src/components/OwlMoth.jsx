@@ -15,7 +15,8 @@
 
 export default function OwlMoth({ onClick, onDoubleClick,
   squeezed, hue, sat, mood, isHappy, isPuffed, isPurring, isBlinking,
-  specialAnim, antennaPerk, wingTwitchSide, pupilOffset }) {
+  specialAnim, antennaPerk, wingTwitchSide, pupilOffset,
+  width = 360, height = 390 }) {
 
   const sleepy = mood === "lateNight" || specialAnim === "sleep";
   const h = hue, s = sat;
@@ -48,7 +49,7 @@ export default function OwlMoth({ onClick, onDoubleClick,
   else if (isHappy) { bodyAnim = "owlBounce 0.5s ease-in-out 3"; }
 
   return (
-    <svg viewBox="0 0 220 240" width="360" height="390"
+    <svg viewBox="0 0 220 240" width={width} height={height}
       onClick={onClick} onDoubleClick={onDoubleClick}
       className="cursor-pointer select-none"
       style={{

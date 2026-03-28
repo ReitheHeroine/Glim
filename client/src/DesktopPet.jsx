@@ -12,7 +12,7 @@
 // Outputs:     Default export: DesktopPet component
 // -----------------------------------------------------------------------------
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import {
   MESSAGES, MOVE_REMINDERS, EYES_REMINDERS, MOVE_DONE_RESPONSES,
   EYES_DONE_RESPONSES, MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS,
@@ -32,6 +32,8 @@ import OwlMoth from './components/OwlMoth';
 import PersistentReminder from './components/PersistentReminder';
 import SettingsPanel from './components/SettingsPanel';
 import JournalPanel from './components/JournalPanel';
+import NavBar from './components/NavBar';
+import CompanionPanel from './components/CompanionPanel';
 
 
 export default function DesktopPet() {
@@ -58,7 +60,15 @@ export default function DesktopPet() {
     reload: reloadSettings,
   } = useSettingsStore();
 
-  const { journalPrompt, setJournalText, setJournalPrompt } = useUIStore();
+  const { journalPrompt, setJournalText, setJournalPrompt, activePanel } = useUIStore();
+
+  // ---- Responsive layout ----
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   const { reload: reloadJournal, addEntry: addJournalEntry } = useJournalStore();
 
@@ -665,7 +675,7 @@ export default function DesktopPet() {
   }, [isPurring, isShaken, showMessage]);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden select-none"
+    <div className="fixed inset-0 flex flex-col overflow-hidden select-none"
       style={{
         fontFamily: "'Courier New', monospace",
         background: "#040408",
@@ -673,86 +683,112 @@ export default function DesktopPet() {
       <Background hue={hue} sat={sat} mood={mood} />
 
       <div className="absolute rounded-full pointer-events-none" style={{
-        width: 420, height: 420,
+        width: isMobile ? 280 : 420, height: isMobile ? 280 : 420,
         border: `1px solid hsla(${hue}, ${sat}%, 55%, 0.07)`,
         animation: "ringPulse 6s ease-in-out infinite",
       }} />
 
       <AmbientBugs hue={hue} chasedBugId={chasedBugId} />
 
-      <div className="relative" style={{
+      {/* Main content area - fills space above nav bar, centers creature */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
         zIndex: 10,
-        transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
-        transition: isDragging ? "none" : "transform 3s cubic-bezier(0.15, 0.6, 0.35, 1)",
-        animation: !isDragging && !isReturning ? (
-          specialAnim === "chaseBug" ? "creatureChase 3s ease-in-out"
-          : specialAnim === "flyAttempt" ? "creatureFly 1.5s ease-in-out"
-          : "none"
-        ) : "none",
-        cursor: isDragging ? "grabbing" : "grab",
-        touchAction: "none",
-      }} ref={creatureRef} onPointerDown={handleCreaturePointerDown}>
-        <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
-        <OwlMoth
-          onClick={handleClick} onDoubleClick={handleDoubleClick}
-          squeezed={squeezed} hue={hue} sat={sat} mood={mood}
-          isHappy={isHappy} isPuffed={isPuffed}
-          isPurring={isPurring} isBlinking={isBlinking} specialAnim={specialAnim}
-          antennaPerk={antennaPerk} wingTwitchSide={wingTwitchSide}
-          pupilOffset={pupilOffset}
-        />
-      </div>
-
-      <div className="mt-1 text-center relative" style={{ zIndex: 10 }}>
+        overflow: "hidden",
+      }}>
+        {/* Creature - compress vertically when a panel is open */}
         <div style={{
-          color: `hsla(${hue}, ${sat}%, 75%, 0.8)`, fontSize: 14,
-          letterSpacing: "3px", textTransform: "uppercase",
-        }}>glim</div>
-        <div style={{
-          color: `hsla(${hue}, ${sat - 15}%, 55%, 0.4)`, fontSize: 10, marginTop: 3, letterSpacing: "1px",
+          transform: activePanel ? "scaleY(0.9)" : "scaleY(1)",
+          transition: "transform 0.3s ease",
         }}>
-          click to say hi{clickCount > 0 && ` · poked ${clickCount} time${clickCount > 1 ? "s" : ""}`}
+          <div className="relative" style={{
+            zIndex: 10,
+            transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+            transition: isDragging ? "none" : "transform 3s cubic-bezier(0.15, 0.6, 0.35, 1)",
+            animation: !isDragging && !isReturning ? (
+              specialAnim === "chaseBug" ? "creatureChase 3s ease-in-out"
+              : specialAnim === "flyAttempt" ? "creatureFly 1.5s ease-in-out"
+              : "none"
+            ) : "none",
+            cursor: isDragging ? "grabbing" : "grab",
+            touchAction: "none",
+          }} ref={creatureRef} onPointerDown={handleCreaturePointerDown}>
+            <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
+            <OwlMoth
+              onClick={handleClick} onDoubleClick={handleDoubleClick}
+              squeezed={squeezed} hue={hue} sat={sat} mood={mood}
+              isHappy={isHappy} isPuffed={isPuffed}
+              isPurring={isPurring} isBlinking={isBlinking} specialAnim={specialAnim}
+              antennaPerk={antennaPerk} wingTwitchSide={wingTwitchSide}
+              pupilOffset={pupilOffset}
+              width={isMobile ? 240 : 360}
+              height={isMobile ? 262 : 390}
+            />
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-          <button onClick={() => {
-            wakeUp();
-            lastInteractionRef.current = Date.now();
-            clearTimeout(moveTimer.current);
-            setMoveReminder(null);
-            moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
-            showMessage(pickRandom(["nice! timer reset.", "got it, you moved!", "noted. clock restarted."]));
-          }} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
-            fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
-            transition: "color 0.2s ease", padding: "2px 6px",
-          }}
-            onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
-            onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
-          >just moved</button>
-          <button onClick={() => {
-            wakeUp();
-            lastInteractionRef.current = Date.now();
-            clearTimeout(eyesTimer.current);
-            setEyesReminder(null);
-            eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
-            showMessage(pickRandom(["good! eye timer reset.", "eyes rested! clock restarted.", "noted. see you in a bit."]));
-          }} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
-            fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
-            transition: "color 0.2s ease", padding: "2px 6px",
-          }}
-            onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
-            onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
-          >eyes rested</button>
+
+        <div className="mt-1 text-center relative" style={{ zIndex: 10 }}>
+          <div style={{
+            color: `hsla(${hue}, ${sat}%, 75%, 0.8)`, fontSize: 14,
+            letterSpacing: "3px", textTransform: "uppercase",
+          }}>glim</div>
+          <div style={{
+            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.4)`, fontSize: 10, marginTop: 3, letterSpacing: "1px",
+          }}>
+            click to say hi{clickCount > 0 && ` · poked ${clickCount} time${clickCount > 1 ? "s" : ""}`}
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            <button onClick={() => {
+              wakeUp();
+              lastInteractionRef.current = Date.now();
+              clearTimeout(moveTimer.current);
+              setMoveReminder(null);
+              moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
+              showMessage(pickRandom(["nice! timer reset.", "got it, you moved!", "noted. clock restarted."]));
+            }} style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
+              fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
+              transition: "color 0.2s ease", padding: "6px 8px", minHeight: 44,
+            }}
+              onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+              onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+            >just moved</button>
+            <button onClick={() => {
+              wakeUp();
+              lastInteractionRef.current = Date.now();
+              clearTimeout(eyesTimer.current);
+              setEyesReminder(null);
+              eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
+              showMessage(pickRandom(["good! eye timer reset.", "eyes rested! clock restarted.", "noted. see you in a bit."]));
+            }} style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 10,
+              fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
+              transition: "color 0.2s ease", padding: "6px 8px", minHeight: 44,
+            }}
+              onPointerEnter={(e) => { e.target.style.color = `hsla(${hue}, ${sat}%, 70%, 0.7)`; }}
+              onPointerLeave={(e) => { e.target.style.color = `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`; }}
+            >eyes rested</button>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-3 mt-5 relative" style={{ minHeight: 20, zIndex: 10 }}>
+          {eyesReminder && <PersistentReminder text={eyesReminder} type="eyes" onDismiss={dismissEyes} />}
+          {moveReminder && <PersistentReminder text={moveReminder} type="move" onDismiss={dismissMove} />}
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-3 mt-5 relative" style={{ minHeight: 20, zIndex: 10 }}>
-        {eyesReminder && <PersistentReminder text={eyesReminder} type="eyes" onDismiss={dismissEyes} />}
-        {moveReminder && <PersistentReminder text={moveReminder} type="move" onDismiss={dismissMove} />}
-      </div>
+      {/* Nav bar - sits at the bottom of the flex column */}
+      <NavBar />
+
+      {/* Companion panel - slides up above the nav bar */}
+      <CompanionPanel />
 
       <SettingsPanel />
       <JournalPanel onSave={saveJournalEntry} />
