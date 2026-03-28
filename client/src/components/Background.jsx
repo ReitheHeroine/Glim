@@ -168,19 +168,9 @@ export default function Background({ hue, sat, mood, isMobile }) {
       }} />
 
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
-      {/* Ground div — plain HTML, always covers NavBar (~58px) + visible ground
-          above it. 120px is predictable across screen sizes unlike the SVG
-          ground rect which depends on viewBox/slice math. */}
-      <div className="absolute bottom-0 left-0 right-0" style={{
-        height: 120,
-        backgroundColor: `hsla(${h}, ${s - 15}%, 4%, 1)`,
-        zIndex: 0,
-      }} />
-
-      {/* Two independent SVGs overlapping the ground div (both at bottom: 0).
+      {/* Two independent SVGs: mobile and desktop can be tweaked separately.
           preserveAspectRatio="xMidYMax slice": uniform scale, anchored to
-          bottom-center, crops overflow. SVG ground rect (y=295) blends into the
-          div below it as a fallback but no longer needs to be precisely sized. */}
+          bottom-center, crops overflow. */}
       {isMobile ? (
 
         // ----- MOBILE landscape -----
@@ -244,7 +234,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M734,286 L730,320 L739,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M746,278 L741,320 L752,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="320" width="800" height="80" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="332" width="800" height="68" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       ) : (
@@ -312,7 +302,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M1468,300 L1459,320 L1477,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M1492,295 L1480,320 L1504,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="320" width="1600" height="80" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="332" width="1600" height="68" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       )}
