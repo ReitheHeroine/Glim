@@ -161,81 +161,76 @@ export default function Background({ hue, sat, mood }) {
       }} />
 
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
-      {/* viewBox 1600x400 panorama. preserveAspectRatio="xMidYMax slice" scales
-          uniformly anchored to bottom-center. Mobile sees a center crop (~390/1600
-          units); desktop sees most of the canvas. No distortion on either.
-          height: 28vh scales with viewport so proportion stays consistent.
-          Main peaks and feature trees are in the center 60% (x 320-1280).
-          Edge trees (x<320, x>1280) are intentionally expendable -- they crop
-          gracefully on narrow screens. No transform hacks on tree paths. */}
+      {/* viewBox 1600x400. preserveAspectRatio="xMidYMax slice": uniform scale,
+          anchored bottom-center, crops edges. height: 28vh scales with viewport.
+          Mobile sees center crop; desktop sees full panorama. No distortion. */}
       <svg className="absolute bottom-0 w-full" viewBox="0 0 1600 400"
         preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
 
-        {/* Far mountains -- tallest peaks in center 60%, flatten toward edges */}
-        <path d="M0,220 L100,200 L220,185 L340,165 L440,140 L540,108 L640,78 L720,55 L800,42 L880,58 L960,80 L1060,108 L1160,138 L1260,162 L1380,182 L1500,198 L1600,212 L1600,400 L0,400 Z"
+        {/* Far mountains — 24 vertices, sharp alpine ridgeline.
+            Envelope: (1 - (dist/800)² × 0.55). Tallest peaks ~y=248 at center.
+            Valley floor clamped to 68% of peak height (~y=297 at center). */}
+        <path d="M0,354 L70,318 L139,336 L209,294 L278,321 L348,275 L417,310 L487,260 L557,302 L626,253 L696,298 L765,248 L835,248 L904,298 L974,253 L1043,302 L1113,260 L1183,310 L1252,275 L1322,321 L1391,294 L1461,336 L1530,318 L1600,354 L1600,400 L0,400 Z"
           fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
 
-        {/* Near mountains -- second layer, lower than far */}
-        <path d="M0,285 L120,268 L260,252 L380,232 L460,202 L560,175 L660,188 L760,172 L860,182 L960,168 L1060,180 L1160,198 L1260,222 L1380,248 L1500,264 L1600,278 L1600,400 L0,400 Z"
+        {/* Near mountains — 17 vertices, center offset 5% right (x≈880).
+            Tallest peak ~y=272 (25u above far valley floor y=297).
+            Valleys ~y=380, hidden by ground rect. */}
+        <path d="M0,390 L100,339 L200,388 L300,309 L400,385 L500,288 L600,383 L700,276 L800,380 L900,272 L1000,380 L1100,277 L1200,383 L1300,291 L1400,385 L1500,314 L1600,390 L1600,400 L0,400 Z"
           fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
 
-        {/* ---- Trees ----
-             All paths written natively for this 400-tall viewBox.
-             Ground at y≈335; trunks extend to y=350 (buried by ground fill).
-             3-tier pine silhouette: trunk + bottom tier + mid tier + top spike.
-             Tall trees: top ~y=205  Medium: top ~y=240  Short: top ~y=278 */}
+        {/* Trees — 28 simple triangles. Base at y=336.
+            Within each cluster: smallest drawn first (behind), largest last (front).
+            Lone trees are smaller and more transparent. Edge clusters more transparent. */}
 
-        {/* EXPENDABLE LEFT EDGE (x < 320) */}
-        {/* Short pine x=65 */}
-        <path d="M62,350 L62,340 L54,340 L58,326 L50,326 L65,278 L80,326 L72,326 L76,340 L68,340 L68,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
-        {/* Medium pine x=160 */}
-        <path d="M156,350 L156,335 L146,335 L152,318 L142,318 L148,298 L138,298 L160,240 L182,298 L172,298 L178,318 L168,318 L174,335 L164,335 L164,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
-        {/* Short pine x=255 */}
-        <path d="M252,350 L252,340 L244,340 L248,326 L240,326 L255,278 L270,326 L262,326 L266,340 L258,340 L258,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+        {/* Cluster 1 — center x≈128, left edge (expendable) */}
+        <path d="M110,318 L105,336 L115,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+        <path d="M135,310 L128,336 L142,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
+        <path d="M120,302 L111,336 L129,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
+        <path d="M148,294 L137,336 L159,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-        {/* CENTER 60% FEATURE TREES (x 320-1280) -- these are important, never cropped on mobile */}
-        {/* Tall pine x=390 */}
-        <path d="M386,350 L386,335 L374,335 L381,316 L370,316 L378,295 L366,295 L376,272 L390,205 L404,272 L414,295 L402,295 L410,316 L399,316 L406,335 L394,335 L394,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.9)`} />
-        {/* Medium pine x=510 */}
-        <path d="M506,350 L506,335 L496,335 L502,318 L492,318 L498,298 L488,298 L510,240 L532,298 L522,298 L528,318 L518,318 L524,335 L514,335 L514,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Tall pine x=640 */}
-        <path d="M636,350 L636,335 L624,335 L631,316 L620,316 L628,295 L616,295 L626,272 L640,205 L654,272 L664,295 L652,295 L660,316 L649,316 L656,335 L644,335 L644,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Tall pine x=780 -- center focal */}
-        <path d="M776,350 L776,335 L764,335 L771,316 L760,316 L768,295 L756,295 L766,272 L780,205 L794,272 L804,295 L792,295 L800,316 L789,316 L796,335 L784,335 L784,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Short pine x=870 */}
-        <path d="M867,350 L867,340 L859,340 L863,326 L855,326 L870,278 L885,326 L877,326 L881,340 L873,340 L873,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
-        {/* Tall pine x=960 */}
-        <path d="M956,350 L956,335 L944,335 L951,316 L940,316 L948,295 L936,295 L946,272 L960,205 L974,272 L984,295 L972,295 L980,316 L969,316 L976,335 L964,335 L964,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Medium pine x=1085 */}
-        <path d="M1081,350 L1081,335 L1071,335 L1077,318 L1067,318 L1073,298 L1063,298 L1085,240 L1107,298 L1097,298 L1103,318 L1093,318 L1099,335 L1089,335 L1089,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Tall pine x=1210 */}
-        <path d="M1206,350 L1206,335 L1194,335 L1201,316 L1190,316 L1198,295 L1186,295 L1196,272 L1210,205 L1224,272 L1234,295 L1222,295 L1230,316 L1219,316 L1226,335 L1214,335 L1214,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.9)`} />
+        {/* Lone trees between clusters 1–2 */}
+        <path d="M272,316 L267,336 L277,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+        <path d="M322,320 L318,336 L326,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
 
-        {/* EXPENDABLE RIGHT EDGE (x > 1280) */}
-        {/* Short pine x=1345 */}
-        <path d="M1342,350 L1342,340 L1334,340 L1338,326 L1330,326 L1345,278 L1360,326 L1352,326 L1356,340 L1348,340 L1348,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
-        {/* Medium pine x=1445 */}
-        <path d="M1441,350 L1441,335 L1431,335 L1437,318 L1427,318 L1433,298 L1423,298 L1445,240 L1467,298 L1457,298 L1463,318 L1453,318 L1459,335 L1449,335 L1449,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
-        {/* Short pine x=1535 */}
-        <path d="M1532,350 L1532,340 L1524,340 L1528,326 L1520,326 L1535,278 L1550,326 L1542,326 L1546,340 L1538,340 L1538,350 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
+        {/* Cluster 2 — center x≈464 */}
+        <path d="M450,314 L444,336 L456,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
+        <path d="M472,304 L463,336 L481,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
+        <path d="M460,296 L449,336 L471,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+        <path d="M485,288 L472,336 L498,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
 
-        {/* Ground -- covers tree trunks, matches safe-area fill color */}
-        <path d="M0,335 Q400,325 800,335 Q1200,345 1600,330 L1600,400 L0,400 Z"
-          fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+        {/* Lone trees between clusters 2–3 */}
+        <path d="M608,312 L601,336 L615,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+        <path d="M656,318 L651,336 L661,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+
+        {/* Cluster 3 — center x≈800, canvas center */}
+        <path d="M783,312 L776,336 L790,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+        <path d="M820,302 L811,336 L829,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+        <path d="M795,292 L783,336 L807,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.95)`} />
+        <path d="M808,288 L795,336 L821,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 1.00)`} />
+
+        {/* Lone trees between clusters 3–4 */}
+        <path d="M944,312 L937,336 L951,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+        <path d="M992,318 L987,336 L997,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+
+        {/* Cluster 4 — center x≈1136 */}
+        <path d="M1118,314 L1112,336 L1124,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
+        <path d="M1142,304 L1133,336 L1151,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
+        <path d="M1130,296 L1119,336 L1141,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+        <path d="M1155,288 L1142,336 L1168,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
+
+        {/* Lone trees between clusters 4–5 */}
+        <path d="M1278,316 L1273,336 L1283,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+        <path d="M1332,320 L1328,336 L1336,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+
+        {/* Cluster 5 — center x≈1472, right edge (expendable) */}
+        <path d="M1458,318 L1453,336 L1463,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+        <path d="M1480,310 L1473,336 L1487,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
+        <path d="M1468,302 L1459,336 L1477,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
+        <path d="M1492,294 L1481,336 L1503,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
+
+        {/* Ground rect — covers tree bases and buried near-mountain valleys */}
+        <rect x="0" y="336" width="1600" height="64" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
       </svg>
 
       {/* Safe-area gap fill -- matches ground color so no strip shows on iPhone */}
