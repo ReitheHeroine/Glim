@@ -784,6 +784,19 @@ export default function DesktopPet() {
         </div>
       </div>
 
+      {/* Ground-fill strip behind NavBar: the landscape SVG ground rect covers
+          only ~38px but the nav bar is ~58px tall, so sky shows through the
+          nav bar's transparent background. This solid strip plugs that gap. */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 'calc(58px + env(safe-area-inset-bottom, 0px))',
+        background: `hsla(${hue}, ${Math.max(0, sat - 15)}%, 4%, 1)`,
+        zIndex: 2,
+      }} />
+
       {/* Nav bar - sits at the bottom of the flex column */}
       <NavBar />
 

@@ -812,8 +812,8 @@ When creating, moving, or deleting files:
 **Status:** Repo initialized and pushed. GitHub Pages source must be set to "GitHub Actions" in repo settings to activate deployment.
 
 **Repo:** `git@github.com:ReitheHeroine/Glim.git` (branch: `main`)
-**Hosting:** Netlify - auto-deploys from `main` on every push. Build: `npm run build` in `client/`, publish: `client/dist/`.
-**Live URL:** Netlify subdomain (check Netlify dashboard for exact URL)
+**Hosting:** GitHub Pages - auto-deploys via GitHub Actions on every push to `main`. Build: `npm run build` in `client/`, artifact uploaded from `client/dist/`. See `.github/workflows/deploy.yml`.
+**Live URL:** https://reitheheroine.github.io/Glim/
 
 **`.gitignore` contents (at repo root):**
 ```
