@@ -167,10 +167,10 @@ export default function Background({ hue, sat, mood, isMobile }) {
       {isMobile ? (
 
         // ----- MOBILE landscape -----
-        // viewBox 800x400. height: 28vh.
+        // viewBox 800x400. height: 32vh.
         // Edit this SVG to change mobile only.
         <svg className="absolute bottom-0 w-full" viewBox="0 0 800 400"
-          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
+          preserveAspectRatio="xMidYMax slice" style={{ height: '32vh' }}>
 
           {/* Far mountains */}
           <path d="M0,354 L35,318 L70,336 L105,294 L140,321 L175,275 L209,310 L244,260 L279,302 L314,253 L349,298 L383,248 L418,248 L453,298 L488,253 L522,302 L557,260 L592,310 L627,275 L662,321 L697,294 L732,336 L766,318 L800,354 L800,400 L0,400 Z"
@@ -226,16 +226,16 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M734,302 L730,336 L739,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M746,294 L741,336 L752,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="336" width="800" height="64" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="310" width="800" height="90" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       ) : (
 
         // ----- DESKTOP landscape -----
-        // viewBox 1600x400. height: 28vh.
+        // viewBox 1600x400. height: 32vh.
         // Edit this SVG to change desktop only.
         <svg className="absolute bottom-0 w-full" viewBox="0 0 1600 400"
-          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
+          preserveAspectRatio="xMidYMax slice" style={{ height: '32vh' }}>
 
           {/* Far mountains */}
           <path d="M0,354 L70,318 L139,336 L209,294 L278,321 L348,275 L417,310 L487,260 L557,302 L626,253 L696,298 L765,248 L835,248 L904,298 L974,253 L1043,302 L1113,260 L1183,310 L1252,275 L1322,321 L1391,294 L1461,336 L1530,318 L1600,354 L1600,400 L0,400 Z"
@@ -295,7 +295,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M1468,316 L1459,336 L1477,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M1492,311 L1480,336 L1504,336 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="336" width="1600" height="64" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="310" width="1600" height="90" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       )}
