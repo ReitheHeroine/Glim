@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-export default function Background({ hue, sat, mood }) {
+export default function Background({ hue, sat, mood, isMobile }) {
   const h = hue, s = sat;
   const h2 = (h + 30) % 360;
   const h3 = (h + 60) % 360;
@@ -161,74 +161,135 @@ export default function Background({ hue, sat, mood }) {
       }} />
 
       {/* ===== LANDSCAPE SILHOUETTE ===== */}
-      <svg className="absolute bottom-0 w-full" viewBox="0 0 800 200" preserveAspectRatio="none"
-        style={{ height: "34%" }}>
-        {/* Far mountains */}
-        <path d="M0,90 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
-          fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
-        {/* Near mountains */}
-        <path d="M0,120 L60,120 L120,145 L200,95 L280,130 L360,100 L420,140 L500,110 L580,135 L660,105 L740,130 L800,115 L800,200 L0,200 Z"
-          fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
+      {isMobile ? (
+        /* -- Mobile: 800-unit canvas, trees scaled wide for narrow screens -- */
+        <svg className="absolute bottom-0 w-full" viewBox="0 0 800 200" preserveAspectRatio="none"
+          style={{ height: "34%" }}>
+          {/* Far mountains */}
+          <path d="M0,90 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L800,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
+          {/* Near mountains */}
+          <path d="M0,120 L60,120 L120,145 L200,95 L280,130 L360,100 L420,140 L500,110 L580,135 L660,105 L740,130 L800,115 L800,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
 
-        {/* Tree line -- left cluster (pines, grounded) */}
-        {/* Each tree scaled 1.5x wider from its center so they read on narrow phone screens */}
-        {/* Pine 1 - medium */}
-        <path transform="translate(29,175) scale(1.5,0.65) translate(-29,-175)"
-          d="M28,175 L28,165 L18,165 L23,155 L15,155 L23,143 L17,143 L30,125 L43,143 L37,143 L45,155 L37,155 L42,165 L32,165 L32,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 2 - tall */}
-        <path transform="translate(60,175) scale(1.5,0.65) translate(-60,-175)"
-          d="M58,175 L58,163 L48,163 L53,152 L45,152 L52,140 L46,140 L53,128 L47,128 L60,108 L73,128 L67,128 L74,140 L68,140 L75,152 L67,152 L72,163 L62,163 L62,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 3 - short */}
-        <path transform="translate(97,175) scale(1.5,0.65) translate(-97,-175)"
-          d="M95,175 L95,166 L87,166 L91,157 L85,157 L97,142 L109,157 L103,157 L107,166 L99,166 L99,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 4 - medium */}
-        <path transform="translate(125,175) scale(1.5,0.65) translate(-125,-175)"
-          d="M122,175 L122,164 L114,164 L118,154 L112,154 L120,140 L114,140 L125,122 L136,140 L130,140 L138,154 L132,154 L136,164 L128,164 L128,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          {/* Tree line -- left cluster */}
+          <path transform="translate(29,175) scale(1.5,0.65) translate(-29,-175)"
+            d="M28,175 L28,165 L18,165 L23,155 L15,155 L23,143 L17,143 L30,125 L43,143 L37,143 L45,155 L37,155 L42,165 L32,165 L32,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(60,175) scale(1.5,0.65) translate(-60,-175)"
+            d="M58,175 L58,163 L48,163 L53,152 L45,152 L52,140 L46,140 L53,128 L47,128 L60,108 L73,128 L67,128 L74,140 L68,140 L75,152 L67,152 L72,163 L62,163 L62,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(97,175) scale(1.5,0.65) translate(-97,-175)"
+            d="M95,175 L95,166 L87,166 L91,157 L85,157 L97,142 L109,157 L103,157 L107,166 L99,166 L99,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(125,175) scale(1.5,0.65) translate(-125,-175)"
+            d="M122,175 L122,164 L114,164 L118,154 L112,154 L120,140 L114,140 L125,122 L136,140 L130,140 L138,154 L132,154 L136,164 L128,164 L128,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
 
-        {/* Tree line -- right cluster */}
-        {/* Pine 5 - tall */}
-        <path transform="translate(682,175) scale(1.5,0.65) translate(-682,-175)"
-          d="M680,175 L680,163 L670,163 L675,152 L667,152 L674,140 L668,140 L675,128 L669,128 L682,108 L695,128 L689,128 L696,140 L690,140 L697,152 L689,152 L694,163 L684,163 L684,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 6 - medium */}
-        <path transform="translate(713,175) scale(1.5,0.65) translate(-713,-175)"
-          d="M710,175 L710,164 L702,164 L706,154 L700,154 L708,140 L702,140 L713,122 L724,140 L718,140 L726,154 L720,154 L724,164 L716,164 L716,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 7 - short */}
-        <path transform="translate(743,175) scale(1.5,0.65) translate(-743,-175)"
-          d="M740,175 L740,166 L733,166 L737,157 L731,157 L743,142 L755,157 L749,157 L753,166 L746,166 L746,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
-        {/* Pine 8 - medium */}
-        <path transform="translate(773,175) scale(1.5,0.65) translate(-773,-175)"
-          d="M770,175 L770,165 L762,165 L766,155 L760,155 L768,142 L762,142 L773,125 L784,142 L778,142 L786,155 L780,155 L784,165 L776,165 L776,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          {/* Tree line -- right cluster */}
+          <path transform="translate(682,175) scale(1.5,0.65) translate(-682,-175)"
+            d="M680,175 L680,163 L670,163 L675,152 L667,152 L674,140 L668,140 L675,128 L669,128 L682,108 L695,128 L689,128 L696,140 L690,140 L697,152 L689,152 L694,163 L684,163 L684,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(713,175) scale(1.5,0.65) translate(-713,-175)"
+            d="M710,175 L710,164 L702,164 L706,154 L700,154 L708,140 L702,140 L713,122 L724,140 L718,140 L726,154 L720,154 L724,164 L716,164 L716,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(743,175) scale(1.5,0.65) translate(-743,-175)"
+            d="M740,175 L740,166 L733,166 L737,157 L731,157 L743,142 L755,157 L749,157 L753,166 L746,166 L746,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(773,175) scale(1.5,0.65) translate(-773,-175)"
+            d="M770,175 L770,165 L762,165 L766,155 L760,155 L768,142 L762,142 L773,125 L784,142 L778,142 L786,155 L780,155 L784,165 L776,165 L776,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
 
-        {/* Scattered single pines */}
-        {/* Lone pine mid-left */}
-        <path transform="translate(195,175) scale(1.5,0.65) translate(-195,-175)"
-          d="M192,175 L192,166 L185,166 L189,157 L183,157 L195,142 L207,157 L201,157 L205,166 L198,166 L198,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
-        {/* Tall pine center-left */}
-        <path transform="translate(313,175) scale(1.5,0.65) translate(-313,-175)"
-          d="M310,175 L310,165 L303,165 L307,155 L301,155 L308,143 L302,143 L313,126 L324,143 L318,143 L325,155 L319,155 L323,165 L316,165 L316,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
-        {/* Small pine center */}
-        <path transform="translate(453,175) scale(1.5,0.65) translate(-453,-175)"
-          d="M450,175 L450,167 L445,167 L453,155 L461,167 L456,167 L456,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
-        {/* Pine mid-right */}
-        <path transform="translate(568,175) scale(1.5,0.65) translate(-568,-175)"
-          d="M565,175 L565,166 L558,166 L562,157 L556,157 L568,142 L580,157 L574,157 L578,166 L571,166 L571,175 Z"
-          fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
+          {/* Scattered single pines */}
+          <path transform="translate(195,175) scale(1.5,0.65) translate(-195,-175)"
+            d="M192,175 L192,166 L185,166 L189,157 L183,157 L195,142 L207,157 L201,157 L205,166 L198,166 L198,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path transform="translate(313,175) scale(1.5,0.65) translate(-313,-175)"
+            d="M310,175 L310,165 L303,165 L307,155 L301,155 L308,143 L302,143 L313,126 L324,143 L318,143 L325,155 L319,155 L323,165 L316,165 L316,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+          <path transform="translate(453,175) scale(1.5,0.65) translate(-453,-175)"
+            d="M450,175 L450,167 L445,167 L453,155 L461,167 L456,167 L456,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
+          <path transform="translate(568,175) scale(1.5,0.65) translate(-568,-175)"
+            d="M565,175 L565,166 L558,166 L562,157 L556,157 L568,142 L580,157 L574,157 L578,166 L571,166 L571,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
 
-        {/* Ground - starts high enough to cover any gap below tree trunks */}
-        <path d="M0,165 Q200,160 400,165 Q600,170 800,162 L800,200 L0,200 Z"
-          fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
-      </svg>
+          {/* Ground */}
+          <path d="M0,165 Q200,160 400,165 Q600,170 800,162 L800,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+        </svg>
+      ) : (
+        /* -- Desktop: 1600-unit canvas, same style extended across wider screen -- */
+        <svg className="absolute bottom-0 w-full" viewBox="0 0 1600 200" preserveAspectRatio="none"
+          style={{ height: "34%" }}>
+          {/* Far mountains -- continuous range across full width */}
+          <path d="M0,90 L80,80 L140,120 L220,60 L300,110 L380,70 L440,100 L520,50 L600,90 L680,65 L750,100 L800,80 L870,95 L940,65 L1020,85 L1100,55 L1180,80 L1260,70 L1340,95 L1420,60 L1500,85 L1560,75 L1600,90 L1600,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
+          {/* Near mountains */}
+          <path d="M0,120 L60,120 L120,145 L200,95 L280,130 L360,100 L420,140 L500,110 L580,135 L660,105 L740,130 L800,115 L860,140 L940,110 L1020,135 L1100,100 L1180,130 L1260,115 L1340,140 L1420,105 L1500,125 L1560,140 L1600,120 L1600,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
+
+          {/* Tree line -- left cluster (same positions as mobile) */}
+          <path transform="translate(29,175) scale(1.5,0.65) translate(-29,-175)"
+            d="M28,175 L28,165 L18,165 L23,155 L15,155 L23,143 L17,143 L30,125 L43,143 L37,143 L45,155 L37,155 L42,165 L32,165 L32,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(60,175) scale(1.5,0.65) translate(-60,-175)"
+            d="M58,175 L58,163 L48,163 L53,152 L45,152 L52,140 L46,140 L53,128 L47,128 L60,108 L73,128 L67,128 L74,140 L68,140 L75,152 L67,152 L72,163 L62,163 L62,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(97,175) scale(1.5,0.65) translate(-97,-175)"
+            d="M95,175 L95,166 L87,166 L91,157 L85,157 L97,142 L109,157 L103,157 L107,166 L99,166 L99,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(125,175) scale(1.5,0.65) translate(-125,-175)"
+            d="M122,175 L122,164 L114,164 L118,154 L112,154 L120,140 L114,140 L125,122 L136,140 L130,140 L138,154 L132,154 L136,164 L128,164 L128,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+
+          {/* Tree line -- right cluster (mirrored at right edge of 1600-unit canvas) */}
+          <path transform="translate(1482,175) scale(1.5,0.65) translate(-1482,-175)"
+            d="M1480,175 L1480,163 L1470,163 L1475,152 L1467,152 L1474,140 L1468,140 L1475,128 L1469,128 L1482,108 L1495,128 L1489,128 L1496,140 L1490,140 L1497,152 L1489,152 L1494,163 L1484,163 L1484,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(1513,175) scale(1.5,0.65) translate(-1513,-175)"
+            d="M1510,175 L1510,164 L1502,164 L1506,154 L1500,154 L1508,140 L1502,140 L1513,122 L1524,140 L1518,140 L1526,154 L1520,154 L1524,164 L1516,164 L1516,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(1543,175) scale(1.5,0.65) translate(-1543,-175)"
+            d="M1540,175 L1540,166 L1533,166 L1537,157 L1531,157 L1543,142 L1555,157 L1549,157 L1553,166 L1546,166 L1546,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+          <path transform="translate(1573,175) scale(1.5,0.65) translate(-1573,-175)"
+            d="M1570,175 L1570,165 L1562,165 L1566,155 L1560,155 L1568,142 L1562,142 L1573,125 L1584,142 L1578,142 L1586,155 L1580,155 L1584,165 L1576,165 L1576,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 1)`} />
+
+          {/* Scattered single pines -- left half (same as mobile) */}
+          <path transform="translate(195,175) scale(1.5,0.65) translate(-195,-175)"
+            d="M192,175 L192,166 L185,166 L189,157 L183,157 L195,142 L207,157 L201,157 L205,166 L198,166 L198,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path transform="translate(313,175) scale(1.5,0.65) translate(-313,-175)"
+            d="M310,175 L310,165 L303,165 L307,155 L301,155 L308,143 L302,143 L313,126 L324,143 L318,143 L325,155 L319,155 L323,165 L316,165 L316,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+          <path transform="translate(453,175) scale(1.5,0.65) translate(-453,-175)"
+            d="M450,175 L450,167 L445,167 L453,155 L461,167 L456,167 L456,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
+          <path transform="translate(568,175) scale(1.5,0.65) translate(-568,-175)"
+            d="M565,175 L565,166 L558,166 L562,157 L556,157 L568,142 L580,157 L574,157 L578,166 L571,166 L571,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
+
+          {/* Scattered single pines -- right half (mirrored positions: x + 800) */}
+          <path transform="translate(995,175) scale(1.5,0.65) translate(-995,-175)"
+            d="M992,175 L992,166 L985,166 L989,157 L983,157 L995,142 L1007,157 L1001,157 L1005,166 L998,166 L998,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path transform="translate(1113,175) scale(1.5,0.65) translate(-1113,-175)"
+            d="M1110,175 L1110,165 L1103,165 L1107,155 L1101,155 L1108,143 L1102,143 L1113,126 L1124,143 L1118,143 L1125,155 L1119,155 L1123,165 L1116,165 L1116,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+          <path transform="translate(1253,175) scale(1.5,0.65) translate(-1253,-175)"
+            d="M1250,175 L1250,167 L1245,167 L1253,155 L1261,167 L1256,167 L1256,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.7)`} />
+          <path transform="translate(1368,175) scale(1.5,0.65) translate(-1368,-175)"
+            d="M1365,175 L1365,166 L1358,166 L1362,157 L1356,157 L1368,142 L1380,157 L1374,157 L1378,166 L1371,166 L1371,175 Z"
+            fill={`hsla(${h}, ${s - 15}%, 5%, 0.8)`} />
+
+          {/* Ground */}
+          <path d="M0,165 Q400,160 800,165 Q1200,170 1600,162 L1600,200 L0,200 Z"
+            fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+        </svg>
+      )}
 
       {/* Safe-area gap fill -- matches ground color so no strip shows on iPhone */}
       <div className="absolute bottom-0 left-0 right-0" style={{
