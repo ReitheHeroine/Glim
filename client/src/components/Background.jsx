@@ -170,18 +170,18 @@ export default function Background({ hue, sat, mood, isMobile }) {
         zIndex: 0,
       }} />
 
-      {/* Two independent SVGs sitting on top of the ground div (bottom: 120px).
+      {/* Two independent SVGs overlapping the ground div (both at bottom: 0).
           preserveAspectRatio="xMidYMax slice": uniform scale, anchored to
           bottom-center, crops overflow. SVG ground rect (y=295) blends into the
           div below it as a fallback but no longer needs to be precisely sized. */}
       {isMobile ? (
 
         // ----- MOBILE landscape -----
-        // viewBox 800x400. height: 28vh. bottom: 120px (sits on ground div).
+        // viewBox 800x400. height: 28vh. bottom: 0 (overlaps ground div).
         // Ground line: y=295. Far peaks raised -30. Near valleys clamped to 295.
         // Trees shifted -41 (apex and base together).
-        <svg className="absolute w-full" viewBox="0 0 800 400"
-          preserveAspectRatio="xMidYMax slice" style={{ bottom: 120, height: '28vh' }}>
+        <svg className="absolute bottom-0 w-full" viewBox="0 0 800 400"
+          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
 
           {/* Far mountains — all interior y values -30 from original */}
           <path d="M0,324 L35,288 L70,306 L105,264 L140,291 L175,245 L209,280 L244,230 L279,272 L314,223 L349,268 L383,218 L418,218 L453,268 L488,223 L522,272 L557,230 L592,280 L627,245 L662,291 L697,264 L732,306 L766,288 L800,324 L800,400 L0,400 Z"
@@ -243,11 +243,11 @@ export default function Background({ hue, sat, mood, isMobile }) {
       ) : (
 
         // ----- DESKTOP landscape -----
-        // viewBox 1600x400. height: 28vh. bottom: 120px (sits on ground div).
+        // viewBox 1600x400. height: 28vh. bottom: 0 (overlaps ground div).
         // Ground line: y=295. Far peaks raised -30. Near valleys clamped to 295.
         // Trees shifted -41 (apex and base together).
-        <svg className="absolute w-full" viewBox="0 0 1600 400"
-          preserveAspectRatio="xMidYMax slice" style={{ bottom: 120, height: '28vh' }}>
+        <svg className="absolute bottom-0 w-full" viewBox="0 0 1600 400"
+          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
 
           {/* Far mountains — all interior y values -30 from original */}
           <path d="M0,324 L70,288 L139,306 L209,264 L278,291 L348,245 L417,280 L487,230 L557,272 L626,223 L696,268 L765,218 L835,218 L904,268 L974,223 L1043,272 L1113,230 L1183,280 L1252,245 L1322,291 L1391,264 L1461,306 L1530,288 L1600,324 L1600,400 L0,400 Z"
