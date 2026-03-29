@@ -234,7 +234,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M734,286 L730,320 L739,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M746,278 L741,320 L752,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="332" width="800" height="68" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="330" width="800" height="100" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       ) : (
@@ -302,7 +302,7 @@ export default function Background({ hue, sat, mood, isMobile }) {
           <path d="M1468,300 L1459,320 L1477,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
           <path d="M1492,295 L1480,320 L1504,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="332" width="1600" height="68" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          <rect x="0" y="330" width="1600" height="100" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       )}
