@@ -23,15 +23,16 @@ function loadWater() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
-  return { entries: [], bottleOz: 24, goal: 6 };
+  return { entries: [], bottleOz: 24, goal: 6, configUpdatedAt: new Date().toISOString() };
 }
 
 function saveWater(state) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      entries: state.entries,
-      bottleOz: state.bottleOz,
-      goal: state.goal,
+      entries:          state.entries,
+      bottleOz:         state.bottleOz,
+      goal:             state.goal,
+      configUpdatedAt:  state.configUpdatedAt,
     }));
   } catch { /* ignore */ }
 }
@@ -101,9 +102,10 @@ function computeWeeklyAvg(entries) {
 const initial = loadWater();
 
 export const useWaterStore = create((set, get) => ({
-  entries:  initial.entries,
-  bottleOz: initial.bottleOz,
-  goal:     initial.goal,
+  entries:         initial.entries,
+  bottleOz:        initial.bottleOz,
+  goal:            initial.goal,
+  configUpdatedAt: initial.configUpdatedAt ?? new Date().toISOString(),
 
   logBottle: () => {
     const entry = {
@@ -132,7 +134,7 @@ export const useWaterStore = create((set, get) => ({
 
   setBottleOz: (oz) => {
     set(state => {
-      const next = { ...state, bottleOz: oz };
+      const next = { ...state, bottleOz: oz, configUpdatedAt: new Date().toISOString() };
       saveWater(next);
       return next;
     });
@@ -140,9 +142,20 @@ export const useWaterStore = create((set, get) => ({
 
   setGoal: (n) => {
     set(state => {
-      const next = { ...state, goal: n };
+      const next = { ...state, goal: n, configUpdatedAt: new Date().toISOString() };
       saveWater(next);
       return next;
+    });
+  },
+
+  // Called by sync service after a pull that updates localStorage
+  reload: () => {
+    const data = loadWater();
+    set({
+      entries:         data.entries,
+      bottleOz:        data.bottleOz,
+      goal:            data.goal,
+      configUpdatedAt: data.configUpdatedAt ?? new Date().toISOString(),
     });
   },
 

@@ -23,7 +23,7 @@ import './glim-animations.css';
 import { pickRandom } from './utils';
 import {
   useCreatureStore, useMessageStore, useSettingsStore,
-  useUIStore, useJournalStore, usePokesStore,
+  useUIStore, useJournalStore, usePokesStore, useWaterStore,
 } from './stores';
 import Background from './components/Background';
 import AmbientBugs from './components/AmbientBugs';
@@ -73,6 +73,8 @@ export default function DesktopPet() {
   const { reload: reloadJournal, addEntry: addJournalEntry } = useJournalStore();
 
   const { total: clickCount, increment: setClickCount, reload: reloadPokes } = usePokesStore();
+
+  const { reload: reloadWater } = useWaterStore();
 
   // ---- Drag refs ----
   const dragStartRef = useRef(null);
@@ -124,13 +126,14 @@ export default function DesktopPet() {
   // ---- Listen for sync service updates (cross-device data arriving) ----
   useEffect(() => {
     const handler = (e) => {
-      if (e.detail?.domains?.includes('journal')) reloadJournal();
-      if (e.detail?.domains?.includes('pokes')) reloadPokes();
+      if (e.detail?.domains?.includes('journal'))  reloadJournal();
+      if (e.detail?.domains?.includes('pokes'))    reloadPokes();
       if (e.detail?.domains?.includes('settings')) reloadSettings();
+      if (e.detail?.domains?.includes('water'))    reloadWater();
     };
     window.addEventListener('glim-data-updated', handler);
     return () => window.removeEventListener('glim-data-updated', handler);
-  }, [reloadJournal, reloadPokes, reloadSettings]);
+  }, [reloadJournal, reloadPokes, reloadSettings, reloadWater]);
 
   // ---- Eye tracking ----
   // Uses isSleepingRef so the callback is stable (no dep on specialAnim).
