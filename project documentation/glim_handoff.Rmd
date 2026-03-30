@@ -12,7 +12,7 @@ output:
 
 # Glim -- Handoff File
 
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-03-29
 
 **Purpose:** Operational coordination between Claude instances and across sessions. Tracks what happened recently, what needs to happen next, and how to work in this project's environment. Updated every session.
 
@@ -198,33 +198,6 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 > - [Decisions made - reference Project Docs Decision Register if significant]
 > - [Issues encountered or flagged]
 
-### 2026-03-27 (Claude Code) - Touch events, Phase 1 scaffolding, background responsive fix attempt
-
-**Touch events (Pointer Events API migration)**
-- Migrated all mouse-only handlers to Pointer Events API across 5 files
-- `DesktopPet.jsx`: renamed `handleMouseMove` -> `handlePointerMove` (also cancels in-flight drift); renamed `handleCreatureMouseDown` -> `handleCreaturePointerDown`; added `eyeDriftFrameRef` + `pupilOffsetRef` refs; added `handleEyePointerUp` callback (touch-only, animates pupils back to center over 1500ms ease-out cubic via rAF); updated eye useEffect to use `pointermove`/`pointerup`/`pointercancel`; added `pointercancel` to drag useEffect; added `touch-action: none` on creature div; converted all `onPointerEnter`/`onPointerLeave` on hover buttons
-- `SettingsPanel.jsx`, `JournalPanel.jsx`, `PersistentReminder.jsx`: all `onMouseEnter`/`onMouseLeave` -> `onPointerEnter`/`onPointerLeave`
-- Confirmed working on phone
-
-**Phase 1 scaffolding (responsive layout, nav bar, companion panel)**
-- `DesktopPet.jsx`: added `isMobile` state with resize listener (`window.innerWidth < 600`); layout restructured from `items-center justify-center` to `flex flex-col`; creature area uses `flex: 1`; creature wrapper gets `scaleY(0.9)` compress when panel open; glow ring and OwlMoth sizes keyed to `isMobile`; button padding bumped to `minHeight: 44`; added `<NavBar />` and `<CompanionPanel />` to return; added `activePanel` from `useUIStore`
-- `client/src/components/NavBar.jsx` (new): 5 SVG icon components using `currentColor`; NAV_ITEMS config; home clears panel, focus/tasks/nutrition open corresponding panel, more is no-op; safe area padding; 44px `minHeight` on buttons
-- `client/src/components/CompanionPanel.jsx` (new): slide-up panel from bottom; `useEffect` + `requestAnimationFrame` for enter animation; `dismiss()` with 300ms exit delay; drag handle with `setPointerCapture`; drag >80px triggers dismiss; transparent backdrop closes on tap; placeholder content per panel type
-- `useUIStore.js`: added `activeNav`, `activePanel`, `setActiveNav`, `setActivePanel`
-- `OwlMoth.jsx`: added `width`/`height` props with defaults
-
-**Background landscape (iterative, still in progress)**
-- Root cause identified: `preserveAspectRatio="none"` stretches the SVG differently on mobile vs desktop
-- Attempted fix 1: two separate SVGs (800-unit mobile, 1600-unit desktop) with `isMobile` -- no improvement reported
-- Attempted fix 2: single 1600-unit panorama with `preserveAspectRatio="xMidYMax slice"` + `height: 200px` -- no improvement
-- Claude.ai designed new spec: jagged alpine mountains (24-vertex far, 17-vertex near), 28 triangle pine trees in 5 clusters + 8 lone trees, `viewBox 1600x400`, `height: 28vh`
-- Switched back to two independent SVGs (mobile: 800x400, desktop: 1600x400) so each can be tweaked without affecting the other
-- Desktop tweak: raised near mountain valley floors (y=380→y=336-342) and scaled tree heights to ~60%. User reported no visible change -- likely a GitHub Pages CDN propagation delay, or the change was too subtle
-- **Current state:** Two independent SVGs in `client/src/components/Background.jsx`. Mobile SVG: `viewBox="0 0 800 400"`. Desktop SVG: `viewBox="0 0 1600 400"`. Both use `preserveAspectRatio="xMidYMax slice"`, `height: 28vh`. `isMobile` prop passed from `DesktopPet.jsx`.
-- **Known issues on desktop:** mountains appear cut off at bottom, trees too tall. Next Claude Code session should verify the last commit is actually live before re-tweaking.
-
----
-
 ### 2026-03-27 (Claude Code) - Zustand migration, hosting migration, icon/splash, file separation
 
 **Hosting migration (Netlify -> GitHub Pages)**
@@ -370,6 +343,27 @@ Both instances update this log. Claude.ai promotes substantive content to the Pr
 - Updated Project Docs: Section 2.1 (current + planned stack), Section 8.2 (infrastructure items), Section 11 (tools/references), 3 new Decision Register entries
 - Updated Handoff: task queue (Vite migration replaces build script), computational environment, resolved questions
 
+### 2026-03-29 (Claude Code) - Water tracker, Firestore sync service, settings improvements
+
+**Work performed:**
+
+- **Nav bar shell:** Implemented `NavBar.jsx` with 5 slots (home, focus, tasks, water, more). WaterIcon (teardrop SVG) replaces NutritionIcon; nutrition deferred to more section. All icons use `currentColor` for active/inactive. Navigation wired through `useUIStore` (`activeNav`, `activePanel`).
+- **Companion mode panel:** Implemented `CompanionPanel.jsx` - slides up from bottom over 300ms, drag-to-dismiss (>80px threshold), tap-outside-to-dismiss via transparent backdrop. Panel routes `activePanel === 'water'` to `WaterPanel`; all other types get placeholder content.
+- **Water tracker:** Created `useWaterStore.js` (localStorage key `glim-water`) with `entries`, `bottleOz` (24 default), `goal` (6 default), `configUpdatedAt`. Actions: `logBottle`, `undoLast`, `setBottleOz`, `setGoal`, `reload`. Computed selectors: `getToday()`, `getStreak()` (consecutive UTC days at goal), `getWeeklyAvg()` (7-day rolling, 1 decimal).
+- **WaterPanel:** Progress ring (r=30, circumference=188, viewBox 72x72), blue/green color states, tappable oz pill with inline editor, +bottle button, 4s undo toast, streak/avg footer. All 130+ messages from the water pools embedded (water_logged with 6 sub-pools, water_goal_met, water_streak by milestone). Streak milestone messages take priority over generic goal-met messages. Message template variables: `{current}`, `{goal}`, `{remaining}`, `{totalOz}`, `{bottleOz}`, `{streak}`. Glim reacts via `useMessageStore.setMessage` + `setShowBubble` with 5s bubble timeout.
+- **Firestore background sync service:** Created `sync.js`. `startSync(uid)` called from `App.jsx` on auth. Triggers: immediate + every 60s + `visibilitychange`. Domains: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`). After pulls, fires `glim-data-updated` CustomEvent; `DesktopPet` calls the relevant store's `reload()`. Post-deploy bug fixed: `configUpdatedAt: undefined` in existing localStorage caused Firestore write rejection; fallback to epoch string added in `syncWater`.
+- **Reset all data:** Added to `SettingsPanel.jsx`. Red-tinted button below sign out. Click reveals confirmation form: warning text + text input + cancel/delete buttons. "Delete everything" button enabled only when input matches `delete` (case-insensitive). On confirm: clears all localStorage keys (`glim-water`, `glim-journal`, `glim-pokes`, `glim-settings`, `glim-sync-meta`) and Firestore subcollections, then reloads.
+- **Google account picker fix:** Added `googleProvider.setCustomParameters({ prompt: 'select_account' })` in `firebase.js`. Previously auto-logged back into last-used account on sign-in screen.
+- **PWA meta tag:** Added `<meta name="mobile-web-app-capable" content="yes">` alongside the existing Apple variant to suppress browser deprecation warning.
+
+**Key design notes:**
+- Water store holds `bottleOz` and `goal` directly (not in useSettingsStore) for self-containment and simpler sync.
+- Undo is a hard-delete. If entry pushed to Firestore before undo, it reappears on next pull. Acceptable given 60s interval.
+- Sync is polling-based, not real-time. Updates arrive within 60s or on tab focus. `onSnapshot` listeners not used.
+- `glimReact()` centralized system not implemented. Water panel calls `useMessageStore` directly for now.
+
+**Outputs:** `client/src/components/NavBar.jsx` (new), `client/src/components/CompanionPanel.jsx` (new), `client/src/components/WaterPanel.jsx` (new), `client/src/stores/useWaterStore.js` (new), `client/src/sync.js` (new), updated `DesktopPet.jsx`, `SettingsPanel.jsx`, `stores/index.js`, `useUIStore.js`, `firebase.js`, `client/index.html`. Updated `glim_project_documentation.Rmd`.
+
 ### 2026-03-26 (Claude.ai) - Firestore schema design and sync architecture decisions
 - Reviewed three sync approaches from previous session. Confirmed Approach 2 (localStorage-primary with background Firebase sync) as the implementation path.
 - Decided: Google sign-in for authentication (one-tap, most users have Google accounts).
@@ -400,12 +394,25 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 ### PHASE 1: Minimal scaffolding (prerequisites + nav shell)
 
-#### Fix background landscape rendering (desktop)
-- **Assigned to:** Claude Code (implementation, design spec complete)
-- **Priority:** Medium (visual polish)
-- **Description:** Desktop landscape has two issues: mountains appear cut off at the bottom, trees are too tall. A fix was pushed (near mountain valleys raised, trees scaled to 60%) but user reported no visible change -- possibly CDN propagation delay. Verify the fix is live before attempting further changes. If the fix didn't land, re-apply. Mobile landscape is separate and currently acceptable. Current deployed state: two independent SVGs in `client/src/components/Background.jsx` conditioned on `isMobile`. Desktop: `viewBox="0 0 1600 400"`, `preserveAspectRatio="xMidYMax slice"`, `height: 28vh`. Mobile: `viewBox="0 0 800 400"`, same scaling.
-- **Context/References:** Session log 2026-03-27 (background fix attempts), `client/src/components/Background.jsx` (desktop SVG is the `: (...)` branch of the `isMobile` ternary, around line 232)
-- **Acceptance criteria:** Desktop mountains look grounded (not truncated). Trees are proportional to mountains. Mobile unchanged.
+#### Implement touch event support
+- **Assigned to:** Claude Code (implementation, spec is complete)
+- **Priority:** High (prerequisite for mobile panels)
+- **Description:** Migrate all mouse-only event handlers to Pointer Events API. Four systems to change: (1) Creature interaction: `onMouseDown` becomes `onPointerDown`, window `mousemove`/`mouseup` become `pointermove`/`pointerup`/`pointercancel`, add `touch-action: none` on creature container. (2) Eye tracking: `mousemove` listener becomes `pointermove`; on touch release (`e.pointerType === "touch"`), eyes drift back to center over 1.5s ease-out cubic via `requestAnimationFrame` (cancel drift on new touch, skip if sleeping/purring). Store animation frame ID in `eyeDriftFrameRef`. (3) Button hover effects (~8 instances): replace `onMouseEnter`/`onMouseLeave` with CSS `:active` or `onPointerDown`/`onPointerUp` press styles. (4) `onClick`/`onDoubleClick` handlers: no changes needed (already cross-platform). No `getPointerXY()` helper needed. `e.clientX`/`e.clientY` work identically in Pointer Events.
+- **Context/References:** [See Project Docs Section 4.2: Interaction System - Pointer Events Migration Plan]
+- **Acceptance criteria:** All interactions (click, double-click, long press, drag, shake) work on both mouse and touch. Eye tracking follows pointer on desktop continuously, tracks finger then drifts to center on touch release. `pointercancel` prevents stuck purr/drag state. Buttons provide visual feedback on both platforms. Test on real phone via Netlify after deployment.
+
+#### Implement responsive layout
+- **Assigned to:** Claude Code (implementation, design reference available)
+- **Priority:** High (prerequisite for mobile panels)
+- **Description:** Add `isMobile` flag based on `window.innerWidth < 600` with resize listener. Scale creature size, glow ring, panel widths, and button sizes. Ensure tap targets meet 44px minimum on mobile. Settings and journal panels expand to near-full-width on small screens. The home screen layout (creature, widgets, nav bar) should match `glim-homescreen-mockup.html`.
+- **Context/References:** [See Project Docs Section 3.4.5: Implementation Status], `glim-homescreen-mockup.html` (target mobile layout)
+- **Acceptance criteria:** Glim renders correctly on screens from 320px to 1920px+. Panels don't overflow on small screens. Tap targets are 44px+ on mobile.
+
+#### ~~Build nav bar shell~~ **DONE 2026-03-29**
+- Implemented in `NavBar.jsx`. 5 slots: home, focus, tasks, water, more. Nutrition moved to more section (not yet implemented). See Completed Tasks.
+
+#### ~~Build companion mode panel mechanism~~ **DONE 2026-03-29**
+- Implemented in `CompanionPanel.jsx`. Slide-up (300ms), drag-to-dismiss (>80px), tap-outside-to-dismiss. See Completed Tasks.
 
 ---
 
@@ -413,17 +420,202 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 #### Build Glim reaction system
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (prerequisite for water tracker and all subsequent trackers)
-- **Description:** Implement the centralized `glimReact(eventType, data)` system. Define event types for existing features (journal save, wellness reminder dismissed) and water tracker (water logged, goal met, streak). Refactor existing journal save reaction to use the system as proof of concept.
+- **Priority:** High (needed for all subsequent trackers)
+- **Description:** Implement the centralized `glimReact(eventType, data)` system. Define event types for existing features (journal save, wellness reminder dismissed) and trackers. Refactor existing journal save and water panel to use it. Currently water panel calls `useMessageStore` directly as a stopgap.
 - **Context/References:** [See Project Docs Section 8.9: Reaction System Specification]
-- **Acceptance criteria:** `glimReact()` function exists and handles message selection, animation triggering, and personality context. Existing journal save uses it. Water tracker can call it without knowing how creature responses work.
+- **Acceptance criteria:** `glimReact()` function exists and handles message selection, animation triggering, and personality context. Water tracker and journal save use it.
 
-#### Build water tracking
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High (pattern-prover for all trackers)
-- **Description:** First tracker feature. Companion mode panel with progress ring, tap-to-log, undo toast. Zustand store + localStorage persistence. Integrates with `glimReact()`. Progress ring widget on home screen. Proves the full data flow: UI -> Zustand -> localStorage -> glimReact() -> creature response -> home screen widget update.
-- **Context/References:** [See Project Docs Section 8.3: Daily Tracking], [See Project Docs Section 8.8: Water schema]
-- **Acceptance criteria:** User can log water, see progress ring fill, and see Glim react. Data persists across refresh. Home screen widget shows current progress. Panel works on desktop and mobile.
+#### ~~Build water tracking~~ **DONE 2026-03-29**
+- Implemented in `WaterPanel.jsx` + `useWaterStore.js`. See Completed Tasks and 2026-03-29 session log for full details.
+
+#### Water message pools (designed 2026-03-27)
+
+Template variables available: `{current}`, `{goal}`, `{remaining}`, `{totalOz}`, `{bottleOz}`, `{streak}`.
+
+**`water_logged` (acknowledge tier, ~68 messages)**
+
+Sub-pool: first bottle only (show only when current === 1):
+- "first one of the day. here we go."
+- "starting strong."
+- "day's first bottle. the journey begins."
+- "bottle 1. a classic."
+
+Main pool (any bottle count):
+
+Simple acknowledgments:
+- "got it. {current} of {goal}."
+- "logged."
+- "bottle {current}. noted."
+- "{current} down, {remaining} to go."
+- "another one. {current}/{goal}."
+- "{totalOz} oz and counting."
+- "check."
+
+Playful/personality:
+- "glug glug glug."
+- "hydration station. {current}/{goal}."
+- "your cells thank you."
+- "water is just boneless soup."
+- "technically this is a chemistry experiment. you're the beaker."
+- "h two... oh yeah."
+- "splish splash, bottle {current}."
+- "liquid acquired."
+- "fun fact: you are now slightly more water than you were a minute ago."
+- "nice nice nice."
+- "{totalOz} oz. that's like... a small aquarium."
+- "the mitochondria is the powerhouse of the cell and water is the powerhouse of you."
+- "your kidneys just sent me a thank you card."
+- "hydrated and humble."
+- "water: the original zero-calorie drink."
+
+Progress-aware (show when remaining <= 2):
+- "ooh, {remaining} more and you've got it."
+- "almost there. just {remaining} to go."
+- "you can practically taste the goal. it tastes like water."
+- "{current} of {goal}. the finish line is right there."
+
+Absurd/unhinged:
+- "hydrate or diedrate motherfucker!"
+- "you just drank water. in THIS economy."
+- "bold of you to be 60% water and still need more."
+- "imagine being a cactus. couldn't be you."
+- "water bottle goes brrr."
+- "somewhere a fish just felt a disturbance in the force."
+- "you: *drinks water* your organs: *standing ovation*"
+- "water is just cloud juice if you think about it."
+- "the ancient romans had aqueducts. you have a bottle. same energy."
+- "congratulations you've unlocked: not being a raisin."
+- "plot twist: the water was inside you all along. literally."
+- "every time you drink water a tiny cell somewhere does a backflip."
+- "you're basically speedrunning hydration at this point."
+- "this water has more personality than most people i've met."
+- "the government doesn't want you to know this but the water in the lake is free."
+
+Science fun facts:
+- "fun fact: your brain is 75% water. you just topped it off."
+- "water molecules in your body right now are older than the sun. you're drinking ancient stuff."
+- "hot water freezes faster than cold water sometimes. science doesn't know why. anyway, bottle {current}."
+- "the water you just drank might have been dinosaur pee at some point. the water cycle is wild."
+- "your blood is 90% water. you just gave it a raise."
+- "it takes about 5 minutes for water to reach your bloodstream. your cells are placing their orders now."
+- "fun fact: a 2% drop in hydration can cut your focus by 25%. you just bought yourself some brain power."
+- "water is the only natural substance found in all three states on earth. and now also in your stomach."
+- "the average human body contains enough water to fill a 10-gallon fish tank. you're getting there."
+- "each kidney filters about 50 gallons of blood a day. yours just got fresh supply."
+- "cold water absorbs into your body faster than warm water. science tip of the day."
+- "your body makes about 8 cups of saliva a day. it needs the raw materials. you're helping."
+- "there's the same amount of water on earth now as when the planet formed. this bottle is recycled from the jurassic."
+- "dehydration shrinks your brain tissue. you're literally plumping your brain right now."
+- "water carries electrical signals between your neurons. you just charged the battery."
+
+Mindful/taste:
+- "did you actually taste that one or just pour it into your face. try tasting the next one."
+- "hot take: water has a flavor and it's different in every room of your house."
+- "mindfulness exercise: the next sip, actually notice the temperature. weird how water can feel round, right?"
+- "some water tastes pointy and some water tastes round and if you disagree you're not paying attention."
+- "you ever just... hold the water in your mouth for a sec? it's a whole experience."
+- "rate this bottle's water out of 10. no i'm serious. develop opinions about water."
+- "connoisseurs say this bottle has notes of hydrogen with a subtle oxygen finish."
+- "cold water at 3 AM hits different and science has never adequately explained why."
+
+**`water_goal_met` (celebrate tier, ~23 messages)**
+
+- "{goal} of {goal}! goal crushed."
+- "you did it. {totalOz} oz. your body is a well-oiled, well-watered machine."
+- "goal: met. kidneys: thriving. glim: proud."
+- "that's {goal}! officially hydrated."
+- "{totalOz} oz today. you're basically a lake."
+- "ring's full. you're full. everyone's full."
+- "daily water goal: demolished."
+- "{goal} bottles. textbook hydration."
+- "ding ding ding! {goal} of {goal}."
+- "your future self just high-fived your current self."
+- "peak hydration achieved. scientists are taking notes."
+- "you just out-watered a house plant."
+- "{goal} bottles down and you didn't even need a reminder."
+- "that's the good stuff. {totalOz} oz of the good stuff."
+- "goal met. you may now brag to exactly nobody."
+- "HYDRATED. DANGEROUS. UNSTOPPABLE."
+- "you could fight god right now and win. hydration is power."
+- "your pee is going to be SO clear. like, suspiciously clear."
+- "scientists hate this one simple trick (it's water) (they don't hate it) (they recommend it)"
+- "you've consumed an entire {totalOz} oz of dihydrogen monoxide and lived to tell the tale."
+- "somewhere a wellness influencer just shed a single tear of pride."
+- "you out-hydrated a camel. probably. i don't know camel stats."
+- "that's {goal} bottles. you are the water cycle now. you are rain."
+
+**`water_streak` (milestone tier, messages grouped by streak length)**
+
+3-day:
+- "three days in a row. a pattern is forming."
+- "3-day streak. that's not luck, that's a habit."
+- "three straight days of hitting your water goal. your cells are doing a wave."
+- "three days. the prophecy is being fulfilled."
+
+7-day:
+- "seven days. a full week of being hydrated. who even are you."
+- "7-day streak. your kidneys would write you a letter if they had hands."
+- "one whole week. the water streak is real."
+- "7 days running. you're not trying anymore, you're just... hydrated."
+- "a week of this? you're not a person anymore, you're a lifestyle brand."
+
+14-day:
+- "two weeks. fourteen days. your body forgot what dehydration feels like."
+- "14-day streak. at this point you're basically a water sommelier."
+- "two weeks of consistent hydration. this is genuinely impressive."
+- "fourteen days. if hydration were a crime you'd be serving consecutive life sentences."
+
+21-day:
+- "21 days. they say that's how long it takes to form a habit. congratulations, you're a water person now."
+- "three weeks. you could teach a class on this."
+
+30-day:
+- "thirty days. one month. you absolute legend."
+- "30-day streak. i'm running out of ways to say i'm proud of you but i am."
+- "a month of perfect hydration. your future biographer will note this chapter."
+- "thirty days. you have ascended. you are no longer human. you are water elemental."
+
+60-day:
+- "sixty days. at this point i think the water is drinking you."
+- "two months straight. i genuinely don't know what to say except wow."
+
+90-day:
+- "ninety days. a full season. you are the water cycle."
+
+Generic fallback (any unlisted milestone):
+- "{streak} days. just... {streak} days. you're incredible."
+- "streak: {streak}. i'm not crying, it's just the humidity from all this hydration."
+- "{streak} days of hydration. at this point your bloodstream is basically a lazy river."
+- "streak: {streak}. this isn't discipline anymore, this is your villain origin story."
+
+Milestone triggers: 3, 7, 14, 21, 30, 60, 90. Generic fallback for any other streak length that somehow triggers (e.g., round numbers > 90).
+
+**`water_nudge` (comfort tier, ~22 messages)**
+
+Fires if no water logged by configurable time (default: noon). Gentle glow animation. Never guilt-trippy.
+
+- "hey. have you had any water today?"
+- "gentle nudge: your water bottle misses you."
+- "no water logged yet today. no pressure, just... water is nice."
+- "your bottle is looking lonely over there."
+- "friendly reminder that water exists and is delicious."
+- "i'm not saying you're dehydrated but your lips just sent me a DM."
+- "psst. water."
+- "it's past noon and your water count is still at zero. just saying."
+- "a body in motion stays in motion. a body without water stays... cranky."
+- "you've been busy. i get it. but also: water."
+- "this is your daily water nudge. brought to you by: caring."
+- "zero bottles so far. your kidneys are sending concerned looks."
+- "hydrate or diedrate. your choice. (please hydrate.)"
+- "your water bottle is staring at you. it's getting weird."
+- "the water is right there. it's not going to drink itself. unfortunately."
+- "fun fact: you can't photosynthesize. you need water. sorry i don't make the rules."
+- "bestie. water. please."
+- "the audacity of being dehydrated when water literally falls from the sky."
+- "*smacks dry lips* waaaattteerrrr..."
+- "*crawling across desert floor* ...water..."
+- "*dramatic soap opera voice* the water... it's been hours..."
+- "your cells are sending increasingly frantic emails."
 
 #### Add home screen summary widgets
 - **Assigned to:** Claude Code (implementation, design is complete)
@@ -498,12 +690,8 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 - **Description:** Focus mode screen showing all tracker progress in one view. Progress rings/bars for each tracker, today's totals, streaks, recent activity. The comprehensive view that complements the 3-widget home screen summary.
 - **Acceptance criteria:** All active trackers visible with current progress. Tapping a tracker navigates to its panel/screen.
 
-#### Sync service implementation
-- **Assigned to:** Claude.ai (architecture) + Claude Code (implementation)
-- **Priority:** Medium (deferred until multiple trackers exist)
-- **Description:** Build the background sync service that pushes local events to Firestore and pulls remote events. Approach 2 architecture: localStorage remains primary read/write layer, sync service runs on a timer and on `visibilitychange` events. Design the module so future trackers plug in by registering their domain and sync strategy.
-- **Context/References:** [See Handoff Session Log 2026-03-26: Approach 2 confirmed], [See Project Docs Section 8.11]
-- **Acceptance criteria:** Events created on one device appear on the other after sync. Offline writes queue and push when connectivity returns. No data loss during normal usage.
+#### ~~Sync service implementation~~ **DONE 2026-03-29**
+- Implemented in `sync.js`. Domains: journal, pokes, settings, water. See Completed Tasks and 2026-03-29 session log.
 
 #### Add service worker for offline support
 - **Assigned to:** Claude Code
@@ -559,10 +747,13 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 > **Entry format:** [Task name] - [Date completed] - [Output location]
 
-- Touch events (Pointer Events API migration) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/JournalPanel.jsx`, `client/src/components/PersistentReminder.jsx`; confirmed working on phone
-- Responsive layout (`isMobile` flag, creature/ring sizing, 44px tap targets) - 2026-03-27 - `client/src/DesktopPet.jsx`, `client/src/components/OwlMoth.jsx`; live on GitHub Pages
-- Nav bar shell (5 slots, SVG icons, active state, safe area padding) - 2026-03-27 - `client/src/components/NavBar.jsx` (new); live on GitHub Pages
-- Companion mode panel mechanism (slide-up, drag-to-dismiss, tap-outside, creature compress) - 2026-03-27 - `client/src/components/CompanionPanel.jsx` (new), `client/src/stores/useUIStore.js`; live on GitHub Pages
+- Google account picker forced on sign-in - 2026-03-29 - `client/src/firebase.js` (`setCustomParameters({ prompt: 'select_account' })`)
+- Reset all data button - 2026-03-29 - `client/src/components/SettingsPanel.jsx` (typed "delete" confirmation, clears localStorage + Firestore, reloads)
+- PWA mobile-web-app-capable meta tag - 2026-03-29 - `client/index.html`
+- Firestore background sync service - 2026-03-29 - `client/src/sync.js`; domains: journal, pokes, settings, water; 60s interval + startup + visibilitychange
+- Water tracker (store + panel) - 2026-03-29 - `client/src/stores/useWaterStore.js`, `client/src/components/WaterPanel.jsx`; Firestore sync via sync.js
+- Nav bar shell - 2026-03-29 - `client/src/components/NavBar.jsx`; water replaces nutrition in main nav; 5 slots live
+- Companion mode panel mechanism - 2026-03-29 - `client/src/components/CompanionPanel.jsx`; routes to WaterPanel; placeholder for others
 - File separation (DesktopPet.jsx -> 9 files) - 2026-03-27 - `client/src/components/` (7 files), `client/src/glim-animations.css`; live on GitHub Pages
 - Zustand state migration - 2026-03-27 - `client/src/stores/` (6 stores + index), `client/src/utils.js`; live on GitHub Pages
 - Hosting migration to GitHub Pages - 2026-03-27 - `.github/workflows/deploy.yml`, `client/vite.config.js` (base path), `client/public/manifest.json` (updated paths), `client/src/SignIn.jsx` (BASE_URL fix); live at https://reitheheroine.github.io/Glim/
@@ -650,13 +841,19 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 
 **Q:** What summary widgets should appear on the home screen? **A:** Three widgets only (rings-only layout): steps progress ring, water progress ring, tasks completed count (checkmark + "N done", not a fraction). Keeps home screen clean with Glim large. Full detail lives in panels and the dashboard focus screen. (2026-03-27)
 
+**Q:** Should water's `bottleOz` and `goal` live in `useSettingsStore` or `useWaterStore`? **A:** `useWaterStore`. Self-contained; simplifies Firestore sync (one config doc, no cross-store reads during sync); cleaner component code (read one store, not two). Future trackers should follow the same pattern. (2026-03-29)
+
+**Q:** Should water undo be a soft-delete (like journal) or hard-delete? **A:** Hard-delete. The undo window is 4 seconds; sync interval is 60 seconds. Push-then-undo-then-pull in the same session is extremely unlikely, and the consequence is one extra bottle - low severity. Soft-delete would add complexity for negligible UX benefit. [FOLLOW-UP NEEDED] If cross-device undo reliability ever matters, switch to soft-delete by adding `deletedAt: null` to entry schema. (2026-03-29)
+
+**Q:** Is sync real-time? **A:** No. Polling only: on startup, every 60s, and on `visibilitychange` (tab gains focus). Both devices must be open simultaneously and one must regain focus or wait for the interval. No Firestore `onSnapshot` listeners. Acceptable for wellness tracking - simultaneous multi-device logging is not a common pattern. (2026-03-29)
+
 ---
 
 # 5. File System Map
 
 ## 5.1 Directory Structure
 
-**Last updated:** 2026-03-27
+**Last updated:** 2026-03-29
 
 **Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. Netlify project still exists but is no longer active. `glim.html` kept as legacy reference.
 
@@ -680,6 +877,7 @@ glim/
 |   +-- glim_handoff.Rmd               # This file
 |   +-- glim_project_documentation.Rmd # Project documentation source
 |   +-- glim_project_documentation.html
+|   +-- glim-water-panel-mockup.html   # Pixel-accurate water panel mockup (3 states)
 |   +-- figures/
 |       +-- glim_system_architecture.svg
 |       +-- glim_system_architecture.png
@@ -699,8 +897,8 @@ glim/
     |   +-- DesktopPet.jsx             # Main logic component (~430 lines, no sub-components)
     |   +-- SplashScreen.jsx           # Auth-loading splash screen
     |   +-- SignIn.jsx                 # Google sign-in screen
-    |   +-- firebase.js                # Firebase app init (exports auth, db, googleProvider)
-    |   +-- sync.js                    # Background Firestore sync service
+    |   +-- firebase.js                # Firebase app init (exports auth, db, googleProvider; prompt: select_account)
+    |   +-- sync.js                    # Background Firestore sync (journal, pokes, settings, water; 60s + startup + visibilitychange)
     |   +-- messages.js                # All message pool arrays (10 exports, ~726 lines)
     |   +-- storage.js                 # window.storage polyfill (side-effect import)
     |   +-- utils.js                   # getTimeOfDay(), getColors(), pickRandom()
@@ -711,17 +909,21 @@ glim/
     |   |   +-- useCreatureStore.js    # Mood, hue/sat, all animation + drag state
     |   |   +-- useMessageStore.js     # Speech bubble, reminder state
     |   |   +-- useSettingsStore.js    # Intervals with localStorage persistence
-    |   |   +-- useUIStore.js          # Panel visibility, journal view/text/prompt
-    |   |   +-- useJournalStore.js     # Journal entries, localStorage, soft-delete
-    |   |   +-- usePokesStore.js       # Poke counter with localStorage persistence
+    |   |   +-- useUIStore.js          # Panel visibility, nav state (activeNav, activePanel)
+    |   |   +-- useJournalStore.js     # Journal entries, localStorage, soft-delete, reload
+    |   |   +-- usePokesStore.js       # Poke counter with localStorage persistence, reload
+    |   |   +-- useWaterStore.js       # Water entries, bottleOz, goal, configUpdatedAt; reload
     |   +-- components/
     |       +-- Background.jsx         # Sky, stars, nebula, landscape, motes
     |       +-- AmbientBugs.jsx        # 5 floating ambient bugs
     |       +-- SpeechBubble.jsx       # Glim's speech bubble
     |       +-- OwlMoth.jsx            # Creature SVG (pure render, all state via props)
     |       +-- PersistentReminder.jsx # Move/eyes reminder bar
-    |       +-- SettingsPanel.jsx      # Gear button + settings panel (reads stores directly)
+    |       +-- SettingsPanel.jsx      # Gear button + settings panel + reset all data
     |       +-- JournalPanel.jsx       # Journal button + panel (reads stores, onSave prop)
+    |       +-- NavBar.jsx             # Bottom nav bar (home, focus, tasks, water, more)
+    |       +-- CompanionPanel.jsx     # Slide-up panel shell; routes to WaterPanel or placeholder
+    |       +-- WaterPanel.jsx         # Water tracking UI (ring, button, undo toast, footer)
     +-- public/
     |   +-- manifest.json              # PWA manifest (start_url and icons use /Glim/ prefix)
     |   +-- glim-icon.svg              # Multi-hue source icon (SVG)
@@ -788,31 +990,32 @@ When creating, moving, or deleting files:
 | tailwindcss | 4.2.2 | Utility CSS (build-integrated) |
 | @tailwindcss/vite | 4.2.2 | Tailwind v4 Vite plugin |
 
+### Also installed
+
+| Dependency | Version | Purpose | Date |
+|---|---|---|---|
+| zustand | 5.x | Shared state management (7 domain stores) | 2026-03-27 |
+| firebase | 11.x | Firestore + Google Auth | 2026-03-26 |
+
 ### Planned (not yet installed)
 
 | Dependency | Package | Purpose |
 |---|---|---|
-| zustand | npm | Shared state management (replaces 30+ useState calls) |
 | chart.js | npm | Data visualization for tracker trends |
-| firebase | npm | Backend sync and auth |
 | vite-plugin-pwa | npm | Service worker and PWA manifest generation |
 
 ## 6.3 Storage
 
-**Current:** `localStorage` via `window.storage` polyfill
+**Current:** `localStorage` (primary read/write layer) + Firebase Firestore (background sync, built 2026-03-29)
 
-**Planned:** `localStorage` for offline cache + Firebase Firestore for cross-device sync (added later)
+**Storage keys:** `glim-journal`, `glim-pokes`, `glim-settings`, `glim-water`, `glim-sync-meta`
 
-**Storage keys (current):** `glim-journal`, `glim-pokes`, `glim-settings`
-
-**Storage structure (planned):** Single unified JSON structure. See Project Docs Section 8.8 for schema.
+**Sync:** `sync.js` pushes/pulls all domains. See Project Docs Section 8.11 for full architecture.
 
 ## 6.4 Repository Configuration
 
-**Status:** Repo initialized and pushed. GitHub Pages source must be set to "GitHub Actions" in repo settings to activate deployment.
-
 **Repo:** `git@github.com:ReitheHeroine/Glim.git` (branch: `main`)
-**Hosting:** GitHub Pages - auto-deploys via GitHub Actions on every push to `main`. Build: `npm run build` in `client/`, artifact uploaded from `client/dist/`. See `.github/workflows/deploy.yml`.
+**Hosting:** GitHub Pages - auto-deploys via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`. Build: `npm run build` in `client/`, deploy: `client/dist/` to `gh-pages` branch.
 **Live URL:** https://reitheheroine.github.io/Glim/
 
 **`.gitignore` contents (at repo root):**
