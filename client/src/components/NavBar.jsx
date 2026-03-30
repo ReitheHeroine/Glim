@@ -4,24 +4,26 @@
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-27
 // Last Modified: 2026-03-30
-// Purpose:     Persistent bottom navigation bar. Five slots: home (fixed,
-//              mountains + stars), focus (clock), tasks (double checkmarks),
-//              water (teardrop), more (three dots). Home always returns to
-//              companion mode and closes any open panel. Nutrition is in the
-//              more section (not yet implemented). All icons use currentColor
-//              so active/inactive is a single CSS color change on the parent.
+// Purpose:     Persistent bottom navigation bar. Six slots: home (mountains +
+//              stars), focus (clock), tasks (double checkmarks), water (teardrop),
+//              steps (paw print), more (three dots). Home returns to companion
+//              mode and closes any open panel. All icons use currentColor so
+//              active/inactive is a single color change on the parent.
+//              Desktop sizing (icons 28px, labels 15px) verified via DevTools.
+//              Mobile sizing (icons 18px, labels 7px) unchanged.
 // Inputs:      Reads activeNav, activePanel, setActiveNav, setActivePanel
 //              from useUIStore. No props.
 // Outputs:     Fixed bottom nav bar
 // -----------------------------------------------------------------------------
 
+import { useState, useEffect } from 'react';
 import { useUIStore } from '../stores/useUIStore';
 
-// ===== Icon components =====
+// ===== Icon components (accept size prop) =====
 
-function HomeIcon() {
+function HomeIcon({ size }) {
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
       <path d="M3 17 L7 9 L10 13 L14 6 L19 17"
         fill="none" stroke="currentColor" strokeWidth="1.4"
         strokeLinecap="round" strokeLinejoin="round" />
@@ -33,9 +35,9 @@ function HomeIcon() {
   );
 }
 
-function FocusIcon() {
+function FocusIcon({ size }) {
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
       <circle cx="11" cy="11" r="7.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
       <path d="M11 6v5l3 2.5" stroke="currentColor" strokeWidth="1.3"
         strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -43,9 +45,9 @@ function FocusIcon() {
   );
 }
 
-function TasksIcon() {
+function TasksIcon({ size }) {
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
       <path d="M6 8 L9 11 L16 4" fill="none" stroke="currentColor" strokeWidth="1.6"
         strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6 14 L9 17 L16 10" fill="none" stroke="currentColor" strokeWidth="1.3"
@@ -54,31 +56,33 @@ function TasksIcon() {
   );
 }
 
-function WaterIcon() {
+function WaterIcon({ size }) {
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
       <path d="M11 3 C9 6.5 5 11.5 5 15 A6 6 0 0 0 17 15 C17 11.5 13 6.5 11 3Z"
         fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function StepsIcon() {
+function StepsIcon({ size }) {
+  // Paw print: main pad + 4 toe pads
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
-      <path d="M4 16 Q4 14 7 13 L12 12 Q15 11.5 16 13 Q17 14.5 15.5 16 Z"
-        fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M7 13 L8 9 Q8.5 7 10 7 Q11.5 7 12 9 L12 12"
-        fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3.5 16.5 Q3.5 18 5.5 18 L15.5 18 Q18 18 17.5 16"
-        fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
+      <ellipse cx="11" cy="14.5" rx="4.5" ry="3.5" fill="currentColor" />
+      <ellipse cx="5.5" cy="9.5" rx="1.8" ry="2.2" fill="currentColor"
+        transform="rotate(-20 5.5 9.5)" />
+      <ellipse cx="9" cy="7.5" rx="1.8" ry="2.2" fill="currentColor" />
+      <ellipse cx="13" cy="7.5" rx="1.8" ry="2.2" fill="currentColor" />
+      <ellipse cx="16.5" cy="9.5" rx="1.8" ry="2.2" fill="currentColor"
+        transform="rotate(20 16.5 9.5)" />
     </svg>
   );
 }
 
-function MoreIcon() {
+function MoreIcon({ size }) {
   return (
-    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
       <circle cx="5" cy="11" r="1.8" fill="currentColor" />
       <circle cx="11" cy="11" r="1.8" fill="currentColor" />
       <circle cx="17" cy="11" r="1.8" fill="currentColor" />
@@ -102,6 +106,20 @@ const NAV_ITEMS = [
 export default function NavBar() {
   const { activeNav, setActiveNav, setActivePanel } = useUIStore();
 
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // Sizing verified via DevTools on Rei's 1365x934 screen (desktop)
+  const iconSize  = isMobile ? 18 : 28;
+  const labelSize = isMobile ? 7  : 15;
+  const padding   = isMobile
+    ? 'calc(8px + env(safe-area-inset-bottom, 0px))'
+    : 'calc(10px + env(safe-area-inset-bottom, 0px))';
+
   const handleTap = (item) => {
     if (item.id === 'home') {
       setActiveNav('home');
@@ -123,7 +141,7 @@ export default function NavBar() {
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      padding: `8px 12px calc(6px + env(safe-area-inset-bottom, 0px))`,
+      padding: `5px 12px ${padding}`,
       background: 'rgba(255,255,255,0.06)',
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
@@ -148,10 +166,10 @@ export default function NavBar() {
               transition: 'color 0.2s ease',
             }}
           >
-            <item.Icon />
+            <item.Icon size={iconSize} />
             <span style={{
               fontFamily: "'Courier New', monospace",
-              fontSize: 7,
+              fontSize: labelSize,
               letterSpacing: '0.5px',
             }}>{item.label}</span>
           </button>
