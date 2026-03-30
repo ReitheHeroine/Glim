@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-27
-// Last Modified: 2026-03-27
+// Last Modified: 2026-03-30
 // Purpose:     Renders Glim's world: sky gradients keyed to time of day,
 //              twinkling stars, shooting star, nebula wisps, landscape
 //              silhouette with pine trees, floating motes near Glim, and
@@ -240,69 +240,118 @@ export default function Background({ hue, sat, mood, isMobile }) {
       ) : (
 
         // ----- DESKTOP landscape -----
-        // viewBox 1600x400. height: 28vh. bottom: 0 (overlaps ground div).
-        // Ground line: y=320. All content shifted +25 from y=295 baseline.
-        // Trees shifted -16 total from original (-41+25). Far peaks at y=243.
-        <svg className="absolute bottom-0 w-full" viewBox="0 0 1600 400"
-          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
+        // viewBox 3200x400. Fixed 3200px wide, 300px tall, centered with translateX(-50%).
+        // Parent overflow:hidden crops the edges; nothing moves on window resize.
+        // Existing content shifted +800 (original x=0..1600 → x=800..2400).
+        // Left/right extensions (x=0..800 and x=2400..3200) taper toward edges.
+        // Ground line: y=320. Far peaks at y=243 (center). Mobile SVG unchanged.
+        <svg className="absolute bottom-0" viewBox="0 0 3200 400"
+          preserveAspectRatio="xMidYMax slice" style={{
+            width: '3200px',
+            height: '300px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}>
 
-          {/* Far mountains — interior y values: original -30 then +25 = net -5 */}
-          <path d="M0,349 L70,313 L139,331 L209,289 L278,316 L348,270 L417,305 L487,255 L557,297 L626,248 L696,293 L800,243 L904,293 L974,248 L1043,297 L1113,255 L1183,305 L1252,270 L1322,316 L1391,289 L1461,331 L1530,313 L1600,349 L1600,400 L0,400 Z"
+          {/* Far mountains — existing content shifted +800; extensions taper lower at edges */}
+          <path d="M0,348 L90,318 L175,330 L260,306 L350,322 L440,294 L520,316 L610,309 L700,324 L800,349 L870,313 L939,331 L1009,289 L1078,316 L1148,270 L1217,305 L1287,255 L1357,297 L1426,248 L1496,293 L1600,243 L1704,293 L1774,248 L1843,297 L1913,255 L1983,305 L2052,270 L2122,316 L2191,289 L2261,331 L2330,313 L2400,349 L2490,319 L2580,331 L2670,312 L2760,327 L2850,319 L2940,334 L3030,322 L3200,350 L3200,400 L0,400 Z"
             fill={`hsla(${h}, ${s - 20}%, 12%, 0.8)`} />
 
-          {/* Near mountains — valleys at y=320, peaks unchanged */}
-          <path d="M0,320 L100,320 L200,320 L300,320 L400,320 L500,280 L600,320 L700,265 L800,320 L900,262 L1000,320 L1100,265 L1200,320 L1300,278 L1400,320 L1500,320 L1600,320 L1600,400 L0,400 Z"
+          {/* Near mountains — existing content shifted +800; extensions at y=290-315 range */}
+          <path d="M0,320 L100,320 L200,307 L300,320 L400,313 L500,320 L600,298 L700,320 L800,320 L900,320 L1000,320 L1100,320 L1200,320 L1300,280 L1400,320 L1500,265 L1600,320 L1700,262 L1800,320 L1900,265 L2000,320 L2100,278 L2200,320 L2300,320 L2400,320 L2500,320 L2600,305 L2700,320 L2800,310 L2900,320 L3000,316 L3100,320 L3200,320 L3200,400 L0,400 Z"
             fill={`hsla(${h}, ${s - 15}%, 8%, 0.9)`} />
 
-          {/* Trees — base at y=320, all y +25 from previous (net -16 from original) */}
+          {/* Trees — existing content shifted +800 */}
 
-          {/* Cluster 1 — left edge */}
-          <path d="M110,309 L105,320 L115,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
-          <path d="M135,304 L128,320 L142,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
-          <path d="M120,300 L111,320 L129,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
-          <path d="M148,295 L136,320 L160,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
+          {/* Cluster 1 (x≈910-960) */}
+          <path d="M910,309 L905,320 L915,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M935,304 L928,320 L942,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
+          <path d="M920,300 L911,320 L929,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
+          <path d="M948,295 L936,320 L960,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          {/* Lone trees 1–2 */}
-          <path d="M272,308 L266,320 L278,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
-          <path d="M322,310 L317,320 L327,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+          {/* Lone trees (x≈1072, 1122) */}
+          <path d="M1072,308 L1066,320 L1078,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+          <path d="M1122,310 L1117,320 L1127,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
 
-          {/* Cluster 2 */}
-          <path d="M450,307 L444,320 L456,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
-          <path d="M472,301 L463,320 L481,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
-          <path d="M460,296 L449,320 L471,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
-          <path d="M485,292 L472,320 L498,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
+          {/* Cluster 2 (x≈1250-1285) */}
+          <path d="M1250,307 L1244,320 L1256,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
+          <path d="M1272,301 L1263,320 L1281,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
+          <path d="M1260,296 L1249,320 L1271,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path d="M1285,292 L1272,320 L1298,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
 
-          {/* Lone trees 2–3 */}
-          <path d="M608,306 L602,320 L614,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
-          <path d="M656,309 L651,320 L661,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+          {/* Lone trees (x≈1408, 1456) */}
+          <path d="M1408,306 L1402,320 L1414,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M1456,309 L1451,320 L1461,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
 
-          {/* Cluster 3 — center */}
-          <path d="M783,306 L777,320 L789,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
-          <path d="M820,300 L811,320 L829,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
-          <path d="M795,294 L783,320 L807,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.95)`} />
-          <path d="M808,292 L795,320 L821,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 1.00)`} />
+          {/* Cluster 3 — center (x≈1583-1620) */}
+          <path d="M1583,306 L1577,320 L1589,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.75)`} />
+          <path d="M1620,300 L1611,320 L1629,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path d="M1595,294 L1583,320 L1607,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.95)`} />
+          <path d="M1608,292 L1595,320 L1621,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 1.00)`} />
 
-          {/* Lone trees 3–4 */}
-          <path d="M944,306 L938,320 L950,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
-          <path d="M992,309 L987,320 L997,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+          {/* Lone trees (x≈1744, 1792) */}
+          <path d="M1744,306 L1738,320 L1750,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M1792,309 L1787,320 L1797,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
 
-          {/* Cluster 4 */}
-          <path d="M1118,307 L1112,320 L1124,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
-          <path d="M1142,301 L1133,320 L1151,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
-          <path d="M1130,296 L1119,320 L1141,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
-          <path d="M1155,292 L1142,320 L1168,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
+          {/* Cluster 4 (x≈1918-1955) */}
+          <path d="M1918,307 L1912,320 L1924,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.70)`} />
+          <path d="M1942,301 L1933,320 L1951,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.80)`} />
+          <path d="M1930,296 L1919,320 L1941,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.85)`} />
+          <path d="M1955,292 L1942,320 L1968,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.90)`} />
 
-          {/* Lone trees 4–5 */}
-          <path d="M1278,308 L1272,320 L1284,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
-          <path d="M1332,310 L1327,320 L1337,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+          {/* Lone trees (x≈2078, 2132) */}
+          <path d="M2078,308 L2072,320 L2084,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+          <path d="M2132,310 L2127,320 L2137,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
 
-          {/* Cluster 5 — right edge */}
-          <path d="M1458,309 L1453,320 L1463,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
-          <path d="M1480,304 L1473,320 L1487,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
-          <path d="M1468,300 L1459,320 L1477,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
-          <path d="M1492,295 L1480,320 L1504,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
+          {/* Cluster 5 (x≈2258-2292) */}
+          <path d="M2258,309 L2253,320 L2263,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M2280,304 L2273,320 L2287,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.55)`} />
+          <path d="M2268,300 L2259,320 L2277,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.60)`} />
+          <path d="M2292,295 L2280,320 L2304,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.65)`} />
 
-          <rect x="0" y="330" width="1600" height="100" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
+          {/* Left extension trees (x=0..800) — smaller, more transparent */}
+
+          {/* Cluster A (x≈110-155) */}
+          <path d="M110,311 L106,320 L114,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+          <path d="M135,305 L129,320 L141,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.45)`} />
+          <path d="M122,299 L115,320 L130,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M148,308 L143,320 L153,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.38)`} />
+
+          {/* Lone trees (x≈275, 380) */}
+          <path d="M275,309 L271,320 L279,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.38)`} />
+          <path d="M380,312 L377,320 L383,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.35)`} />
+
+          {/* Cluster B (x≈535-565) */}
+          <path d="M535,308 L531,320 L539,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.42)`} />
+          <path d="M558,302 L551,320 L565,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.48)`} />
+          <path d="M546,296 L538,320 L555,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.52)`} />
+
+          {/* Lone trees (x≈680, 745) */}
+          <path d="M680,310 L676,320 L684,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+          <path d="M745,306 L741,320 L749,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.37)`} />
+
+          {/* Right extension trees (x=2400..3200) — smaller, more transparent */}
+
+          {/* Cluster C (x≈2490-2515) */}
+          <path d="M2490,310 L2486,320 L2494,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.42)`} />
+          <path d="M2512,304 L2506,320 L2518,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.48)`} />
+          <path d="M2500,298 L2492,320 L2508,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.52)`} />
+
+          {/* Lone trees (x≈2630, 2730) */}
+          <path d="M2630,311 L2626,320 L2634,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.36)`} />
+          <path d="M2730,308 L2726,320 L2734,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.39)`} />
+
+          {/* Cluster D (x≈2862-2910) */}
+          <path d="M2862,309 L2857,320 L2867,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.40)`} />
+          <path d="M2885,302 L2878,320 L2892,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.46)`} />
+          <path d="M2873,296 L2865,320 L2882,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.50)`} />
+          <path d="M2905,308 L2900,320 L2910,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.38)`} />
+
+          {/* Lone trees (x≈3050, 3130) */}
+          <path d="M3050,310 L3046,320 L3054,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.37)`} />
+          <path d="M3130,307 L3126,320 L3138,320 Z" fill={`hsla(${h}, ${s - 15}%, 5%, 0.35)`} />
+
+          <rect x="0" y="330" width="3200" height="100" fill={`hsla(${h}, ${s - 15}%, 4%, 1)`} />
         </svg>
 
       )}
