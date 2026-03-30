@@ -269,7 +269,7 @@ async function syncWater(uid) {
 
   // --- CONFIG: last-write-wins by configUpdatedAt ---
   const configRef    = doc(db, 'users', uid, 'water-config', 'current');
-  const localConfig  = { bottleOz: local.bottleOz, goal: local.goal, configUpdatedAt: local.configUpdatedAt };
+  const localConfig  = { bottleOz: local.bottleOz, goal: local.goal, configUpdatedAt: local.configUpdatedAt ?? new Date(0).toISOString() };
 
   try {
     const configSnap   = await getDoc(configRef);
