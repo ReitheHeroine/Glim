@@ -59,12 +59,12 @@ The following values guide all design decisions for Glim:
 | Styling | Tailwind CSS v4 | 4.2.2 | Installed (via `@tailwindcss/vite` plugin) |
 | Rendering | SVG (inline) | - | Unchanged |
 | State persistence | `localStorage` via `window.storage` polyfill | - | Unchanged |
+| State management | Zustand | 5.x | Installed (2026-03-27). 6 domain stores: creature, message, settings, UI, journal, pokes |
 | Authentication | Firebase Auth (Google sign-in) | 11.x | Installed (2026-03-26) |
-| Cloud database | Firebase Firestore | 11.x | Installed (2026-03-26). Auth and security rules configured. Sync service not yet built |
-| State management | Zustand | - | Planned (not yet installed) |
+| Cloud database | Firebase Firestore | 11.x | Installed (2026-03-26). Auth and security rules configured. Background sync service built 2026-03-29. See Section 8.11 |
 | Data visualization | Chart.js | - | Planned (not yet installed) |
 | PWA | vite-plugin-pwa | - | Planned (not yet installed) |
-| Hosting | Netlify | - | Live. Auto-deploys from `main` branch |
+| Hosting | GitHub Pages | - | Live at https://reitheheroine.github.io/Glim/. Auto-deploys via GitHub Actions on push to `main`. Migrated from Netlify 2026-03-27 |
 
 **Note on React version:** The Vite scaffold installed React 19 (not 18 as originally planned). No compatibility issues encountered. React 19 is backward compatible.
 
@@ -88,23 +88,42 @@ The diagram below shows the four-layer architecture of future Glim and how the l
 
 ## 2.2 File Structure & Build Process
 
-**Active project files (post-migration, 2026-03-25):**
+**Active project files (post-file-separation, 2026-03-27):**
 
 | File | Purpose |
 |---|---|
-| `client/src/DesktopPet.jsx` | All components + logic (~1724 lines). Source of truth for development. |
-| `client/src/messages.js` | All message pool arrays (10 named exports, ~706 lines). Edit messages here. |
+| `client/src/DesktopPet.jsx` | Main logic component (~430 lines). All state management, refs, effects, timers, interaction handlers, render tree. Reads from Zustand stores. |
+| `client/src/components/OwlMoth.jsx` | Creature SVG (pure render, all state via props). |
+| `client/src/components/Background.jsx` | Sky crossfade, stars, nebula, landscape, motes. |
+| `client/src/components/AmbientBugs.jsx` | 5 floating ambient bugs with flight paths. |
+| `client/src/components/SpeechBubble.jsx` | Glim's speech bubble display. |
+| `client/src/components/PersistentReminder.jsx` | Move/eyes reminder bar. |
+| `client/src/components/SettingsPanel.jsx` | Gear button + settings panel. Reads stores directly. Includes sign-out button. |
+| `client/src/components/JournalPanel.jsx` | Journal button + panel. Reads stores, `onSave` prop for cross-store callback. |
+| `client/src/stores/useCreatureStore.js` | Zustand store: mood, hue/sat, all animation + drag state. |
+| `client/src/stores/useMessageStore.js` | Zustand store: speech bubble text/visibility, reminder state. |
+| `client/src/stores/useSettingsStore.js` | Zustand store: intervals with localStorage persistence + `lastModified`. |
+| `client/src/stores/useUIStore.js` | Zustand store: panel visibility, journal view/text/prompt state. |
+| `client/src/stores/useJournalStore.js` | Zustand store: journal entries with localStorage persistence, soft-delete. |
+| `client/src/stores/usePokesStore.js` | Zustand store: poke counter with localStorage persistence. |
+| `client/src/stores/index.js` | Barrel export for all stores. |
+| `client/src/messages.js` | All message pool arrays (10 named exports, ~726 lines). Edit messages here. |
 | `client/src/storage.js` | `window.storage` localStorage polyfill. Side-effect import. |
-| `client/src/firebase.js` | Firebase initialization. Exports `db` (Firestore), `auth` (Firebase Auth), `googleProvider` (GoogleAuthProvider). Added 2026-03-26. |
-| `client/src/SignIn.jsx` | Google sign-in screen (twilight aesthetic). Handles popup errors and loading state. Added 2026-03-26. |
-| `client/src/App.jsx` | Root component. Auth gate: loading → SignIn → DesktopPet. Creates Firestore user doc on first sign-in. |
+| `client/src/utils.js` | Shared utility functions: `getTimeOfDay()`, `getColors()`, `pickRandom()`. Extracted to avoid circular imports between stores and components. |
+| `client/src/glim-animations.css` | All CSS keyframes (extracted from DesktopPet during file separation). Imported once in DesktopPet.jsx. |
+| `client/src/firebase.js` | Firebase initialization. Exports `db` (Firestore), `auth` (Firebase Auth), `googleProvider` (GoogleAuthProvider). |
+| `client/src/sync.js` | Background Firestore sync service. Pushes/pulls journal, pokes, settings, and water. Triggers on startup, every 60s, and on `visibilitychange`. Fires `glim-data-updated` CustomEvent after pulls so stores can reload. |
+| `client/src/SignIn.jsx` | Google sign-in screen (twilight aesthetic). |
+| `client/src/SplashScreen.jsx` | Auth-loading splash screen. Multi-hue Glim, starfield, randomized taglines. Added 2026-03-27. |
+| `client/src/App.jsx` | Root component. Auth gate: SplashScreen (loading) / SignIn (not authed) / DesktopPet (authed). |
 | `client/src/main.jsx` | Vite entry point. Mounts App into `#root`. |
 | `client/src/index.css` | Tailwind v4 import + base styles (full-height, overflow hidden). |
 | `client/index.html` | HTML shell. Title "Glim", owl favicon. |
-| `client/vite.config.js` | Vite config (React + Tailwind v4 plugins). |
-| `client/package.json` | npm dependencies. |
-| `client/.env.local` | Firebase config vars (`VITE_FIREBASE_*`). Gitignored. Not committed. |
+| `client/vite.config.js` | Vite config (React + Tailwind v4 plugins, `base: '/Glim/'` for GitHub Pages). |
+| `client/package.json` | npm dependencies (React 19, Vite 8, Tailwind v4, Zustand, Firebase). |
+| `client/.env.local` | Firebase config vars (`VITE_FIREBASE_*`). Gitignored. |
 | `client/.env.example` | Template for `.env.local` (no secrets). Committed. |
+| `.github/workflows/deploy.yml` | GitHub Actions: build with Firebase secrets injected, deploy to GitHub Pages. |
 | `firestore.rules` | Firestore security rules. Restricts reads/writes to authenticated user's own `users/{userId}/**` path. |
 | `glim.html` | Legacy standalone HTML. Kept as reference/fallback. No longer the active source. |
 
@@ -120,28 +139,46 @@ npm run preview  # Preview production build locally
 
 ## 2.3 Codebase Organization
 
+**Post-file-separation (2026-03-27).** The codebase was split from a single 1724-line file into 9+ files organized by concern. Zustand stores replaced 35+ useState calls.
+
 **`messages.js`** (~726 lines) contains all message arrays, each exported:
 
 - `MESSAGES` object - time-of-day keys (earlyMorning, morning, afternoon, evening, night, lateNight), plus clicked, rapidClick, shaken, startled, purr, flyFail, mindfulClick, sleepTalk, idle, wellness, encouragement
 - Standalone arrays: `MINDFULNESS`, `MOVE_REMINDERS`, `EYES_REMINDERS`, `MOVE_DONE_RESPONSES`, `EYES_DONE_RESPONSES`, `DISCOVERIES`, `JOURNAL_PROMPTS`, `JOURNAL_NUDGES`, `SCIENCE_FACTS`
 
-**`DesktopPet.jsx`** (~1724 lines) is organized in the following order:
+**`utils.js`** contains shared utilities extracted to avoid circular imports: `getTimeOfDay()`, `getColors()`, `pickRandom()`.
 
-1. **Imports** - React hooks, message arrays from `messages.js`, `storage.js` side-effect
-2. **Color system** - `getTimeOfDay()` and `getColors()` mapping hours to hue/saturation values
-3. **Utility** - `pickRandom(arr)`
-4. **Background component** - Sky crossfade layers, stars, shooting stars, nebula wisps, landscape SVG, floating motes, horizon glow, moon
-5. **AmbientBugs component** - 5 glowing bugs with unique flight paths
-6. **SpeechBubble component** - Message display with frosted glass styling
-7. **OwlMoth component** - The creature SVG: body, wings, face disc, eyes (squish-to-line closing), beak, blush, antennae, tail, feet, body dots
-8. **PersistentReminder component** - Wellness reminder display with dismiss buttons
-9. **DesktopPet component** (main) - All state, refs, effects, timers, interaction handlers, render tree
+**`stores/`** contains 6 Zustand domain stores (see Section 2.1 file table for details):
+
+- `useCreatureStore` - mood, hue/sat, all animation states, drag position/state, pupil offset, bug chasing
+- `useMessageStore` - speech bubble text/visibility, isWellness, msgType, move/eyes reminder state
+- `useSettingsStore` - intervals with localStorage persistence, `lastModified` for sync compatibility
+- `useUIStore` - panel visibility (settings, journal), journal view/text/prompt state. Will grow to include nav mode, active panel, etc.
+- `useJournalStore` - journal entries with localStorage persistence, soft-delete, reload action
+- `usePokesStore` - poke counter with localStorage persistence
+- `useWaterStore` - water tracking: entries array, bottleOz, goal, configUpdatedAt. Computed selectors: getToday(), getStreak(), getWeeklyAvg(). Syncs via Firestore (added 2026-03-29)
+
+Future tracker stores (one per domain) will be added as features are built: `useStepsStore`, `useNutritionStore`, `useTodosStore`, `usePomodoroStore`, `useExerciseStore`, etc.
+
+**`components/`** contains extracted visual components:
+
+- `OwlMoth.jsx` - creature SVG (pure render, all state via props)
+- `Background.jsx` - sky crossfade, stars, shooting stars, nebula, landscape, motes
+- `AmbientBugs.jsx` - 5 floating bugs with flight paths
+- `SpeechBubble.jsx` - message display with frosted glass styling
+- `PersistentReminder.jsx` - wellness reminder bar with dismiss buttons
+- `SettingsPanel.jsx` - gear button + settings panel (reads stores directly, includes sign-out)
+- `JournalPanel.jsx` - journal button + panel (reads stores, `onSave` prop for cross-store callback)
+
+**`DesktopPet.jsx`** (~430 lines) is the main logic component. It imports all components and stores, manages refs and effects, handles all interaction logic (click, drag, purr, shake), schedules autonomous behaviors, and composes the render tree. It no longer contains any sub-component definitions.
+
+**`glim-animations.css`** contains all CSS keyframes (owlFloat, owlBounce, purrRock, flyAttempt, chaseBug, secretSpin, wing animations, antenna animations, tail animations, star twinkle, nebula drift, bug paths, etc.). Extracted from DesktopPet during file separation. Imported once in DesktopPet.jsx.
 
 **Key state management patterns:**
 
-- `useRef` for values that need to be current inside async callbacks (timers, intervals) without causing re-renders. Critical refs: `isSleepingRef`, `isPurringRef`, `lastInteractionRef`, `dragStartRef`, `justDraggedRef`, `dragVelocityRef`, `wanderDriftRef`, `settingsInitRef`
-- `useCallback` for stable function references passed as dependencies
-- `useState` for values that need to trigger re-renders (visual state, message display, UI panels)
+- **Zustand stores** for all state that the UI needs to display. Any component can read from any store without prop drilling.
+- **`useRef`** for values that need to be current inside async callbacks (timers, intervals) without causing re-renders. Critical refs: `isSleepingRef`, `isPurringRef`, `lastInteractionRef`, `dragStartRef`, `justDraggedRef`, `dragVelocityRef`, `wanderDriftRef`, `settingsInitRef`. Refs stay in DesktopPet.jsx (not in stores).
+- **`useCallback`** for stable function references passed as dependencies.
 
 **Stale closure pattern:** All `useEffect` hooks that run asynchronous callbacks (timers, intervals) use `.current` refs instead of state variables for checks that need to reflect the latest value. This was the source of multiple bugs where Glim would talk in its sleep or ignore sleep state, because `specialAnim` was captured at effect creation time rather than checked at callback execution time.
 
@@ -156,7 +193,7 @@ npm run preview  # Preview production build locally
 **Storage backend:**
 
 - **Local:** `window.storage` polyfill defined in `storage.js`, wrapping `localStorage.getItem/setItem/removeItem`. Imported as a side effect in `DesktopPet.jsx`. In the legacy `glim.html`: same polyfill inlined in the HTML `<head>`. The `window.storage` API mirrors Anthropic's artifact storage API, so the same Glim code works in both contexts.
-- **Cloud (2026-03-26):** Firebase Firestore, organized as subcollections under `users/{userId}/`. Currently installed and configured but not yet wired into data writes. The planned architecture is localStorage-primary with background Firebase sync. See Section 8.11 for the Firestore schema and sync architecture.
+- **Cloud (2026-03-26, sync built 2026-03-29):** Firebase Firestore, organized as subcollections under `users/{userId}/`. localStorage-primary with background Firebase sync: the UI reads and writes localStorage directly; a background service (`sync.js`) pushes changes to Firestore and pulls remote changes on a timer and on tab focus. After a pull that modifies localStorage, `sync.js` fires a `glim-data-updated` CustomEvent with the affected domain names; DesktopPet's event handler calls the relevant store's `reload()` method to update the UI. Currently synced domains: journal, pokes, settings, water. See Section 8.11 for the Firestore schema and sync architecture.
 
 **Authentication (2026-03-26):** Google sign-in is required on first launch. Firebase Auth manages session persistence. The `users/{userId}` Firestore document is created on first sign-in with user metadata (name, email, createdAt). Firestore security rules restrict all reads/writes to the authenticated user's own `users/{userId}/**` path.
 
@@ -534,34 +571,41 @@ Messages are stored in `const` arrays at the top of `desktop-pet.jsx`. The main 
 
 **Requirements for legacy HTML:** Internet connection on first load (React/Tailwind CDN caching). Works offline after first load.
 
-## 6.2 Netlify PWA (Mobile)
+## 6.2 GitHub Pages PWA (Mobile + Desktop)
 
-**Status:** Partially implemented (2026-03-25). Installable on iPhone via Safari. Service worker (offline support) not yet added.
+**Status:** Live as of 2026-03-27. Installable on iPhone via Safari. Service worker (offline support) not yet added. Migrated from Netlify to GitHub Pages to avoid deploy preview credit exhaustion.
 
 **Current setup:**
 
-- Hosted on Netlify, auto-deploys from `main` branch on push
-- `client/public/manifest.json` - PWA manifest (standalone display, dark theme `#0d0820`, both icon sizes)
-- `client/public/glim-icon-192.png`, `glim-icon-512.png` - PWA icons generated from custom SVG
+- Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/
+- Auto-deploys via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`
+- GitHub Actions workflow: builds with Firebase secrets injected from repository secrets, deploys `client/dist/` to `gh-pages` branch
+- `client/vite.config.js` has `base: '/Glim/'` for GitHub Pages path prefix
+- `client/public/manifest.json` - PWA manifest (standalone display, dark theme `#0d0820`, both icon sizes, `/Glim/` prefixed paths)
+- `client/public/glim-icon.svg` - multi-hue source icon (updated 2026-03-27)
+- `client/public/glim-icon-192.png`, `glim-icon-512.png` - PWA icons generated from multi-hue SVG
 - `client/public/apple-touch-icon.png` (180px) - iOS home screen icon
 - `client/index.html` - includes `apple-touch-icon` link, manifest link, `apple-mobile-web-app-capable`, status bar style, theme-color meta tags
+- iPhone safe area handling: color-matched div strip using `env(safe-area-inset-bottom)`, buttons positioned with `calc(env(safe-area-inset-top, 0px) + 16px)`
 
 **To install on iPhone:**
 
-1. Open Netlify URL in Safari
-2. Tap Share → Add to Home Screen → Add
-3. Glim appears on home screen with icon, opens full screen with no browser chrome
+1. Open https://reitheheroine.github.io/Glim/ in Safari
+2. Tap Share, then Add to Home Screen, then Add
+3. Glim appears on home screen with multi-hue icon, opens full screen with no browser chrome
 
-**[FOLLOW-UP NEEDED]:** Add service worker via `vite-plugin-pwa` for offline support. Test touch interactions on real device (touch events not yet implemented in Glim codebase).
+**Splash screen:** While Firebase auth resolves on app open, a splash screen displays the multi-hue Glim creature against a twilight starfield with a randomly selected tagline from a pool of 5 messages in Glim's voice ("oh hi, welcome back!", "hey, there you are", "missed you", "let's do today together", "hi friend"). Implemented in `SplashScreen.jsx`.
+
+**[FOLLOW-UP NEEDED]:** Add service worker via `vite-plugin-pwa` for offline support. Test touch interactions on real device (touch events not yet implemented in Glim codebase, Pointer Events migration spec complete in Section 4.2).
 
 ## 6.3 Update Workflow
 
-**Current workflow (post-migration, Vite):**
+**Current workflow (post-migration, Vite + GitHub Pages):**
 
-1. Edit `client/src/DesktopPet.jsx` or `client/src/messages.js` (Claude Code or directly)
+1. Edit source files in `client/src/` (Claude Code or directly)
 2. Run `npm run dev` from `client/` for live preview at `localhost:5173`
 3. Run `npm run build` to verify production build
-4. Push to GitHub repo - Netlify auto-deploys from `client/dist/`
+4. Push to GitHub repo - GitHub Actions auto-builds and deploys to GitHub Pages
 5. Journal entries and poke count persist (localStorage, not in source files)
 
 **Note on Claude.ai workflow:** Feature and message changes designed in the Claude.ai artifact environment should be transferred to `client/src/DesktopPet.jsx` (components/logic) and `client/src/messages.js` (message content) by Claude Code. The artifact is no longer the source of truth.
@@ -625,18 +669,18 @@ These items are prerequisite to or should be built alongside the feature work be
 | Touch event support | Not started | **High** | Primary mobile blocker. Pointer Events API migration (not dual mouse/touch handlers). `getPointerXY()` helper not needed. See Section 4.2 for full spec. |
 | Responsive layout | Not started | **High** | `isMobile` flag, responsive creature sizing, panel widths, 44px+ tap targets |
 | Vite migration | **Done** (2026-03-25) | - | Migrated to Vite 8 + React 19. See Section 2.2 |
-| Zustand state management | Not started | **High** | Migrate 30+ useState calls from DesktopPet into Zustand shared stores. Organize by domain (creature, trackers, UI, settings). Prerequisite for multi-component architecture |
-| File separation | Not started | **High** | Split single 2460-line file into: message data, creature component, background component, UI panels, stores, reaction system. Enabled by Vite migration |
+| Zustand state management | **Done** (2026-03-27) | - | 7 domain stores: creature, message, settings, UI, journal, pokes, water. 35+ useState calls replaced. Future tracker stores added per feature. |
+| File separation | **Done** (2026-03-27) | - | DesktopPet split from 1724 lines to ~430. 7 components, 6 stores, utils, animations CSS extracted. See Section 2.3 |
 | Sync-ready data model | **Done** (2026-03-25) | - | Event-based data model designed for all 15 domains. See Section 8.8 |
 | Firestore schema and auth | **Done** (2026-03-26) | - | Firebase project created, Google sign-in implemented, Firestore security rules deployed. See Section 8.11 |
-| Background sync service | Not started | **High** | localStorage-primary with background Firebase sync. Push/pull on timer and visibilitychange. See Section 8.11 |
+| Background sync service | **Done** (2026-03-29) | - | localStorage-primary with background Firebase sync. Push/pull on 60s timer, startup, and visibilitychange. Domains: journal, pokes, settings, water. See Section 8.11 |
 | Glim reaction system | Not started | **High** | Centralized system for creature responses to tracker events: `glimReact('water_logged', { current: 6, goal: 8 })`. Keeps personality layer separate from tracker code |
 | Behavior state machine | Not started | **Medium** | Formal states and transitions for creature behavior. Prevents impossible state combinations as feature count grows |
-| PWA setup (manifest, icons) | **Done** (2026-03-25) | - | Manifest, icons, iOS meta tags. Service worker still needed |
+| PWA setup (manifest, icons) | **Done** (2026-03-25, icons updated 2026-03-27) | - | Manifest, multi-hue icons, iOS meta tags, splash screen. Service worker still needed |
 | Service worker (offline) | Not started | **Medium** | `vite-plugin-pwa` for offline caching. Currently requires internet on every load. Also prerequisite for Web Push notifications |
 | Web Push notifications | Not started | **Medium** | Push API + Firebase Cloud Function backend. Works on Android (fully) and iOS (home-screen PWA, since 16.4). Requires service worker. Use cases: wellness reminders, streak warnings, daily nudges |
 | GitHub repository | **Done** (2026-03-25) | - | `git@github.com:ReitheHeroine/Glim.git` |
-| Netlify hosting | **Done** (2026-03-25) | - | Auto-deploys from `main`, live on Netlify |
+| Hosting | **Done** (2026-03-25 Netlify, migrated to GitHub Pages 2026-03-27) | - | https://reitheheroine.github.io/Glim/. Auto-deploys via GitHub Actions. Netlify project no longer active |
 | Off-screen adventure behavior | Not started | **Low** | Creature behavior: drift off-screen, return on pointer activity. Needs `isOffScreenRef`, `OFFSCREEN_RETURN` messages |
 | Remove Tailwind dependency | Not started | **Low** | Replace utility classes with inline styles. Eliminates CDN dependency and console warning |
 
@@ -787,7 +831,7 @@ No events, no history. Last-write-wins on sync.
   moveInterval: 45,
   eyesInterval: 20,
   goals: {
-    water: { amount: 8, unit: "glass" },        // "glass" | "oz" | "ml"
+    water: { amount: 6, unit: "bottle", bottleOz: 24 },  // Goal in bottles, oz derived
     steps: {                                     // Tier milestones, not single target
       tiers: [2500, 5000, 7500, 10000],
     },
@@ -857,7 +901,8 @@ The model tracker that sets the pattern for all daily trackers.
   logs: [
     {
       id: "e5f6g7h8-...",
-      amount: 1,                                // Number of units
+      amount: 1,                                // Always 1 (one bottle per tap)
+      bottleOz: 24,                             // Oz per bottle AT TIME OF LOGGING (denormalized)
       createdAt: "2026-03-25T10:30:00.000Z",
       date: "2026-03-25",
       deletedAt: null,
@@ -866,11 +911,63 @@ The model tracker that sets the pattern for all daily trackers.
 }
 ```
 
-Goal lives in `glim-settings.goals.water`, not duplicated here.
+`bottleOz` is denormalized (stamped on each entry from `glim-settings.goals.water.bottleOz` at log time). This means historical oz calculations stay accurate if the user changes their bottle size later. Without this, switching from a 24 oz to 32 oz bottle would retroactively inflate all past oz totals.
 
-**Derived values (computed, never stored):** Today's total (`logs.filter(date === today && !deletedAt).reduce(sum, amount)`), progress percentage, current streak (consecutive days meeting goal), best streak, weekly average.
+Goal lives in `glim-settings.goals.water`, not duplicated here. The current bottle size also lives in settings, and is read at log time to stamp onto the entry.
 
-**Glim reactions:** `water_logged` ("nice! that's glass 5 of 8"), `water_goal_met`, `water_streak` (3/7/14/30 days), `water_nudge` (no water by configurable time).
+**Derived values (computed, never stored):** Today's bottle count (`logs.filter(date === today && !deletedAt).length`), today's total oz (`todayLogs.reduce((sum, l) => sum + l.amount * l.bottleOz, 0)`), progress percentage, current streak (consecutive days meeting goal), best streak, weekly average in bottles (`last7DaysCount / 7`), weekly average in oz (`last7DaysLogs.reduce(sum of amount * bottleOz) / 7`).
+
+**Glim reactions:** `water_logged` ("nice! that's bottle 5 of 6"), `water_goal_met`, `water_streak` (3/7/14/30 days), `water_nudge` (no water by configurable time).
+
+**Zustand store (`useWaterStore`, built 2026-03-29):** `client/src/stores/useWaterStore.js`, localStorage key `glim-water`.
+
+```
+Persisted state:
+  entries: []           Array of { id, timestamp, bottleOz }. One entry per bottle logged.
+  bottleOz: 24          Current bottle size in oz. Stamped on each entry at log time.
+  goal: 6               Daily bottle goal.
+  configUpdatedAt       ISO timestamp of last bottleOz or goal change (for sync last-write-wins).
+
+Actions:
+  logBottle()           Append { id: Date.now(), timestamp: Date.now(), bottleOz } to entries.
+                        Save to localStorage.
+  undoLast()            Remove the most recent entry for today. Save to localStorage.
+                        Note: hard-delete (not soft-delete). If already synced to Firestore,
+                        the entry will reappear on next pull (acceptable edge case).
+  setBottleOz(oz)       Update bottleOz, set configUpdatedAt to now. Save to localStorage.
+  setGoal(n)            Update goal, set configUpdatedAt to now. Save to localStorage.
+  reload()              Re-read glim-water from localStorage into store. Called by DesktopPet
+                        after a sync pull fires the glim-data-updated event.
+
+Computed selectors (call get() internally, always current):
+  getToday()            Count of entries for today (UTC date comparison).
+  getStreak()           Consecutive days at or above goal, counting backward from today.
+  getWeeklyAvg()        Average bottles per day over last 7 days (rounded to 1 decimal).
+```
+
+**Data flow on "+1 bottle" tap:**
+
+```
+1. User taps "+ bottle" in WaterPanel
+2. Panel calls useWaterStore.logBottle() (synchronous Zustand set)
+3. Panel computes new count: current + 1
+4. Panel calls selectMessage(newCount, goal, bottleOz, newStreak) - picks from
+   water_logged / water_goal_met / water_streak message pools (130+ messages)
+5. Panel calls useMessageStore.setMessage(msg) + setShowBubble(true) - Glim reacts
+6. Panel shows undo toast for 4s, then auto-dismisses
+7. Zustand re-renders WaterPanel: ring, count, button color update
+8. sync.js pushes new entry to Firestore on next sync cycle (up to 60s)
+```
+
+**Cross-store independence:** Water store holds bottleOz and goal directly (not in useSettingsStore). This makes the store self-contained and simplifies Firestore sync (one config doc, no cross-store reads during sync). The original design had these in useSettingsStore; revised during implementation.
+
+**Companion panel UI (designed 2026-03-27):** See `glim-water-panel-mockup.html` for pixel-accurate visual reference. Three visual states:
+
+- **In-progress:** Progress ring (64px, blue #60a5fa) on left with count/goal inside. Large "+ 1 bottle" button to the right of the ring (same row, not below). Tappable oz pill below the button row: "72 oz so far (24 oz/bottle)". Tapping the oz pill opens an inline editor to change bottle size. Footer: streak count + weekly average.
+- **Undo toast:** After logging, an undo toast appears between the oz pill and footer. Shows "logged 1 bottle" with an undo button. Auto-dismisses after 4 seconds. Undo soft-deletes the most recent log entry (sets `deletedAt`). Only one level of undo (last entry only, not a stack).
+- **Goal reached:** Ring turns green (#4ade80), checkmark replaces the count number, button turns green. Logging past the goal is allowed (count exceeds goal, ring stays full green). Oz pill turns green.
+
+**Settings:** Average display format (bottles vs oz) is a user setting. Default: bottles ("avg: 4.8/day"). Alternative: oz ("avg: 115 oz/day"). This setting lives in the settings panel, not in the water panel itself.
 
 #### Todos (`glim-todos`)
 
@@ -1520,12 +1617,14 @@ A persistent bottom nav bar appears in both modes, identical in position and beh
 
 **Nav bar order:** home, focus (pomodoro), tasks, nutrition, more. This is the default; slots are user-customizable in settings.
 
-**Nav bar icon candidates (to be finalized):**
-- Home: nest icon (cozy, fits Glim's character)
-- Nutrition: leaf icon
-- Tasks: clipboard/list icon
-- Focus/pomodoro: clock icon
-- More: three dots
+**Nav bar icons (finalized 2026-03-27):**
+- Home: mountains + stars (two angular peaks with ground line and three star dots above; represents Glim's twilight landscape)
+- Focus/pomodoro: clock (circle with hour hand at ~2 o'clock)
+- Tasks: double checkmarks (two stacked, top bolder)
+- Nutrition: leaf with vein (pointed leaf outline, center vein, one branching pair)
+- More: three dots (horizontal ellipsis)
+
+All icons use `currentColor` so active/inactive is a single CSS color change. Active: `rgba(200,210,230,0.8)`, inactive: `rgba(200,210,230,0.4)`. See `nav-icons-reference.md` for exact SVG paths and React component code. See `glim-homescreen-mockup.html` for pixel-accurate visual reference (open in browser).
 
 Active feature is highlighted (teal). Inactive features are dimmed. Tapping home returns to companion mode with no panel open.
 
@@ -1613,6 +1712,10 @@ users/
       counters                       <- { total, lastPoke }
     settings/                        <- subcollection: single doc
       current                        <- { wellnessInterval, moveInterval, eyesInterval, lastModified }
+    water/                           <- subcollection: one doc per bottle log entry (added 2026-03-29)
+      {entryId}                      <- { id, timestamp, bottleOz }
+    water-config/                    <- subcollection: single config doc (added 2026-03-29)
+      current                        <- { bottleOz, goal, configUpdatedAt }
 ```
 
 **Adding new trackers:** Create a new subcollection under `users/{userId}/`. No changes to existing collections, security rules, or sync service registration (beyond adding the new domain to the sync config).
@@ -1642,31 +1745,50 @@ service cloud.firestore {
 }
 ```
 
-### Sync Service (not yet built)
+### Sync Service (`client/src/sync.js`, built 2026-03-29)
 
-The background sync service will be a standalone module with the following design:
+The background sync service is a standalone module (`sync.js`) imported by `App.jsx`. It exposes two functions: `startSync(uid)` (called after auth) and `stopSync()` (called on sign-out).
 
-- Runs on a timer (interval TBD, likely 30-60 seconds) and on `visibilitychange` events (sync when tab regains focus)
-- Each domain registers its sync strategy (event-log, singleton, or counter)
-- Push: find local events newer than `lastSyncedAt`, batch-write to Firestore
-- Pull: query Firestore for events newer than `lastSyncedAt`, merge into localStorage
-- Tracker code is unaware of Firebase. It reads/writes localStorage and Zustand only.
-- Future upgrade path: attach real-time Firestore listeners for specific active domains (e.g., the open tracker panel) while keeping background sync for everything else.
+**Triggers:**
+- Immediately on `startSync(uid)` call (page load / tab open)
+- Every 60 seconds via `setInterval`
+- On `visibilitychange` when the tab regains focus (catches updates made on another device while this tab was in the background)
+
+**Architecture:**
+- UI reads and writes localStorage only. It is never aware of Firebase.
+- After a pull that changes localStorage, `sync.js` fires `window.dispatchEvent(new CustomEvent('glim-data-updated', { detail: { domains: [...] } }))`.
+- `DesktopPet.jsx` listens for this event and calls the affected store's `reload()` method, which reads the updated localStorage and calls Zustand `set()`, triggering a re-render.
+- Sync metadata (`glim-sync-meta` localStorage key) tracks per-domain push timestamps so only new data is pushed on subsequent syncs.
+
+**Sync strategy per domain:**
+
+| Domain | Firestore path | Strategy | Push condition | Pull condition |
+|---|---|---|---|---|
+| journal | `users/{uid}/journal/{entryId}` | Additive merge + soft-delete propagation | Entries created or soft-deleted after `journalPushedAt` | Firestore docs not present in local by ID |
+| pokes | `users/{uid}/pokes/counters` | Take-the-max | Local total >= remote total | Remote total > local total |
+| settings | `users/{uid}/settings/current` | Last-write-wins by `lastModified` | Local `lastModified` >= remote | Remote `lastModified` > local |
+| water entries | `users/{uid}/water/{entryId}` | Additive merge | Entries with `timestamp` > `waterPushedAt` | Firestore docs not present in local by ID |
+| water config | `users/{uid}/water-config/current` | Last-write-wins by `configUpdatedAt` | Local `configUpdatedAt` >= remote | Remote `configUpdatedAt` > local |
+
+**Undo and sync:** The undo toast (4s window) removes the entry from localStorage. Since water entries use additive merge (no soft-delete), an undone entry that was already pushed to Firestore will reappear on next pull. This is an acceptable edge case: the 60s sync interval makes same-session push-then-undo-then-pull unlikely, and the consequence is a single extra bottle in the count.
+
+**Not real-time:** Both tabs must be open simultaneously for one to see the other's changes; there are no Firestore `onSnapshot` listeners. Updates arrive at next sync trigger (up to 60s, or immediately on tab focus). This is acceptable for wellness tracking - simultaneous multi-device logging is not a common use pattern.
 
 ### Cost Considerations
 
 Firestore free tier: 50K reads/day, 20K writes/day. With background sync on a timer (not real-time listeners on every domain), Glim's usage should stay well within free tier for personal use. The sync service should batch writes where possible to minimize write count.
 
-### Files Added (2026-03-26)
+### Files Added
 
-| File | Purpose |
-|---|---|
-| `client/src/firebase.js` | Firebase app initialization. Exports `db`, `auth`, `googleProvider` |
-| `client/src/SignIn.jsx` | Google sign-in screen with twilight aesthetic |
-| `client/src/App.jsx` | Updated: auth gate (loading -> SignIn -> DesktopPet), user doc creation on first sign-in |
-| `client/.env.local` | Firebase config vars (`VITE_FIREBASE_*`). Gitignored |
-| `client/.env.example` | Template for `.env.local` (no secrets). Committed |
-| `firestore.rules` | Security rules restricting access to own user data |
+| File | Date | Purpose |
+|---|---|---|
+| `client/src/firebase.js` | 2026-03-26 | Firebase app initialization. Exports `db`, `auth`, `googleProvider` |
+| `client/src/SignIn.jsx` | 2026-03-26 | Google sign-in screen with twilight aesthetic |
+| `client/src/App.jsx` | 2026-03-26 | Updated: auth gate (loading -> SignIn -> DesktopPet), user doc creation on first sign-in, calls `startSync`/`stopSync` on auth state change |
+| `client/.env.local` | 2026-03-26 | Firebase config vars (`VITE_FIREBASE_*`). Gitignored |
+| `client/.env.example` | 2026-03-26 | Template for `.env.local` (no secrets). Committed |
+| `firestore.rules` | 2026-03-26 | Security rules restricting access to own user data (`users/{userId}/{document=**}`) |
+| `client/src/sync.js` | 2026-03-29 | Background sync service. `startSync(uid)` / `stopSync()`. Syncs journal, pokes, settings, water on 60s timer + startup + visibilitychange |
 
 ## 8.12 Creature Personality Ideas
 
@@ -1889,6 +2011,20 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Alternatives considered:** (1) Single daily entry at end of day - simplest but no mid-day feedback. (2) Additive entries - requires subtraction, error-prone. (3) Single goal (e.g., 10,000) - binary pass/fail, less motivating.
 **Impact:** `glim-steps` uses latest-entry-wins logic. `glim-settings.goals.steps` stores tier array instead of single amount.
 
+### 2026-03-29 - Water store holds bottleOz and goal (not delegated to useSettingsStore)
+
+**Decision:** `useWaterStore` holds `bottleOz`, `goal`, and `configUpdatedAt` directly. The original design in Section 8.3 delegated these to `useSettingsStore`.
+**Rationale:** Self-containment simplifies Firestore sync: water config syncs as a single document (`water-config/current`) with no cross-store reads. The water panel reads one store instead of two. Keeping tracker-specific settings inside the tracker store matches Zustand's per-domain ownership model.
+**Alternatives considered:** Keep bottleOz/goal in useSettingsStore as designed. Rejected because it would require sync.js to read from two stores (or one composite query) to produce a single Firestore document, and would couple the water sync to the settings sync.
+**Impact:** `useSettingsStore` does not need water-related fields. Future tracker stores should follow the same pattern: hold their own config values locally rather than delegating to settings.
+
+### 2026-03-29 - Additive merge (not soft-delete) for water entries
+
+**Decision:** Water entry sync uses additive merge. Undoing a bottle in-app does a hard-delete from localStorage, not a soft-delete. If the entry was already pushed to Firestore before the undo, it reappears on next pull.
+**Rationale:** The undo window is 4 seconds. The sync interval is 60 seconds. Push-then-undo-then-pull in the same session is extremely unlikely. The consequence is one extra bottle in the count - low severity. Implementing soft-delete (setting `deletedAt` and filtering in the pull) would add complexity to both the store and the sync function without meaningfully improving UX.
+**Alternatives considered:** Soft-delete matching the journal pattern. Rejected as over-engineering for this edge case.
+**Impact:** [FOLLOW-UP NEEDED] If undo reliability across devices ever becomes important, switch to soft-delete by adding `deletedAt: null` to the entry schema and filtering in `countToday`, `computeStreak`, and `computeWeeklyAvg`.
+
 ### 2026-03-27 - Inside-out feature build order (incremental framework growth)
 
 **Decision:** Build features one at a time, growing the framework incrementally around real needs, rather than building the full navigation/panel framework first. Phased: (1) minimal scaffolding + prerequisites, (2) water tracker as pattern-prover, (3) second companion tracker, (4) first focus-mode feature (to-do list), (5) everything else.
@@ -2087,6 +2223,31 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 **Decisions made:** See Decision Register entries for 2026-03-27 (6 entries: hybrid nutrition, pomodoro time tracking, recurring tasks Approach 2, replace-style steps, inside-out build order, and nav bar design).
 **Next steps identified:** Begin Phase 1 (Zustand migration, file separation, touch/responsive, nav shell). Then Phase 2 (water tracker as pattern-prover).
 
+### 2026-03-29 - Water tracker and Firestore sync implementation
+
+**Work performed:** (Claude Code session.) Implemented the water tracker (Phase 2 first feature) and wired up the Firestore background sync service.
+
+**Water tracker:**
+- Created `useWaterStore.js` with localStorage persistence (`glim-water`), `logBottle` / `undoLast` / `setBottleOz` / `setGoal` actions, and computed selectors (`getToday`, `getStreak`, `getWeeklyAvg`). Store holds `bottleOz` and `goal` directly (not delegated to useSettingsStore as originally designed) for self-containment and sync simplicity.
+- Created `WaterPanel.jsx` with a circular progress ring (r=30, circumference=188, viewBox 72x72), green/blue color states for goal-met vs. in-progress, tappable oz pill for inline bottle size editing, +bottle button, 4-second undo toast, and footer showing streak + 7-day average.
+- Embedded all 130+ messages from the water message pools (water_logged sub-pools: first-bottle, simple, playful, progress-aware, absurd, science, mindful; water_goal_met; water_streak by milestone day). Streak milestone messages take priority over generic goal-met messages.
+- Updated `NavBar.jsx`: replaced NutritionIcon with WaterIcon (teardrop SVG); nutrition moved to more section (not yet implemented). Updated `CompanionPanel.jsx` to route `activePanel === 'water'` to `<WaterPanel />`. Updated `stores/index.js` and `useUIStore.js` for the new panel type.
+
+**Firestore sync service:**
+- Created `sync.js` with `startSync(uid)` / `stopSync()`. Called from `App.jsx` on auth state change. Triggers: immediate on startup, every 60s, and on `visibilitychange`.
+- Implemented per-domain sync functions: `syncJournal` (additive merge + soft-delete propagation), `syncPokes` (take-the-max), `syncSettings` (last-write-wins by `lastModified`), `syncWater` (additive entry merge + last-write-wins config by `configUpdatedAt`).
+- After pulls that change localStorage, fires `glim-data-updated` CustomEvent with affected domain names. DesktopPet listens and calls the relevant store's `reload()` method.
+- Fixed one post-deploy bug: `configUpdatedAt` was `undefined` in existing localStorage entries (field added after initial water store deployment), causing Firestore to reject the write. Fixed by falling back to epoch string in `syncWater`.
+
+**Outputs:** `client/src/stores/useWaterStore.js` (new), `client/src/components/WaterPanel.jsx` (new), `client/src/sync.js` (new), updated `NavBar.jsx`, `CompanionPanel.jsx`, `stores/index.js`, `useUIStore.js`, `DesktopPet.jsx`. Also: `client/index.html` updated with `mobile-web-app-capable` meta tag alongside Apple variant.
+
+**Known limitations:**
+- Undo is a hard-delete (not soft-delete). If an entry is pushed to Firestore before the user undoes it, it will reappear on next pull. Low risk given 60s sync interval.
+- Sync is not real-time. Both devices must be open simultaneously and wait up to 60s (or regain tab focus) for changes to propagate.
+- Water count uses UTC dates for day boundaries. Users in western timezones may see today's count reset after midnight UTC but before midnight local time.
+
+**Next steps identified:** Home screen summary widgets (water ring + steps placeholder + tasks placeholder). Touch event support (Pointer Events API migration, currently the primary mobile usability gap).
+
 ---
 
 # 11. References & Resources
@@ -2113,11 +2274,16 @@ Not features per se, but ideas for how Glim's personality layer extends as featu
 | Tailwind CSS | 4.2.2 | npm: tailwindcss | Utility CSS (build-integrated via @tailwindcss/vite) |
 | Firebase | 11.x | npm: firebase | Cloud database (Firestore), authentication (Google sign-in) |
 
+### Installed since migration
+
+| Tool | Version | Package | Date | Purpose |
+|---|---|---|---|---|
+| Zustand | 5.x | npm: zustand | 2026-03-27 | Shared state management. 7 domain stores. Replaced 35+ useState calls |
+
 ### Planned (not yet installed)
 
 | Tool | Package | Purpose |
 |---|---|---|
-| Zustand | npm: zustand | Shared state management (replaces 30+ useState calls) |
 | Chart.js | npm: chart.js | Data visualization for trends, progress charts |
 | vite-plugin-pwa | npm: vite-plugin-pwa | Service worker and manifest auto-generation |
 
