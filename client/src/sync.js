@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-26
-// Last Modified: 2026-03-26
+// Last Modified: 2026-03-30
 // Purpose:     Background sync service. Pushes localStorage data to Firestore
 //              and pulls remote changes back into localStorage so data stays
 //              in sync across devices. localStorage remains the primary
@@ -294,6 +294,71 @@ async function syncWater(uid) {
 }
 
 // =============================================================================
+//  Steps sync
+//  Entries strategy: additive merge. One Firestore doc per entry.
+//  Firestore path: users/{uid}/steps/{entryId}
+//  Push: entries created after stepsPushedAt
+//  Pull: entries in Firestore not present in localStorage
+//
+//  Replace-style resolution (latest entry per date wins) happens in the store's
+//  derived value layer (countForDate), not here. The sync layer is purely
+//  additive - it only adds missing entries, never removes or overwrites.
+// =============================================================================
+
+async function syncSteps(uid) {
+  const meta         = getSyncMeta();
+  const lastPushedAt = meta.stepsPushedAt ? new Date(meta.stepsPushedAt) : new Date(0);
+
+  let local;
+  try {
+    const raw = localStorage.getItem('glim-steps');
+    local = raw ? JSON.parse(raw) : { entries: [] };
+  } catch {
+    return;
+  }
+
+  const entries    = Array.isArray(local.entries) ? local.entries : [];
+  const entriesRef = collection(db, 'users', uid, 'steps');
+
+  // --- PUSH: entries created since last push ---
+  const toPush = entries.filter(e => new Date(e.timestamp) > lastPushedAt);
+
+  for (const entry of toPush) {
+    try {
+      await setDoc(doc(entriesRef, String(entry.id)), entry, { merge: true });
+    } catch (e) {
+      console.warn('[glim sync] steps entry push failed:', entry.id, e);
+    }
+  }
+
+  if (toPush.length > 0) {
+    setSyncMeta({ stepsPushedAt: new Date().toISOString() });
+  }
+
+  // --- PULL: Firestore entries not in local ---
+  let snapshot;
+  try {
+    snapshot = await getDocs(entriesRef);
+  } catch (e) {
+    console.warn('[glim sync] steps pull failed:', e);
+    return;
+  }
+
+  const localIdSet = new Set(entries.map(e => String(e.id)));
+  const toAdd = [];
+  snapshot.forEach(d => {
+    if (!localIdSet.has(d.id)) toAdd.push(d.data());
+  });
+
+  if (toAdd.length > 0) {
+    const merged = [...entries, ...toAdd].sort((a, b) => a.timestamp - b.timestamp);
+    local = { ...local, entries: merged };
+    localStorage.setItem('glim-steps', JSON.stringify(local));
+    notify(['steps']);
+  }
+}
+
+// =============================================================================
 //  Sync orchestrator
 // =============================================================================
 
@@ -305,6 +370,7 @@ async function syncAll() {
       syncPokes(currentUid),
       syncSettings(currentUid),
       syncWater(currentUid),
+      syncSteps(currentUid),
     ]);
   } catch (e) {
     console.warn('[glim sync] syncAll failed:', e);

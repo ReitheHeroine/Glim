@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-25
-// Last Modified: 2026-03-27
+// Last Modified: 2026-03-30
 // Purpose:     Main Glim application component. Owns all interaction logic,
 //              timer-based behaviors, and state coordination across stores.
 //              Sub-components (Background, OwlMoth, panels, etc.) are in
@@ -23,7 +23,7 @@ import './glim-animations.css';
 import { pickRandom } from './utils';
 import {
   useCreatureStore, useMessageStore, useSettingsStore,
-  useUIStore, useJournalStore, usePokesStore, useWaterStore,
+  useUIStore, useJournalStore, usePokesStore, useWaterStore, useStepsStore,
 } from './stores';
 import Background from './components/Background';
 import AmbientBugs from './components/AmbientBugs';
@@ -75,6 +75,7 @@ export default function DesktopPet() {
   const { total: clickCount, increment: setClickCount, reload: reloadPokes } = usePokesStore();
 
   const { reload: reloadWater } = useWaterStore();
+  const { reload: reloadSteps } = useStepsStore();
 
   // ---- Drag refs ----
   const dragStartRef = useRef(null);
@@ -130,10 +131,11 @@ export default function DesktopPet() {
       if (e.detail?.domains?.includes('pokes'))    reloadPokes();
       if (e.detail?.domains?.includes('settings')) reloadSettings();
       if (e.detail?.domains?.includes('water'))    reloadWater();
+      if (e.detail?.domains?.includes('steps'))    reloadSteps();
     };
     window.addEventListener('glim-data-updated', handler);
     return () => window.removeEventListener('glim-data-updated', handler);
-  }, [reloadJournal, reloadPokes, reloadSettings, reloadWater]);
+  }, [reloadJournal, reloadPokes, reloadSettings, reloadWater, reloadSteps]);
 
   // ---- Eye tracking ----
   // Uses isSleepingRef so the callback is stable (no dep on specialAnim).

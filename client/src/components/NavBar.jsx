@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-27
-// Last Modified: 2026-03-27
+// Last Modified: 2026-03-30
 // Purpose:     Persistent bottom navigation bar. Five slots: home (fixed,
 //              mountains + stars), focus (clock), tasks (double checkmarks),
 //              water (teardrop), more (three dots). Home always returns to
@@ -63,6 +63,19 @@ function WaterIcon() {
   );
 }
 
+function StepsIcon() {
+  return (
+    <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
+      <path d="M4 16 Q4 14 7 13 L12 12 Q15 11.5 16 13 Q17 14.5 15.5 16 Z"
+        fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M7 13 L8 9 Q8.5 7 10 7 Q11.5 7 12 9 L12 12"
+        fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 16.5 Q3.5 18 5.5 18 L15.5 18 Q18 18 17.5 16"
+        fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function MoreIcon() {
   return (
     <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
@@ -80,6 +93,7 @@ const NAV_ITEMS = [
   { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
   { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
   { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
+  { id: 'steps', label: 'steps', Icon: StepsIcon, panel: 'steps' },
   { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
 ];
 

@@ -24,7 +24,7 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUIStore } from '../stores/useUIStore';
 
 // All known localStorage keys owned by Glim
-const LOCAL_KEYS = ['glim-water', 'glim-journal', 'glim-pokes', 'glim-settings', 'glim-sync-meta'];
+const LOCAL_KEYS = ['glim-water', 'glim-steps', 'glim-journal', 'glim-pokes', 'glim-settings', 'glim-sync-meta', 'glim-uid'];
 
 // Firestore collections/singletons to delete (best-effort)
 async function deleteFirestoreData(uid) {

@@ -6,3 +6,4 @@ export { useUIStore       } from './useUIStore';
 export { useJournalStore  } from './useJournalStore';
 export { usePokesStore    } from './usePokesStore';
 export { useWaterStore    } from './useWaterStore';
+export { useStepsStore   } from './useStepsStore';

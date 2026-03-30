@@ -3,18 +3,24 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-26
-// Last Modified: 2026-03-26
+// Last Modified: 2026-03-29
 // Purpose:     Sign-in screen shown to unauthenticated users. Handles Google
-//              sign-in via Firebase Auth popup. Displays on first visit and
-//              after sign-out. Matches Glim's twilight aesthetic.
+//              sign-in via Firebase Auth. Uses signInWithRedirect on iOS PWA
+//              (standalone mode) because WebKit blocks popups there; falls back
+//              to signInWithPopup on desktop and regular browser tabs.
 // Inputs:      Firebase auth and googleProvider from firebase.js
 // Outputs:     Triggers onAuthStateChanged in App.jsx on successful sign-in
 // Usage:       Rendered by App.jsx when auth state is null (not signed in)
 // -----------------------------------------------------------------------------
 
 import { useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
+
+// iOS PWA (standalone) blocks popups - detect and route accordingly
+const isStandalone =
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches;
 
 // --- Google "G" logo SVG (inline, official brand colors) ---
 
@@ -39,8 +45,14 @@ export default function SignIn() {
     setError(null);
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      // App.jsx onAuthStateChanged fires and transitions to DesktopPet
+      if (isStandalone) {
+        // Redirect flow: page navigates to Google and back.
+        // onAuthStateChanged in App.jsx fires automatically on return.
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+        // App.jsx onAuthStateChanged fires and transitions to DesktopPet
+      }
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setError('sign-in failed - try again');

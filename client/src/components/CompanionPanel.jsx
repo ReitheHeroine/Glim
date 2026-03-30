@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-27
-// Last Modified: 2026-03-27
+// Last Modified: 2026-03-30
 // Purpose:     Slide-up companion mode panel. Renders when activePanel is set
 //              in useUIStore. Animates up from the bottom over 300ms. Supports
 //              drag-handle-to-dismiss (drag > 80px triggers close) and
@@ -18,6 +18,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUIStore } from '../stores/useUIStore';
 import WaterPanel from './WaterPanel';
+import StepsPanel from './StepsPanel';
 
 // ===== Placeholder content per panel type =====
 
@@ -158,9 +159,9 @@ export default function CompanionPanel() {
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          {activePanel === 'water'
-            ? <WaterPanel />
-            : <PanelContent type={activePanel} />}
+          {activePanel === 'water'  ? <WaterPanel /> :
+           activePanel === 'steps'  ? <StepsPanel /> :
+           <PanelContent type={activePanel} />}
         </div>
       </div>
     </>
