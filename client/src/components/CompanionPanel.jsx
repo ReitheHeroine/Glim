@@ -17,6 +17,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useUIStore } from '../stores/useUIStore';
+import WaterPanel from './WaterPanel';
 
 // ===== Placeholder content per panel type =====
 
@@ -157,7 +158,9 @@ export default function CompanionPanel() {
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          <PanelContent type={activePanel} />
+          {activePanel === 'water'
+            ? <WaterPanel />
+            : <PanelContent type={activePanel} />}
         </div>
       </div>
     </>

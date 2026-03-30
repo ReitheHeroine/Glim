@@ -6,10 +6,10 @@
 // Last Modified: 2026-03-27
 // Purpose:     Persistent bottom navigation bar. Five slots: home (fixed,
 //              mountains + stars), focus (clock), tasks (double checkmarks),
-//              nutrition (leaf with vein), more (three dots). Home always
-//              returns to companion mode and closes any open panel.
-//              All icons use currentColor so active/inactive is a single
-//              CSS color change on the parent wrapper.
+//              water (teardrop), more (three dots). Home always returns to
+//              companion mode and closes any open panel. Nutrition is in the
+//              more section (not yet implemented). All icons use currentColor
+//              so active/inactive is a single CSS color change on the parent.
 // Inputs:      Reads activeNav, activePanel, setActiveNav, setActivePanel
 //              from useUIStore. No props.
 // Outputs:     Fixed bottom nav bar
@@ -54,13 +54,11 @@ function TasksIcon() {
   );
 }
 
-function NutritionIcon() {
+function WaterIcon() {
   return (
     <svg viewBox="0 0 22 22" width="18" height="18" style={{ display: 'block' }}>
-      <path d="M11 3 Q8 6 7 9 Q6 12 8 15 Q9 17 11 18 Q13 17 14 15 Q16 12 15 9 Q14 6 11 3Z"
+      <path d="M11 3 C9 6.5 5 11.5 5 15 A6 6 0 0 0 17 15 C17 11.5 13 6.5 11 3Z"
         fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M11 8 v6 M9 12 Q11 10 13 12"
-        fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
     </svg>
   );
 }
@@ -78,11 +76,11 @@ function MoreIcon() {
 // ===== Nav items config =====
 
 const NAV_ITEMS = [
-  { id: 'home',      label: 'home',      Icon: HomeIcon,      panel: null },
-  { id: 'focus',     label: 'focus',     Icon: FocusIcon,     panel: 'focus' },
-  { id: 'tasks',     label: 'tasks',     Icon: TasksIcon,     panel: 'tasks' },
-  { id: 'nutrition', label: 'nutrition', Icon: NutritionIcon, panel: 'nutrition' },
-  { id: 'more',      label: 'more',      Icon: MoreIcon,      panel: null },
+  { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
+  { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
+  { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
+  { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
+  { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
 ];
 
 // ===== Component =====

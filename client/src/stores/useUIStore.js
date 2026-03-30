@@ -20,8 +20,8 @@ export const useUIStore = create((set) => ({
   showJournal:  false,
 
   // Nav bar and companion panel state (Phase 1)
-  activeNav:   'home',   // 'home' | 'focus' | 'tasks' | 'nutrition' | 'more'
-  activePanel: null,     // null | 'focus' | 'tasks' | 'nutrition'
+  activeNav:   'home',   // 'home' | 'focus' | 'tasks' | 'water' | 'more'
+  activePanel: null,     // null | 'focus' | 'tasks' | 'water'
 
   // Journal panel internal state
   journalView:   "write",
