@@ -66,16 +66,14 @@ function WaterIcon({ size }) {
 }
 
 function StepsIcon({ size }) {
-  // Paw print: main pad + 4 toe pads
+  // Paw print: path-based palm pad with two bottom lobes + 4 toe beans
   return (
-    <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
-      <ellipse cx="11" cy="14.5" rx="4.5" ry="3.5" fill="currentColor" />
-      <ellipse cx="5.5" cy="9.5" rx="1.8" ry="2.2" fill="currentColor"
-        transform="rotate(-20 5.5 9.5)" />
-      <ellipse cx="9" cy="7.5" rx="1.8" ry="2.2" fill="currentColor" />
-      <ellipse cx="13" cy="7.5" rx="1.8" ry="2.2" fill="currentColor" />
-      <ellipse cx="16.5" cy="9.5" rx="1.8" ry="2.2" fill="currentColor"
-        transform="rotate(20 16.5 9.5)" />
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" stroke="none" style={{ display: 'block' }}>
+      <path d="M6,17 Q5.5,19.5 8.5,19.5 Q10.5,19.5 11.2,18.3 Q11.5,17.7 12,17 Q12.5,17.7 12.8,18.3 Q13.5,19.5 15.5,19.5 Q18.5,19.5 18,17 Q18,15 16.5,12.5 Q15,10 12,9.5 Q9,10 7.5,12.5 Q6,15 6,17Z" />
+      <ellipse cx="6.0" cy="7.5" rx="2.2" ry="2.7" transform="rotate(22 6.0 7.5)" />
+      <ellipse cx="18.0" cy="7.5" rx="2.2" ry="2.7" transform="rotate(-22 18.0 7.5)" />
+      <ellipse cx="9.8" cy="4.5" rx="2.0" ry="2.6" transform="rotate(10 9.8 4.5)" />
+      <ellipse cx="14.2" cy="4.5" rx="2.0" ry="2.6" transform="rotate(-10 14.2 4.5)" />
     </svg>
   );
 }
