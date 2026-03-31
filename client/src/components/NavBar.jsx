@@ -92,10 +92,10 @@ function MoreIcon({ size }) {
 
 const NAV_ITEMS_DESKTOP = [
   { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
-  { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
-  { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
   { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
   { id: 'steps', label: 'steps', Icon: StepsIcon, panel: 'steps' },
+  { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
+  { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
   { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
 ];
 
@@ -150,7 +150,7 @@ export default function NavBar() {
       justifyContent: 'space-around',
       alignItems: 'center',
       padding: `${isMobile ? '7px' : '5px'} 12px ${padding}`,
-      background: 'rgba(255,255,255,0.06)',
+      background: 'hsl(220, 15%, 8%)',
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
       {navItems.map((item) => {
