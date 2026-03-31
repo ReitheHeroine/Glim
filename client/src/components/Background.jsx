@@ -6,8 +6,7 @@
 // Last Modified: 2026-03-30
 // Purpose:     Renders Glim's world: sky gradients keyed to time of day,
 //              twinkling stars, shooting star, nebula wisps, landscape
-//              silhouette with pine trees, floating motes near Glim, and
-//              safe-area gap fill for iPhone.
+//              silhouette with pine trees, and floating motes near Glim.
 // Inputs:      hue, sat, mood props from DesktopPet (passed from creatureStore)
 // Outputs:     Absolutely positioned full-viewport background layer (zIndex 1)
 // -----------------------------------------------------------------------------
@@ -339,11 +338,6 @@ export default function Background({ hue, sat, mood, isMobile }) {
 
       )}
 
-      {/* Safe-area gap fill -- matches ground color so no strip shows on iPhone */}
-      <div className="absolute bottom-0 left-0 right-0" style={{
-        height: "env(safe-area-inset-bottom, 0px)",
-        backgroundColor: `hsla(${h}, ${s - 15}%, 4%, 1)`,
-      }} />
 
       {/* ===== FLOATING MOTES (near Glim) ===== */}
       {motes.map((p) => (
