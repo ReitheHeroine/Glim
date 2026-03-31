@@ -15,6 +15,10 @@
 // -----------------------------------------------------------------------------
 
 import { create } from 'zustand';
+import { todayStr, dateStr, toLogicalDateStr } from '../utils/dateUtils';
+
+// Re-export so existing consumers (StepsPanel) don't break
+export { dateStr };
 
 const STORAGE_KEY = 'glim-steps';
 
@@ -37,16 +41,6 @@ function saveSteps(state) {
   } catch { /* ignore */ }
 }
 
-// --- Date helpers ---
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-}
-
-export function dateStr(timestamp) {
-  return new Date(timestamp).toISOString().slice(0, 10);
-}
-
 // --- Computed helpers ---
 
 // Replace-style: latest entry per date wins for the step count
@@ -64,7 +58,7 @@ function computeStreak(entries) {
   for (let i = 0; i < 365; i++) {
     const d = new Date(base);
     d.setDate(d.getDate() - i);
-    const dStr = d.toISOString().slice(0, 10);
+    const dStr = toLogicalDateStr(d);
     if (countForDate(entries, dStr) >= TIERS[0]) {
       streak++;
     } else {
@@ -81,7 +75,7 @@ function computeWeeklyAvg(entries) {
   for (let i = 0; i < 7; i++) {
     const d = new Date(base);
     d.setDate(d.getDate() - i);
-    total += countForDate(entries, d.toISOString().slice(0, 10));
+    total += countForDate(entries, toLogicalDateStr(d));
   }
   return Math.round((total / 7) * 10) / 10;
 }

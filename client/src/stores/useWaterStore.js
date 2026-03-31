@@ -13,6 +13,7 @@
 // -----------------------------------------------------------------------------
 
 import { create } from 'zustand';
+import { todayStr, dateStr, toLogicalDateStr } from '../utils/dateUtils';
 
 const STORAGE_KEY = 'glim-water';
 
@@ -37,16 +38,6 @@ function saveWater(state) {
   } catch { /* ignore */ }
 }
 
-// --- Date helpers ---
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-}
-
-function dateStr(timestamp) {
-  return new Date(timestamp).toISOString().slice(0, 10);
-}
-
 // --- Computed helpers ---
 
 function countToday(entries) {
@@ -69,7 +60,7 @@ function computeStreak(entries, goal) {
   for (let i = 0; i < 365; i++) {
     const d = new Date(base);
     d.setDate(d.getDate() - i);
-    const dStr = d.toISOString().slice(0, 10);
+    const dStr = toLogicalDateStr(d);
     if ((byDate[dStr] || 0) >= goal) {
       streak++;
     } else {
@@ -91,7 +82,7 @@ function computeWeeklyAvg(entries) {
   for (let i = 0; i < 7; i++) {
     const d = new Date(base);
     d.setDate(d.getDate() - i);
-    const dStr = d.toISOString().slice(0, 10);
+    const dStr = toLogicalDateStr(d);
     total += byDate[dStr] || 0;
   }
   return Math.round((total / 7) * 10) / 10;
