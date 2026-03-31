@@ -90,12 +90,20 @@ function MoreIcon({ size }) {
 
 // ===== Nav items config =====
 
-const NAV_ITEMS = [
+const NAV_ITEMS_DESKTOP = [
   { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
   { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
   { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
   { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
   { id: 'steps', label: 'steps', Icon: StepsIcon, panel: 'steps' },
+  { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
+];
+
+const NAV_ITEMS_MOBILE = [
+  { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
+  { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
+  { id: 'steps', label: 'steps', Icon: StepsIcon, panel: 'steps' },
+  { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
   { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
 ];
 
@@ -111,11 +119,13 @@ export default function NavBar() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  const navItems = isMobile ? NAV_ITEMS_MOBILE : NAV_ITEMS_DESKTOP;
+
   // Sizing verified via DevTools on Rei's 1365x934 screen (desktop)
-  const iconSize  = isMobile ? 18 : 28;
-  const labelSize = isMobile ? 7  : 15;
+  const iconSize  = isMobile ? 29 : 28;
+  const labelSize = isMobile ? 14 : 15;
   const padding   = isMobile
-    ? 'calc(8px + env(safe-area-inset-bottom, 0px))'
+    ? 'calc(11px + env(safe-area-inset-bottom, 0px))'
     : 'calc(10px + env(safe-area-inset-bottom, 0px))';
 
   const handleTap = (item) => {
@@ -139,11 +149,11 @@ export default function NavBar() {
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      padding: `5px 12px ${padding}`,
+      padding: `${isMobile ? '7px' : '5px'} 12px ${padding}`,
       background: 'rgba(255,255,255,0.06)',
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const isActive = activeNav === item.id;
         return (
           <button
@@ -154,7 +164,7 @@ export default function NavBar() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: 2,
-              padding: '6px 12px',
+              padding: isMobile ? '7px 13px' : '6px 12px',
               minHeight: 44,
               justifyContent: 'center',
               background: 'none',

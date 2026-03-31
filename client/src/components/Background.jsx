@@ -177,8 +177,8 @@ export default function Background({ hue, sat, mood, isMobile }) {
         // viewBox 800x400. height: 28vh. bottom: 0 (overlaps ground div).
         // Ground line: y=320. All content shifted +25 from y=295 baseline.
         // Trees shifted -16 total from original (-41+25). Far peaks at y=243.
-        <svg className="absolute bottom-0 w-full" viewBox="0 0 800 400"
-          preserveAspectRatio="xMidYMax slice" style={{ height: '28vh' }}>
+        <svg className="absolute bottom-0 w-full" viewBox="0 200 800 200"
+          preserveAspectRatio="xMidYMax slice" style={{ height: '200px' }}>
 
           {/* Far mountains — interior y values: original -30 then +25 = net -5 */}
           <path d="M0,349 L35,313 L70,331 L105,289 L140,316 L175,270 L209,305 L244,255 L279,297 L314,248 L349,293 L400,243 L453,293 L488,248 L522,297 L557,255 L592,305 L627,270 L662,316 L697,289 L732,331 L766,313 L800,349 L800,400 L0,400 Z"
