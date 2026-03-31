@@ -50,7 +50,7 @@ function PanelContent({ type }) {
 // ===== Component =====
 
 export default function CompanionPanel() {
-  const { activePanel, setActivePanel, setActiveNav, navBarHeight } = useUIStore();
+  const { activePanel, setActivePanel, setActiveNav, navBarHeight, requestClose, setRequestClose } = useUIStore();
 
   // Drag-to-dismiss state
   const [dragY, setDragY] = useState(0);
@@ -58,12 +58,23 @@ export default function CompanionPanel() {
   const [visible, setVisible] = useState(false);
   const startYRef = useRef(null);
 
-  // Animate in on mount (next frame so CSS transition fires)
+  // Animate in on mount and on panel switch (two rAFs to ensure browser paints "off" state first)
   useEffect(() => {
     if (activePanel) {
-      requestAnimationFrame(() => setVisible(true));
+      setVisible(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
     }
   }, [activePanel]);
+
+  // Handle toggle-close requests from NavBar (routes through dismiss for animation)
+  useEffect(() => {
+    if (requestClose) {
+      setRequestClose(false);
+      dismiss();
+    }
+  }, [requestClose]);
 
   const dismiss = () => {
     setVisible(false);

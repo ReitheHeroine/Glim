@@ -23,6 +23,7 @@ export const useUIStore = create((set) => ({
   activeNav:   'home',   // 'home' | 'focus' | 'tasks' | 'water' | 'more'
   activePanel: null,     // null | 'focus' | 'tasks' | 'water'
   navBarHeight: 80,      // measured via ResizeObserver in NavBar.jsx
+  requestClose: false,   // signal from NavBar to CompanionPanel to animate closed
 
   // Journal panel internal state
   journalView:   "write",
@@ -34,6 +35,7 @@ export const useUIStore = create((set) => ({
   setActiveNav:    (v) => set({ activeNav: v }),
   setActivePanel:  (v) => set({ activePanel: v }),
   setNavBarHeight: (h) => set({ navBarHeight: h }),
+  setRequestClose: (v) => set({ requestClose: v }),
   setJournalView:  (v) => set({ journalView: v }),
   setJournalText:  (v) => set({ journalText: v }),
   setJournalPrompt:(v) => set({ journalPrompt: v }),

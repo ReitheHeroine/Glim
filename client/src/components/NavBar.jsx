@@ -110,7 +110,7 @@ const NAV_ITEMS_MOBILE = [
 // ===== Component =====
 
 export default function NavBar() {
-  const { activeNav, setActiveNav, setActivePanel } = useUIStore();
+  const { activeNav, setActiveNav, setActivePanel, setRequestClose } = useUIStore();
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
   useEffect(() => {
@@ -148,8 +148,7 @@ export default function NavBar() {
       setActivePanel(null);
     } else if (activeNav === item.id) {
       // Tapping the active icon toggles its panel closed
-      setActiveNav('home');
-      setActivePanel(null);
+      setRequestClose(true);
     } else {
       // Tapping a different icon switches directly
       setActiveNav(item.id);
