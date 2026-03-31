@@ -85,8 +85,8 @@ export default function OwlMoth({ onClick, onDoubleClick,
         {/* Tail */}
         <g style={{ animation: isPurring ? "tailPurr 0.8s ease-in-out infinite" : "tailCurl 3s ease-in-out infinite" }}>
           <path d="M110,185 Q115,200 125,208 Q140,218 148,210 Q155,200 145,195 Q135,192 132,198"
-            stroke={`hsla(${h}, ${h - 5}%, 60%, 0.7)`} strokeWidth="6" strokeLinecap="round" fill="none" />
-          <circle cx="132" cy="198" r="4" fill={`hsla(${h2}, ${s}%, 75%, 0.7)`}
+            stroke={`hsla(${h}, ${h - 5}%, 60%, 0.5)`} strokeWidth="5" strokeLinecap="round" fill="none" />
+          <circle cx="128" cy="199" r="4" fill={`hsla(${h2}, ${s}%, 75%, 0.55)`}
             style={{ animation: "softPulse 2.5s ease-in-out infinite" }} />
         </g>
 
