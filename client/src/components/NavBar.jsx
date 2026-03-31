@@ -145,7 +145,13 @@ export default function NavBar() {
     } else if (item.id === 'more') {
       // More menu not yet implemented
       setActiveNav('more');
+      setActivePanel(null);
+    } else if (activeNav === item.id) {
+      // Tapping the active icon toggles its panel closed
+      setActiveNav('home');
+      setActivePanel(null);
     } else {
+      // Tapping a different icon switches directly
       setActiveNav(item.id);
       setActivePanel(item.panel);
     }
