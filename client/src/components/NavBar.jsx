@@ -149,7 +149,7 @@ export default function NavBar() {
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      padding: `${isMobile ? '7px' : '5px'} 12px ${padding}`,
+      padding: `${isMobile ? '3px' : '5px'} 12px ${padding}`,
       background: 'hsl(220, 15%, 8%)',
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
