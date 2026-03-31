@@ -108,7 +108,10 @@ export default function CompanionPanel() {
         onClick={dismiss}
         style={{
           position: 'fixed',
-          inset: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: navBarHeight + 'px',
           zIndex: 39,
           // No background - creature stays visible, backdrop is transparent
         }}
