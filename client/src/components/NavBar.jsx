@@ -125,7 +125,7 @@ export default function NavBar() {
   const iconSize  = isMobile ? 29 : 28;
   const labelSize = isMobile ? 14 : 15;
   const padding   = isMobile
-    ? 'calc(3px + env(safe-area-inset-bottom, 0px))'
+    ? 'calc(11px + env(safe-area-inset-bottom, 0px))'
     : 'calc(10px + env(safe-area-inset-bottom, 0px))';
 
   const handleTap = (item) => {
@@ -149,7 +149,7 @@ export default function NavBar() {
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      padding: `5px 12px ${padding}`,
+      padding: `${isMobile ? '3px' : '5px'} 12px ${padding}`,
       background: 'hsl(220, 15%, 8%)',
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
