@@ -19,7 +19,7 @@ export default function SpeechBubble({ text, visible, isWellness }) {
         opacity: visible ? 1 : 0, scale: visible ? "1" : "0.8", width: "max-content",
       }}>
       <div className="relative px-4 py-2 rounded-2xl text-center" style={{
-        maxWidth: 560, width: "max-content", whiteSpace: "normal", lineHeight: 1.4,
+        maxWidth: 'calc(100vw - 40px)', width: "max-content", whiteSpace: "normal", lineHeight: 1.4,
         background: isWellness ? "rgba(100, 220, 180, 0.15)" : "rgba(255,255,255,0.1)",
         backdropFilter: "blur(12px)",
         border: isWellness ? "1px solid rgba(100, 220, 180, 0.3)" : "1px solid rgba(255,255,255,0.15)",

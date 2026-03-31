@@ -704,7 +704,7 @@ export default function DesktopPet() {
         justifyContent: "center",
         position: "relative",
         zIndex: 10,
-        overflow: "hidden",
+        overflowY: "hidden",
       }}>
         {/* Creature - compress vertically when a panel is open */}
         <div style={{
