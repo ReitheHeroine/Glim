@@ -57,15 +57,21 @@ export default function CompanionPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [visible, setVisible] = useState(false);
   const startYRef = useRef(null);
+  const prevPanelRef = useRef(null);
 
-  // Animate in on mount and on panel switch (two rAFs to ensure browser paints "off" state first)
+  // Slide in only when opening from home (no previous panel)
   useEffect(() => {
     if (activePanel) {
-      setVisible(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setVisible(true));
-      });
+      if (prevPanelRef.current) {
+        // Switching between panels - no animation, content swaps via re-render
+      } else {
+        // Opening from home - slide in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setVisible(true));
+        });
+      }
     }
+    prevPanelRef.current = activePanel;
   }, [activePanel]);
 
   // Handle toggle-close requests from NavBar (routes through dismiss for animation)
