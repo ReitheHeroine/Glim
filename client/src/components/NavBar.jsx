@@ -16,7 +16,7 @@
 // Outputs:     Fixed bottom nav bar
 // -----------------------------------------------------------------------------
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUIStore } from '../stores/useUIStore';
 
 // ===== Icon components (accept size prop) =====
@@ -119,6 +119,16 @@ export default function NavBar() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  const navRef = useRef(null);
+  useEffect(() => {
+    if (!navRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      useUIStore.getState().setNavBarHeight(entry.target.getBoundingClientRect().height);
+    });
+    observer.observe(navRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const navItems = isMobile ? NAV_ITEMS_MOBILE : NAV_ITEMS_DESKTOP;
 
   // Sizing verified via DevTools on Rei's 1365x934 screen (desktop)
@@ -142,7 +152,7 @@ export default function NavBar() {
   };
 
   return (
-    <div style={{
+    <div ref={navRef} style={{
       position: 'relative',
       zIndex: 20,
       flexShrink: 0,

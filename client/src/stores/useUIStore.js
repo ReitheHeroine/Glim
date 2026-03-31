@@ -22,6 +22,7 @@ export const useUIStore = create((set) => ({
   // Nav bar and companion panel state (Phase 1)
   activeNav:   'home',   // 'home' | 'focus' | 'tasks' | 'water' | 'more'
   activePanel: null,     // null | 'focus' | 'tasks' | 'water'
+  navBarHeight: 80,      // measured via ResizeObserver in NavBar.jsx
 
   // Journal panel internal state
   journalView:   "write",
@@ -32,6 +33,7 @@ export const useUIStore = create((set) => ({
   setShowJournal:  (v) => set({ showJournal: v }),
   setActiveNav:    (v) => set({ activeNav: v }),
   setActivePanel:  (v) => set({ activePanel: v }),
+  setNavBarHeight: (h) => set({ navBarHeight: h }),
   setJournalView:  (v) => set({ journalView: v }),
   setJournalText:  (v) => set({ journalText: v }),
   setJournalPrompt:(v) => set({ journalPrompt: v }),

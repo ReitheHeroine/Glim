@@ -50,7 +50,7 @@ function PanelContent({ type }) {
 // ===== Component =====
 
 export default function CompanionPanel() {
-  const { activePanel, setActivePanel, setActiveNav } = useUIStore();
+  const { activePanel, setActivePanel, setActiveNav, navBarHeight } = useUIStore();
 
   // Drag-to-dismiss state
   const [dragY, setDragY] = useState(0);
@@ -99,9 +99,7 @@ export default function CompanionPanel() {
 
   if (!activePanel) return null;
 
-  // Panel sits above the nav bar (~56px) + safe area
-  // Nav bar content is ~44px; safe area adds below that via its own padding.
-  const panelBottom = 'calc(44px + env(safe-area-inset-bottom, 0px))';
+  const panelBottom = `${navBarHeight}px`;
 
   return (
     <>
