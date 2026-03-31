@@ -160,7 +160,7 @@ export default function NavBar() {
   return (
     <div ref={navRef} style={{
       position: 'relative',
-      zIndex: 20,
+      zIndex: 50,
       flexShrink: 0,
       display: 'flex',
       justifyContent: 'space-around',
