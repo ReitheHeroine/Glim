@@ -164,7 +164,7 @@ export default function NavBar() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: 2,
-              padding: isMobile ? '7px 13px' : '6px 12px',
+              padding: isMobile ? '3px 13px' : '6px 12px',
               minHeight: 44,
               justifyContent: 'center',
               background: 'none',
