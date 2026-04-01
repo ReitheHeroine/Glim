@@ -27,7 +27,7 @@ const DAY_BOUNDARY_HOUR = 0;
 export function toLogicalDateStr(date) {
   const shifted = new Date(date.getTime());
   shifted.setHours(shifted.getHours() - DAY_BOUNDARY_HOUR);
-  return shifted.toISOString().slice(0, 10);
+  return shifted.toLocaleDateString('en-CA');
 }
 
 /**

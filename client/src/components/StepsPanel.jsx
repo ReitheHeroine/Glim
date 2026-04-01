@@ -19,6 +19,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useStepsStore, TIERS, countForDate, dateStr } from '../stores/useStepsStore';
+import { todayStr } from '../utils/dateUtils';
 import { useCreatureStore } from '../stores/useCreatureStore';
 import { useMessageStore } from '../stores/useMessageStore';
 
@@ -384,7 +385,7 @@ export default function StepsPanel() {
     if (count === prev) return; // no change, no message
     logSteps(count);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();
     // Compute streak after the new entry (entries not yet updated in closure,
     // but the replace-style count for today is `count` since it's the latest)
     const newStreak = count >= TIERS[0] ? getStreak() : streak;
