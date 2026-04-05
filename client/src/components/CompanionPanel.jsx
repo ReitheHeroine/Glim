@@ -19,6 +19,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useUIStore } from '../stores/useUIStore';
 import WaterPanel from './WaterPanel';
 import StepsPanel from './StepsPanel';
+import NutritionPanel from './NutritionPanel';
 
 // ===== Placeholder content per panel type =====
 
@@ -175,10 +176,15 @@ export default function CompanionPanel() {
           }} />
         </div>
 
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          {activePanel === 'water'  ? <WaterPanel /> :
-           activePanel === 'steps'  ? <StepsPanel /> :
+        {/* Scrollable content. Nutrition panel manages its own scroll split internally. */}
+        <div style={{
+          flex:      1,
+          overflowY: activePanel === 'nutrition' ? 'hidden' : 'auto',
+          overflowX: 'hidden',
+        }}>
+          {activePanel === 'water'     ? <WaterPanel /> :
+           activePanel === 'steps'     ? <StepsPanel /> :
+           activePanel === 'nutrition' ? <NutritionPanel /> :
            <PanelContent type={activePanel} />}
         </div>
       </div>

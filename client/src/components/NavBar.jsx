@@ -78,6 +78,18 @@ function StepsIcon({ size }) {
   );
 }
 
+function NutritionIcon({ size }) {
+  // Apple with medium lobes + 45-degree leaf ellipse (Icon I from nav-more mockup)
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: 'block' }}
+      fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 9C5.5 10.5 4.5 13 5 15.5c.3 2 1.5 3.5 3 4.5 1 .6 2 .8 2.8.5.5-.2.8-.6 1.2-1 .4.4.7.8 1.2 1 .8.3 1.8.1 2.8-.5 1.5-1 2.7-2.5 3-4.5.5-2.5-.5-5-2.5-6.5C14.5 8 13.2 7.5 12 7.5S9.5 8 7.5 9z" />
+      <ellipse cx="14" cy="5" rx="2.2" ry="1.2" transform="rotate(-45 14 5)" />
+    </svg>
+  );
+}
+
 function MoreIcon({ size }) {
   return (
     <svg viewBox="0 0 22 22" width={size} height={size} style={{ display: 'block' }}>
@@ -90,15 +102,17 @@ function MoreIcon({ size }) {
 
 // ===== Nav items config =====
 
+// Desktop: nutrition is rightmost before "more". Focus/exercise/etc. live in the more menu.
 const NAV_ITEMS_DESKTOP = [
-  { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
-  { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
-  { id: 'steps', label: 'steps', Icon: StepsIcon, panel: 'steps' },
-  { id: 'tasks', label: 'tasks', Icon: TasksIcon, panel: 'tasks' },
-  { id: 'focus', label: 'focus', Icon: FocusIcon, panel: 'focus' },
-  { id: 'more',  label: 'more',  Icon: MoreIcon,  panel: null    },
+  { id: 'home',      label: 'home',      Icon: HomeIcon,      panel: null        },
+  { id: 'water',     label: 'water',     Icon: WaterIcon,     panel: 'water'     },
+  { id: 'steps',     label: 'steps',     Icon: StepsIcon,     panel: 'steps'     },
+  { id: 'tasks',     label: 'tasks',     Icon: TasksIcon,     panel: 'tasks'     },
+  { id: 'nutrition', label: 'nutrition', Icon: NutritionIcon, panel: 'nutrition' },
+  { id: 'more',      label: 'more',      Icon: MoreIcon,      panel: null        },
 ];
 
+// Mobile: nutrition lives in the "more" menu, not the nav bar.
 const NAV_ITEMS_MOBILE = [
   { id: 'home',  label: 'home',  Icon: HomeIcon,  panel: null    },
   { id: 'water', label: 'water', Icon: WaterIcon, panel: 'water' },
@@ -110,7 +124,7 @@ const NAV_ITEMS_MOBILE = [
 // ===== Component =====
 
 export default function NavBar() {
-  const { activeNav, setActiveNav, setActivePanel, setRequestClose } = useUIStore();
+  const { activeNav, setActiveNav, setActivePanel, setRequestClose, setShowMoreMenu } = useUIStore();
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
   useEffect(() => {
@@ -143,9 +157,9 @@ export default function NavBar() {
       setActiveNav('home');
       setActivePanel(null);
     } else if (item.id === 'more') {
-      // More menu not yet implemented
       setActiveNav('more');
       setActivePanel(null);
+      setShowMoreMenu(true);
     } else if (activeNav === item.id) {
       // Tapping the active icon toggles its panel closed
       setRequestClose(true);

@@ -20,16 +20,18 @@ export const useUIStore = create((set) => ({
   showJournal:  false,
 
   // Nav bar and companion panel state (Phase 1)
-  activeNav:   'home',   // 'home' | 'focus' | 'tasks' | 'water' | 'more'
-  activePanel: null,     // null | 'focus' | 'tasks' | 'water'
-  navBarHeight: 80,      // measured via ResizeObserver in NavBar.jsx
-  requestClose: false,   // signal from NavBar to CompanionPanel to animate closed
+  activeNav:    'home',   // 'home' | 'water' | 'steps' | 'nutrition' | 'tasks' | 'more'
+  activePanel:  null,     // null | 'water' | 'steps' | 'nutrition' | 'tasks' | 'focus'
+  navBarHeight: 80,       // measured via ResizeObserver in NavBar.jsx
+  requestClose: false,    // signal from NavBar to CompanionPanel to animate closed
+  showMoreMenu: false,    // controls the "more" feature grid overlay
 
   // Journal panel internal state
   journalView:   "write",
   journalText:   "",
   journalPrompt: pickRandom(JOURNAL_PROMPTS),
 
+  setShowMoreMenu: (v) => set({ showMoreMenu: v }),
   setShowSettings: (v) => set({ showSettings: v }),
   setShowJournal:  (v) => set({ showJournal: v }),
   setActiveNav:    (v) => set({ activeNav: v }),

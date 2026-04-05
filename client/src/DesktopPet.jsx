@@ -34,6 +34,7 @@ import SettingsPanel from './components/SettingsPanel';
 import JournalPanel from './components/JournalPanel';
 import NavBar from './components/NavBar';
 import CompanionPanel from './components/CompanionPanel';
+import MoreMenu from './components/MoreMenu';
 
 
 export default function DesktopPet() {
@@ -794,6 +795,9 @@ export default function DesktopPet() {
 
       {/* Companion panel - slides up above the nav bar */}
       <CompanionPanel />
+
+      {/* More menu - feature grid overlay, slides up above the nav bar */}
+      <MoreMenu />
 
       <SettingsPanel />
       <JournalPanel onSave={saveJournalEntry} />

@@ -1,5 +1,5 @@
 ---
-title: "Glim -- Handoff File"
+title: "Glim - Handoff File"
 output:
   html_document:
     toc: true
@@ -10,409 +10,164 @@ output:
     theme: default
 ---
 
-# Glim -- Handoff File
+**Last Updated:** 2026-04-04 (nutrition tracker implemented: stores, panel, more menu, nav bar corrections; build verified)
 
-**Last Updated:** 2026-03-29
+**Purpose:** Operational coordination across Claude instances and across sessions. Tracks current development state, active tasks, blockers, and data contracts. Updated every session.
 
-**Purpose:** Operational coordination between Claude instances and across sessions. Tracks what happened recently, what needs to happen next, and how to work in this project's environment. Updated every session.
+**Key principle:** The Project Documentation (`glim_project_documentation.Rmd`) is the architectural reference. This handoff is purely operational - it tracks *what is happening now*, not *why things are designed the way they are*.
 
-**Key principle:** Reference the Project Documentation for explanations rather than restating them. Keep entries terse and action-oriented.
+**Companion files (read on demand, not every session):**
 
-**Companion document:** `glim_project_documentation` (.Rmd / .docx) is the single source of truth for how Glim works, why it works that way, and full feature/decision history. This handoff file is for session-to-session coordination. If you need to understand a feature, go to the Project Documentation. If you need to know what to do next, stay here.
+- `glim_project_history.Rmd` - Decision Register and Development Log. Read when checking past decisions or logging new ones.
+- `glim_session_log.Rmd` - Append-only session history. Read when catching up on recent implementation work.
+- `glim_environment.Rmd` - Platform, deployment, dependencies, VCS reference. Read when working with infrastructure or committing.
+- `glim_file_map.Rmd` - Directory tree and scripts/files reference. Read when creating or locating files.
+- `glim_message_pools.md` - Water and step message pools (and future tracker pools). Read during tracker message implementation sessions.
+- `nutrition-message-pools.md` - Nutrition tracker message pools (~200 messages, 8 event types). Designed 2026-04-04.
 
 ---
 
 ### DOCUMENT MAINTENANCE RULES:
 - **ADD** new information to appropriate sections; do not remove existing content unless archiving
 - **EDIT** only when specific information needs correction
-- **ARCHIVE** session log entries older than 4 weeks once their content has been captured in the Project Documentation
-- **REFERENCE** the Project Documentation for explanations rather than duplicating them (format: [See Project Docs Section X.X: Title])
+- **REFERENCE** the Project Documentation for design rationale (format: [See Project Documentation Section X.X: Title])
 
 ---
 
-# 1. Instance Instructions
-
-Read the section that matches your instance. Each contains a complete session protocol and role-specific guidance.
-
----
-
-## 1.1 Instructions for Claude.ai
+# 1. Claude Session Protocol
 
 ### Session Protocol
 
-**AT SESSION START:**
+**At session start:** Read this handoff file. Check the task queue (Section 3) for assigned work. Consult `glim_file_map.Rmd` for project structure.
 
-- Read the Project Documentation (if uploaded or if significant design/feature questions are expected)
-- Read this Handoff File
-- Check "Changes for Testing" (Section 3.2) for outputs that need browser verification
-- Review recent Session Log entries (Section 2) to understand what has been done since your last session
-- Check "Open Questions" (Section 4) for items that may have been resolved or need attention
+**During the session:**
 
-**DURING THE SESSION:**
-
-- When editing `desktop-pet.jsx` or `glim.html`, always verify structural integrity after changes (bracket balance, key functions present, storage keys intact)
-- When making significant design or technical decisions, document them using the Decision Register format in Project Documentation Section 9
-- When drafting tasks for Claude Code, write them as actionable entries with clear acceptance criteria for the Pending Tasks queue (Section 3.1)
-- When adding or editing messages, follow the voice rules: lowercase, casual, no em dashes, personal references by name, science facts prefixed with casual tags. No hustle culture, toxic positivity, or pressure to perform.
-- After code changes, always rebuild the HTML export and spot-check the output
-
-**AT SESSION END:**
-
-- Promote Session Log content to the Project Documentation as appropriate:
-  - Feature additions/changes go in Project Documentation Sections 4-5
-  - Significant decisions go in Project Documentation Section 9 (Decision Register)
-  - Work summaries go in Project Documentation Section 10 (Project Log)
-- Move any tested/verified changes from "Changes for Testing" (Section 3.2) to "Completed Tasks" (Section 3.3)
-- Add any new tasks to "Pending Tasks" (Section 3.1)
-- Flag any open questions or blockers in Section 4
-
-### Role and Responsibilities
-
-**Primary responsibilities:**
-
-- Feature design and implementation (JSX/React development in artifact environment)
-- Message writing and content creation (maintaining Glim's voice and personalization)
-- Visual design decisions (creature appearance, animation, background, UI)
-- HTML export build process (tail/sed/cat pipeline or equivalent)
-- Project Documentation maintenance (features, decisions, limitations, roadmap)
-- Design review and iteration with the user
-
-**Development workflow (current):**
-
-1. Edit `desktop-pet.jsx` in Claude artifact
-2. Test changes in artifact preview
-3. Run the HTML export build process
-4. Download `glim.html` and verify key elements
-5. User saves to same file path and refreshes browser tab
-
-**Quality checks after code changes:**
-
-- Bracket/paren/brace balance in the script block
-- All 6 component functions present (Background, AmbientBugs, SpeechBubble, PersistentReminder, OwlMoth, DesktopPet)
-- Storage keys present: `glim-journal`, `glim-pokes`, `glim-settings`
-- No em dashes in any message strings
-- All `showMessage` calls match current signature: `showMessage(text, wellness?, msgType?)`
-- Timer effects have cleanup returns
-- New refs follow the sync-to-state pattern (see Project Docs Section 2.3)
-
-**Message content rules:**
-
-- Lowercase, casual tone
-- No em dashes (use single hyphens)
-- Personal references by name (Spooky, Pepita, Alex, Lados, Anora, Dr. Blanco-Suarez)
-- Science facts prefixed with casual tags ("science fact:", "nerd fact:", "did you know:", etc.)
-- No hustle culture, toxic positivity, or pressure to perform
-- See Project Docs Section 5 for full message inventory and themes
-
----
-
-## 1.2 Instructions for Claude Code
-
-### Session Protocol
-
-**AT SESSION START:**
-
-- Read this Handoff File
-- If the task involves feature logic, message content, or design decisions, ask the user to provide the Project Documentation or relevant sections
-- Check "Pending Tasks" (Section 3.1) for assigned work items
-- Review the File System Map (Section 6) to orient yourself to the project structure
-- Check Computational Environment (Section 7) for environment and dependency info
-- Review Code and Style Preferences (Section 8) before writing any code
-
-**DURING THE SESSION:**
-
-- When writing build scripts, deployment configs, or tooling, use the header format and style conventions from Section 8
-- When touching message content or creature behavior logic, cross-reference with the Project Documentation for design context and voice rules
-- If a task references a feature or design decision you don't have context for, ask the user for the relevant Project Documentation section rather than guessing
+- If a task references a feature or design decision you don't have context for, ask Rei for the relevant Project Documentation section rather than guessing
 - Pause between major steps, report what changed, and confirm before proceeding
+- Cross-reference message content or creature behavior logic with the Project Documentation for design context and voice rules
+- Log work as you go in the "Current Session" section (Section 6) below
 
-**AT SESSION END:**
+**At session end:**
 
-- Update Session Log (Section 2) with a dated entry of work done, including:
-  - Files created or modified (with paths)
-  - Output files generated (with paths)
-  - Any checks performed and their outcomes
-  - Any warnings, unexpected results, or concerns
-- Move completed tasks to "Completed Tasks" (Section 3.3) with date and output location
-- Add any changes needing browser verification to "Changes for Testing" (Section 3.2) with:
-  - File paths to the outputs
-  - What to look for when testing
-  - Any notes or observations
-- Update File System Map (Section 6) if files were created, moved, or deleted
-- Update Scripts Reference table (Section 6.2) if new scripts were created
-- Flag any issues or questions in Section 4
+Flush the current session to the session log, then clean up:
 
-### Role and Responsibilities
+1. **Write to session log first:** Read only the first ~20 lines of `glim_session_log.Rmd` to confirm the structure. Insert the contents of Section 6 (everything between `[SESSION START]` and `[SESSION END]`) immediately after the `# Active Session Log` header, above any existing entries. Do not read the rest of the file.
+2. **Clear Section 6:** Replace the session content with the empty template (keep the `[SESSION START]` and `[SESSION END]` markers, remove everything between them).
+3. **Update other sections as needed:**
+   - Update "Current Development State" (Section 2) if statuses changed
+   - Move completed tasks to "Completed Tasks" (Section 3.3) with date
+   - Update the File System Map (`glim_file_map.Rmd`) if files were created, moved, or deleted
+   - Flag any issues or questions in Section 4
+   - If a significant design decision was made, note it and flag it for promotion to the Decision Register in `glim_project_history.Rmd`
 
-**Primary responsibilities:**
+**Important:** Always write to the session log before clearing Section 6. If the session is interrupted, a duplicate entry is recoverable; a lost entry is not.
 
-- Build tooling and automation (HTML export script, build pipeline)
-- GitHub repository setup and maintenance
-- PWA file creation (manifest.json, service worker, app icons)
-- GitHub Pages deployment configuration
-- File system operations (organizing, renaming, packaging)
-- Automated testing or verification scripts
-- Any task that benefits from persistent file system access and shell execution
+### QC Check Protocol (Mandatory)
 
-**Planned near-term tasks:**
-
-- Create permanent HTML export build script (replace the ad-hoc tail/sed/cat pipeline)
-- Set up GitHub repository with proper .gitignore
-- Create PWA files (manifest.json, sw.js, icon generation from SVG)
-- Configure GitHub Pages deployment
-- Potentially: automated structural verification script for post-edit checks
+- Pause between major implementation steps to verify outputs before proceeding
+- Report QC metrics after each step - do not continue silently
+- Ask the user if results look reasonable before moving to the next part
+- If any test fails or produces unexpected results, STOP and report
 
 **Check-in format after major steps:**
-
 ```
 Step [X] complete.
   Results:
   - Output file: [path]
   - [Key detail]: [value]
   Checks: [what was verified]
+  QC Status: [PASS / WARNING / FAIL]
   [Notes or concerns]
   Ready to proceed to Step [Y]. Continue? (y/n)
 ```
 
 **Red flags to watch for and report:**
 
-- HTML export missing storage polyfill or CDN links
-- Bracket/brace imbalance in generated HTML
-- Missing component functions after export transformation
-- File size anomalies (glim.html should be ~2400-2500 lines currently)
-- Service worker caching stale versions
-- Git conflicts in the single-file codebase
+- Bundle size jumps (current: ~628KB JS / 194KB gzip, Firebase accounts for ~100KB gzip)
+- Stale closure bugs in timer callbacks (use refs, not state, for values read inside async callbacks)
+- SVG coordinate drift when scaling or repositioning elements (verify with DevTools measurement)
+- Sync race conditions (localStorage write + Firestore push + store reload ordering)
+- Tests that pass when they should fail (or vice versa)
+- Unexpected file sizes or data dimensions
+- Schema mismatches between components (check Section 5)
 
 ---
 
-# 2. Session Log
+# 2. Current Development State
 
-Both instances update this log. Claude.ai promotes substantive content to the Project Documentation as appropriate (features to Sections 4-5, decisions to Section 9, milestones to Section 10).
+## 2.1 Phase Overview
 
-> **Entry template:**
->
-> ### [DATE] ([Instance])
-> - [What was done]
-> - [Key outputs generated with file paths]
-> - [Checks performed and outcomes]
-> - [Decisions made - reference Project Docs Decision Register if significant]
-> - [Issues encountered or flagged]
+| Phase | Description | Status | Notes |
+|---|---|---|---|
+| Phase 1 | Minimal scaffolding (prerequisites + nav shell) | In progress | Zustand done, file separation done, nav bar done. Touch + responsive still pending. |
+| Phase 2 | Water tracker (proves the full pattern) | In progress | Water panel + sync live. Reaction system, home widgets, message pool integration pending. |
+| Phase 3 | Second companion-mode tracker | In progress | Steps panel built. Nutrition panel + stores implemented (2026-04-04). Library CRUD + step sync pending. |
+| Phase 4 | First focus-mode feature (to-do list) | Not started | Requires focus mode transition + mini-Glim |
+| Phase 5 | Remaining features (any order) | Not started | |
 
-### 2026-03-27 (Claude Code) - Zustand migration, hosting migration, icon/splash, file separation
+**Current phase:** Phases 1-3 in parallel (infrastructure gaps from Phase 1 being filled alongside Phase 2-3 feature work).
 
-**Hosting migration (Netlify -> GitHub Pages)**
-- Migrated from Netlify to GitHub Pages to avoid credit exhaustion from deploy previews
-- Created `.github/workflows/deploy.yml`: triggers on push to main, builds with Firebase secrets injected, deploys to GitHub Pages
-- Added `base: '/Glim/'` to `vite.config.js`, updated `manifest.json` start_url and icon paths to include `/Glim/` prefix
-- Fixed `SignIn.jsx` icon path using `import.meta.env.BASE_URL` for GitHub Pages compatibility
-- Added Firebase secrets to GitHub repository Settings > Secrets and variables > Actions (6 VITE_FIREBASE_* vars)
-- Live URL: https://reitheheroine.github.io/Glim/
-- Netlify project can be deleted when convenient (no active traffic)
+**Current focus:** Nutrition tracker live testing + NutritionLibraryManager (CRUD for food library, requires focus mode first). Step tracking completion (Firestore sync, message pools). Critical bug: localStorage cross-account contamination.
 
-**iPhone UI fixes**
-- Safe area gap at bottom: color-matched div strip using `env(safe-area-inset-bottom)` + `hsla()` matching ground color
-- Settings/journal buttons: moved to `calc(env(safe-area-inset-top, 0px) + 16px)` from top
-- Mountain path: reverted leftmost mountain after user rejected repositioned version
+## 2.2 Component/Module Status
 
-**Icon and splash screen (from Claude.ai handoff files)**
-- Copied `glim-icon-multihue.svg` to `client/public/glim-icon.svg`
-- Generated PNG icons using `sips`: `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`
-- Moved `SplashScreen.jsx` to `client/src/SplashScreen.jsx`
-- Updated `App.jsx` to use `<SplashScreen />` while Firebase auth resolves (replaces blank dark div)
+| Component | Phase | Status | Last Touched | Notes |
+|---|---|---|---|---|
+| Creature + world | 1 | Live | 2026-03-30 | Desktop + mobile SVG landscapes, autonomous behaviors, all mouse interactions |
+| Auth | 1 | Live | 2026-03-26 | Google sign-in, auth gate in App.jsx |
+| Nav bar | 1 | Live | 2026-04-04 | Desktop: 6 items (home, water, steps, tasks, nutrition, more). Mobile: 5 items (home, water, steps, tasks, more). |
+| Companion panel | 1 | Live | 2026-03-30 | Slide-up, drag-to-dismiss, routes to panels |
+| Touch events | 1 | Not started | - | Primary mobile blocker. Spec complete in Project Docs Section 4.2 |
+| Responsive layout | 1 | Not started | - | isMobile flag, scaling, tap targets |
+| Water tracker | 2 | Live | 2026-03-29 | Ring UI, log/undo, streak/avg, Firestore sync |
+| Reaction system | 2 | Not started | - | glimReact() - needed for all trackers |
+| Home screen widgets | 2 | Not started | - | 3 rings: steps, water, tasks |
+| Step tracker | 3 | Live (partial) | 2026-03-30 | Hero number panel. Firestore sync not wired. |
+| Nutrition tracker | 3 | Live (partial) | 2026-04-04 | Panel, two stores, more menu implemented. Library CRUD (NutritionLibraryManager) pending. Firestore sync not yet wired. |
+| More menu | 1 | Live | 2026-04-04 | Slide-up overlay, 3-column grid, settings + nutrition (mobile) available. |
+| Sync service | - | Live | 2026-03-29 | Domains: journal, pokes, settings, water. Steps not yet wired. |
+| Journal | - | Live | 2026-03-27 | Entries with soft-delete, syncs via Firestore |
+| Settings | - | Live | 2026-03-27 | Intervals, sign-out, reset-all-data |
+| Zustand stores | - | Live | 2026-04-04 | 10 stores: creature, message, settings, UI, journal, pokes, water, steps, nutrition, nutrition-library. All have reload(). |
+| Background landscape | - | Live (polished) | 2026-03-30 | Desktop: 3200px fixed. Mobile: 200px viewBox crop. |
 
-**Sign-out button**
-- Added sign out button to settings panel (`signOut(auth)` on click)
+### Latest session
 
-**Zustand state migration**
-- Installed `zustand` npm package
-- Created `client/src/utils.js`: `getTimeOfDay()`, `getColors()`, `pickRandom()` (extracted to avoid circular imports)
-- Created 6 domain stores in `client/src/stores/`:
-  - `useCreatureStore.js`: mood, hue/sat, all animation state, drag/motion state
-  - `useMessageStore.js`: speech bubble text/visibility, reminder state
-  - `useSettingsStore.js`: intervals with localStorage persistence + `lastModified` for sync compatibility
-  - `useUIStore.js`: panel visibility, journal view/text/prompt state
-  - `useJournalStore.js`: entries with localStorage persistence, soft-delete, reload action
-  - `usePokesStore.js`: poke counter with localStorage persistence
-  - `index.js`: barrel export
-- Migrated DesktopPet.jsx: replaced 35+ useState calls with store reads, removed local reload callbacks
-- Fixed several migration regressions: duplicate declarations, removed `useState` accidentally dropped from React import (Background uses it for shootingStar)
-- Build verified clean after migration
-
-**File separation**
-- Split monolithic DesktopPet.jsx (1670 lines) into 9 files:
-  - `client/src/components/Background.jsx`
-  - `client/src/components/AmbientBugs.jsx`
-  - `client/src/components/SpeechBubble.jsx`
-  - `client/src/components/OwlMoth.jsx`
-  - `client/src/components/PersistentReminder.jsx`
-  - `client/src/components/SettingsPanel.jsx` (reads stores directly, includes gear button)
-  - `client/src/components/JournalPanel.jsx` (reads stores directly, `onSave` prop for cross-store callback)
-  - `client/src/glim-animations.css` (all keyframes, imported once in DesktopPet.jsx)
-  - DesktopPet.jsx retained as main logic component (~430 lines)
-- `npm run build` clean; pushed and verified on GitHub Pages
-
-### 2026-03-27 (Claude.ai) - Feature design brainstorm, icon design, and build plan
-- Brainstormed and designed feature suite: nutrition (hybrid library + raw add), pomodoro/time tracking (with work categories), to-do list (recurring via Approach 2, done section), step tracking (replace-style, tier milestones), workout logging (categories, intensity, per-type goals)
-- Designed home screen layout: big Glim + 3 summary widgets (steps ring, water ring, tasks done) + nav bar (home/focus/tasks/nutrition/more)
-- Mockupped companion mode panels (nutrition quick-add) and home screen variations (rings-only vs all-widgets, chose rings-only)
-- Finalized nav bar icons: mountains+stars (home), clock (focus), double checkmarks (tasks), leaf with vein (nutrition), three dots (more)
-- Established 5-phase inside-out build plan: (1) scaffolding + prerequisites, (2) water tracker, (3) second companion tracker, (4) to-do list (first focus mode), (5) everything else
-- Designed and finalized multi-hue app icon (accurate Glim from DesktopPet.jsx bezier paths) and splash screen with "oh hi, welcome back!" randomized taglines
-- Designed Pointer Events migration spec for touch support (4 systems: creature interaction, eye tracking with drift-to-center, button hover replacement, click handlers)
-- Output files for Claude Code:
-  - `glim-icon-multihue.svg` - app icon source SVG
-  - `SplashScreen.jsx` - auth-loading splash screen component
-  - `icon-splash-handoff.md` - implementation instructions for icon + splash
-  - `nav-icons-reference.md` - all 5 nav icon SVGs with React component code and color specs
-  - `glim-homescreen-mockup.html` - pixel-accurate home screen mockup (open in browser), includes embedded implementation notes with every measurement, color value, SVG path, and behavioral spec
-- Updated Project Documentation: Sections 2.1, 2.3, 3.3, 4.2, 6.2, 6.3, 8.2, 8.2.1, 8.3, 8.4, 8.8, 8.10, 6 decision register entries, project log
-- Updated Handoff: task queue restructured by build phase with mockup references, session log, resolved questions, file system map
-
-### 2026-03-26 (Claude.ai) - Mobile platform strategy evaluation
-- Evaluated four mobile deployment options: enhanced PWA, Capacitor (WebView wrapper), React Native, full native (Swift/Kotlin)
-- Analyzed native API requirements vs. PWA capabilities. Only meaningful gap: HealthKit/Google Fit (requires $99/year Apple Developer Program on iOS)
-- Confirmed Web Push notifications work on iOS for home-screen PWAs (since iOS 16.4, clunky onboarding but functional)
-- Confirmed React Native would require rewriting all visual components (~70% of codebase), not justified
-- Decision: stay on enhanced PWA path, Capacitor as documented fallback if native API need arises [See Project Docs Decision Register 2026-03-26: Enhanced PWA over native app]
-- Updated Project Documentation: platform strategy (Section 8.1), decision register entry, project log entry
-- Updated Handoff: new Web Push notification task (Medium priority), bumped service worker task from Low to Medium, added session log
-- No code changes this session
-
-### 2026-03-26 (Claude Code) - Firebase setup and Google auth flow
-- Installed `firebase` npm package (v11.x) in `client/`
-- Added `.env.local` (gitignored) with all Firebase config vars as `VITE_FIREBASE_*`
-- Added `.env.example` (committed, no secrets) as template for config vars
-- Updated `.gitignore` to exclude `.env.local` and `.env.*.local`
-- Created `client/src/firebase.js` - initializes Firebase app, exports `db` (Firestore), `auth` (Firebase Auth), `googleProvider` (GoogleAuthProvider)
-- Created `firestore.rules` - restricts all reads/writes to authenticated user's own `users/{userId}/**` path; deployed to Firebase Console
-- Created `client/src/SignIn.jsx` - full-screen twilight-aesthetic sign-in screen with Google sign-in button; handles popup errors and loading state
-- Updated `client/src/App.jsx` - auth gate: undefined=loading (blank dark screen), null=show SignIn, user object=show DesktopPet; creates Firestore `users/{userId}` document on first sign-in (name, email, createdAt) using getDoc check so createdAt is never overwritten
-- Checks: `npm run build` clean (628KB JS / 194KB gzip - Firebase adds ~100KB gzip); sign-in flow tested locally at localhost:5174; Firestore user document created on first login; pushed to Netlify and confirmed live
-- Notes: Google sign-in provider must be enabled in Firebase Console > Security > Authentication > Sign-in method. JS bundle is now over Vite's 500KB warning threshold - cosmetic only, no action needed now.
-
-### 2026-03-25 (Claude.ai)
-- Full line-by-line codebase audit of `glim.html` against Project Documentation
-- Fixed 6 bugs: timer memory leaks in scheduleBlink/scheduleTwitch/shootingStar, wander drift orphan cleanup, behavior system rewrite (cascading draws to weighted random), eye tracking callback stabilization
-- Added settings persistence (`glim-settings` storage key)
-- Removed dead code (`calcDuration`, unused `durationOverride` param)
-- Corrected documentation-code mismatches: marked off-screen adventure, touch events, responsive layout, `isMobile` as [NOT IMPLEMENTED]
-- Updated Project Documentation with 9 [NOT IMPLEMENTED] tags, new Section 7.1, 4 new Decision Register entries, 1 new Project Log entry
-- Outputs: updated `glim.html` (~2461 lines), updated `glim_project_documentation.Rmd` and `.docx`
-- Created this Handoff File
-
-### 2026-03-25 (Claude.ai) - Architecture review and feature planning
-- Evaluated React vs vanilla JS migration. Decided to stay on React given planned feature complexity (10+ data-driven trackers). See Project Docs Decision Register 2026-03-25.
-- Discussed cross-device sync. Decided on Firebase with offline-first design. Data model to be designed now, Firebase integration built later.
-- Decided on event-based data model for all trackers (timestamped logs, not running totals) for sync-safe merging.
-- Decided on centralized Glim reaction system (`glimReact(event, data)`) to keep personality separate from tracker code.
-- Cataloged ~25 features across 7 categories. Rewrote Project Docs Section 8 as comprehensive feature roadmap with data model notes.
-- Outputs: updated `glim_project_documentation.Rmd`/`.docx` (Section 1.1, Section 8 rewrite, 4 new Decision Register entries, 1 new Project Log entry), updated `glim_handoff.Rmd`/`.docx`
-
-### 2026-03-25 (Claude Code) - Netlify hosting and PWA setup
-- Set up Netlify hosting: connected to `ReitheHeroine/Glim` repo, build dir `client/`, publish dir `client/dist/`, command `npm run build`. Auto-deploys on every push to `main`.
-- Added `client/public/_redirects` to fix Netlify "Page not found" routing issue
-- Removed `base: '/Glim/'` from `vite.config.js` (was for GitHub Pages, Netlify serves from root)
-- Created `client/public/glim-icon.svg` - custom Glim icon (dark background, purple/teal creature with eyes, wings, antennae, beak)
-- Generated PNG icons from SVG using `sips`: `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png` (180px)
-- Created `client/public/manifest.json` - PWA manifest (standalone display, dark theme, both icon sizes)
-- Updated `client/index.html` with PWA meta tags: `apple-touch-icon`, manifest link, `apple-mobile-web-app-capable`, status bar style, theme-color
-- Checks: `npm run build` clean; Netlify deploy successful; Glim confirmed working in browser
-- Install path for iPhone: open Netlify URL in Safari → Share → Add to Home Screen
-
-### 2026-03-25 (Claude Code) - Vite migration
-- Initialized Vite + React project scaffold in `client/` directory (React 19, Vite 8)
-- Installed Tailwind CSS v4 with `@tailwindcss/vite` plugin (already configured in vite.config.js)
-- Extracted all message pools (lines 52-757 of `glim.html`) to `client/src/messages.js` with `export` on each const
-- Created `client/src/storage.js` - window.storage polyfill (localStorage wrapper) as side-effect module
-- Created `client/src/DesktopPet.jsx` - all components + logic (utils, Background, AmbientBugs, SpeechBubble, OwlMoth, PersistentReminder, DesktopPet) with proper React imports and messages/storage imports
-- Updated `client/src/App.jsx` to render DesktopPet only
-- Updated `client/src/index.css` with Tailwind v4 import and Glim base styles (overflow:hidden, 100% height)
-- Updated `client/index.html` with correct title ("Glim") and owl emoji favicon
-- Removed scaffold files (App.css, assets/)
-- Added `.gitignore` at repo root
-- Checks: `npm run build` - clean, no errors (285KB JS bundle); `npm run dev` - serves at localhost:5173, HTTP 200
-- Notes: React version is 19 (not 18 as planned in docs) - no issues encountered. Zustand not yet installed (assigned to Claude.ai). GitHub repo not yet initialized (no `git init` run).
-
-### 2026-03-25 (Claude.ai) - Tech stack evaluation
-- Evaluated entire technology stack against 25-feature roadmap
-- Decided: adopt Vite as build tool (eliminates Babel CDN, enables file separation, dev server)
-- Decided: stay on React over Svelte (ecosystem size, skill transferability, existing code)
-- Decided: adopt Zustand for state management (replaces 30+ useState calls)
-- Decided: Tailwind stays but migrates from CDN to build-integrated version
-- Decided: Chart.js for data visualization, vite-plugin-pwa for PWA generation
-- Updated Project Docs: Section 2.1 (current + planned stack), Section 8.2 (infrastructure items), Section 11 (tools/references), 3 new Decision Register entries
-- Updated Handoff: task queue (Vite migration replaces build script), computational environment, resolved questions
-
-### 2026-03-29 (Claude Code) - Water tracker, Firestore sync service, settings improvements
-
-**Work performed:**
-
-- **Nav bar shell:** Implemented `NavBar.jsx` with 5 slots (home, focus, tasks, water, more). WaterIcon (teardrop SVG) replaces NutritionIcon; nutrition deferred to more section. All icons use `currentColor` for active/inactive. Navigation wired through `useUIStore` (`activeNav`, `activePanel`).
-- **Companion mode panel:** Implemented `CompanionPanel.jsx` - slides up from bottom over 300ms, drag-to-dismiss (>80px threshold), tap-outside-to-dismiss via transparent backdrop. Panel routes `activePanel === 'water'` to `WaterPanel`; all other types get placeholder content.
-- **Water tracker:** Created `useWaterStore.js` (localStorage key `glim-water`) with `entries`, `bottleOz` (24 default), `goal` (6 default), `configUpdatedAt`. Actions: `logBottle`, `undoLast`, `setBottleOz`, `setGoal`, `reload`. Computed selectors: `getToday()`, `getStreak()` (consecutive UTC days at goal), `getWeeklyAvg()` (7-day rolling, 1 decimal).
-- **WaterPanel:** Progress ring (r=30, circumference=188, viewBox 72x72), blue/green color states, tappable oz pill with inline editor, +bottle button, 4s undo toast, streak/avg footer. All 130+ messages from the water pools embedded (water_logged with 6 sub-pools, water_goal_met, water_streak by milestone). Streak milestone messages take priority over generic goal-met messages. Message template variables: `{current}`, `{goal}`, `{remaining}`, `{totalOz}`, `{bottleOz}`, `{streak}`. Glim reacts via `useMessageStore.setMessage` + `setShowBubble` with 5s bubble timeout.
-- **Firestore background sync service:** Created `sync.js`. `startSync(uid)` called from `App.jsx` on auth. Triggers: immediate + every 60s + `visibilitychange`. Domains: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`). After pulls, fires `glim-data-updated` CustomEvent; `DesktopPet` calls the relevant store's `reload()`. Post-deploy bug fixed: `configUpdatedAt: undefined` in existing localStorage caused Firestore write rejection; fallback to epoch string added in `syncWater`.
-- **Reset all data:** Added to `SettingsPanel.jsx`. Red-tinted button below sign out. Click reveals confirmation form: warning text + text input + cancel/delete buttons. "Delete everything" button enabled only when input matches `delete` (case-insensitive). On confirm: clears all localStorage keys (`glim-water`, `glim-journal`, `glim-pokes`, `glim-settings`, `glim-sync-meta`) and Firestore subcollections, then reloads.
-- **Google account picker fix:** Added `googleProvider.setCustomParameters({ prompt: 'select_account' })` in `firebase.js`. Previously auto-logged back into last-used account on sign-in screen.
-- **PWA meta tag:** Added `<meta name="mobile-web-app-capable" content="yes">` alongside the existing Apple variant to suppress browser deprecation warning.
-
-**Key design notes:**
-- Water store holds `bottleOz` and `goal` directly (not in useSettingsStore) for self-containment and simpler sync.
-- Undo is a hard-delete. If entry pushed to Firestore before undo, it reappears on next pull. Acceptable given 60s interval.
-- Sync is polling-based, not real-time. Updates arrive within 60s or on tab focus. `onSnapshot` listeners not used.
-- `glimReact()` centralized system not implemented. Water panel calls `useMessageStore` directly for now.
-
-**Outputs:** `client/src/components/NavBar.jsx` (new), `client/src/components/CompanionPanel.jsx` (new), `client/src/components/WaterPanel.jsx` (new), `client/src/stores/useWaterStore.js` (new), `client/src/sync.js` (new), updated `DesktopPet.jsx`, `SettingsPanel.jsx`, `stores/index.js`, `useUIStore.js`, `firebase.js`, `client/index.html`. Updated `glim_project_documentation.Rmd`.
-
-### 2026-03-26 (Claude.ai) - Firestore schema design and sync architecture decisions
-- Reviewed three sync approaches from previous session. Confirmed Approach 2 (localStorage-primary with background Firebase sync) as the implementation path.
-- Decided: Google sign-in for authentication (one-tap, most users have Google accounts).
-- Decided: Require sign-in on first launch (eliminates local-to-cloud migration problem entirely). Every event written to Firestore from the start, localStorage is purely an offline cache.
-- Decided: Pattern A (subcollections per domain) for Firestore top-level structure. Each tracker domain gets its own subcollection under `users/{userId}/`. Scales naturally, avoids 1MB document limit, writes are small and fast.
-- Decided: Pokes stored as single counter document (not event log). Simpler, and losing a few pokes during offline conflicts is acceptable for a vanity counter.
-- Designed concrete Firestore schema for current 3 domains only (journal, pokes, settings). Future tracker schemas will be added incrementally as features are built, not speculatively.
-- Firestore path structure finalized: `users/{userId}/journal/{entryId}`, `users/{userId}/pokes/counters`, `users/{userId}/settings/current`
-- User metadata (name, email, createdAt) stored on the `users/{userId}` document itself.
-- Outputs: updated `glim_handoff.Rmd`
-
-### 2026-03-25 (Claude.ai) - Data model, reaction system, and UI design
-- Designed complete data model spec: 15 storage domains with full schemas, sync strategies, migration paths. Foundational decisions: one key per domain, UUIDs, local dates from UTC, soft delete everywhere. Documented as Project Docs Section 8.8.
-- Designed reaction system: 4-tier pipeline (comfort/acknowledge/celebrate/milestone), template interpolation, context evaluation (sleep check, cooldown, dedup), multi-event sequences, nudge events. Walked through water and mood tracking examples. Documented as Project Docs Section 8.9.
-- Designed UI navigation system: hybrid companion/focus modes, customizable 4-slot bottom nav bar, mini-Glim spec for focus mode. Created mockups in HTML. Documented as Project Docs Section 8.10.
-- Discussed AI-powered messages (hybrid static + Claude API for summaries/cross-tracker observations). Deferred to after Firebase - added as a known future option.
-- Outputs: updated `glim_project_documentation.Rmd`/`.docx` (Sections 8.8-8.10 fully specified, 2 new Decision Register entries, 2 new Project Log entries), `mockup_companion_mode.html`, `mockup_focus_mode.html`
+See `glim_session_log.Rmd` for full details. Most recent: 2026-04-04 (Claude Code) - Nutrition tracker implementation: created `useNutritionStore.js`, `useNutritionLibraryStore.js`, `NutritionPanel.jsx` (full 200-message pool, two-tone bars, inline raw-add, library quick-add, undo, streak footer), `MoreMenu.jsx`. Updated NavBar (correct slots + nutrition icon), useUIStore (showMoreMenu), CompanionPanel (routing), DesktopPet (MoreMenu render), stores/index.js (barrel exports). 47 unit tests passed. Build clean: 721KB JS / 223KB gzip.
 
 ---
 
 # 3. Task Queue
 
+Tasks organized by build phase (see Project Docs Section 8.2.1). Work within each phase roughly top-to-bottom, but exact order is flexible.
+
 ## 3.1 Pending Tasks
 
-Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within each phase roughly top-to-bottom, but exact order within a phase is flexible.
+### CRITICAL BUG FIX
+
+#### Fix localStorage cross-account contamination
+- **Assigned to:** Claude Code
+- **Priority:** CRITICAL
+- **Description:** localStorage is scoped to browser origin, not Firebase user ID. Switching Google accounts in the same browser causes cross-account data contamination. Fix: track `glim-last-user-id` in localStorage, clear all `glim-*` keys on auth state change when userId changes.
+- **Acceptance criteria:** Switching accounts clears stale data. Each account sees only its own data.
 
 ---
 
 ### PHASE 1: Minimal scaffolding (prerequisites + nav shell)
 
 #### Implement touch event support
-- **Assigned to:** Claude Code (implementation, spec is complete)
+- **Assigned to:** Claude Code (spec is complete)
 - **Priority:** High (prerequisite for mobile panels)
-- **Description:** Migrate all mouse-only event handlers to Pointer Events API. Four systems to change: (1) Creature interaction: `onMouseDown` becomes `onPointerDown`, window `mousemove`/`mouseup` become `pointermove`/`pointerup`/`pointercancel`, add `touch-action: none` on creature container. (2) Eye tracking: `mousemove` listener becomes `pointermove`; on touch release (`e.pointerType === "touch"`), eyes drift back to center over 1.5s ease-out cubic via `requestAnimationFrame` (cancel drift on new touch, skip if sleeping/purring). Store animation frame ID in `eyeDriftFrameRef`. (3) Button hover effects (~8 instances): replace `onMouseEnter`/`onMouseLeave` with CSS `:active` or `onPointerDown`/`onPointerUp` press styles. (4) `onClick`/`onDoubleClick` handlers: no changes needed (already cross-platform). No `getPointerXY()` helper needed. `e.clientX`/`e.clientY` work identically in Pointer Events.
-- **Context/References:** [See Project Docs Section 4.2: Interaction System - Pointer Events Migration Plan]
-- **Acceptance criteria:** All interactions (click, double-click, long press, drag, shake) work on both mouse and touch. Eye tracking follows pointer on desktop continuously, tracks finger then drifts to center on touch release. `pointercancel` prevents stuck purr/drag state. Buttons provide visual feedback on both platforms. Test on real phone via Netlify after deployment.
+- **Description:** Migrate all mouse-only handlers to Pointer Events API. Four systems: (1) creature interaction, (2) eye tracking with drift-to-center on touch release, (3) button hover replacement with `:active`/press styles, (4) click handlers (no changes needed, already cross-platform).
+- **Context/References:** [See Project Docs Section 4.2: Pointer Events Migration Plan]
+- **Acceptance criteria:** All interactions work on both mouse and touch. Eye tracking follows pointer on desktop, drifts to center on touch release. `pointercancel` prevents stuck states. 44px+ tap targets.
 
 #### Implement responsive layout
-- **Assigned to:** Claude Code (implementation, design reference available)
+- **Assigned to:** Claude Code (design reference available)
 - **Priority:** High (prerequisite for mobile panels)
-- **Description:** Add `isMobile` flag based on `window.innerWidth < 600` with resize listener. Scale creature size, glow ring, panel widths, and button sizes. Ensure tap targets meet 44px minimum on mobile. Settings and journal panels expand to near-full-width on small screens. The home screen layout (creature, widgets, nav bar) should match `glim-homescreen-mockup.html`.
-- **Context/References:** [See Project Docs Section 3.4.5: Implementation Status], `glim-homescreen-mockup.html` (target mobile layout)
-- **Acceptance criteria:** Glim renders correctly on screens from 320px to 1920px+. Panels don't overflow on small screens. Tap targets are 44px+ on mobile.
-
-#### ~~Build nav bar shell~~ **DONE 2026-03-29**
-- Implemented in `NavBar.jsx`. 5 slots: home, focus, tasks, water, more. Nutrition moved to more section (not yet implemented). See Completed Tasks.
-
-#### ~~Build companion mode panel mechanism~~ **DONE 2026-03-29**
-- Implemented in `CompanionPanel.jsx`. Slide-up (300ms), drag-to-dismiss (>80px), tap-outside-to-dismiss. See Completed Tasks.
+- **Description:** Add `isMobile` flag (`window.innerWidth < 600` with resize listener). Scale creature, panels, buttons. Match `glim-homescreen-mockup.html`.
+- **Context/References:** [See Project Docs Section 3.4.5], `glim-homescreen-mockup.html`
+- **Acceptance criteria:** Renders correctly 320px to 1920px+. Panels don't overflow on small screens. 44px+ tap targets.
 
 ---
 
@@ -421,226 +176,39 @@ Tasks are organized by build phase (see Project Docs Section 8.2.1). Work within
 #### Build Glim reaction system
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
 - **Priority:** High (needed for all subsequent trackers)
-- **Description:** Implement the centralized `glimReact(eventType, data)` system. Define event types for existing features (journal save, wellness reminder dismissed) and trackers. Refactor existing journal save and water panel to use it. Currently water panel calls `useMessageStore` directly as a stopgap.
+- **Description:** Implement centralized `glimReact(eventType, data)`. Refactor water panel and journal save to use it. Currently water panel calls `useMessageStore` directly as stopgap.
 - **Context/References:** [See Project Docs Section 8.9: Reaction System Specification]
-- **Acceptance criteria:** `glimReact()` function exists and handles message selection, animation triggering, and personality context. Water tracker and journal save use it.
+- **Acceptance criteria:** `glimReact()` handles message selection, animation triggering, personality context. Water tracker and journal save use it.
 
-#### ~~Build water tracking~~ **DONE 2026-03-29**
-- Implemented in `WaterPanel.jsx` + `useWaterStore.js`. See Completed Tasks and 2026-03-29 session log for full details.
-
-#### Water message pools (designed 2026-03-27)
-
-Template variables available: `{current}`, `{goal}`, `{remaining}`, `{totalOz}`, `{bottleOz}`, `{streak}`.
-
-**`water_logged` (acknowledge tier, ~68 messages)**
-
-Sub-pool: first bottle only (show only when current === 1):
-- "first one of the day. here we go."
-- "starting strong."
-- "day's first bottle. the journey begins."
-- "bottle 1. a classic."
-
-Main pool (any bottle count):
-
-Simple acknowledgments:
-- "got it. {current} of {goal}."
-- "logged."
-- "bottle {current}. noted."
-- "{current} down, {remaining} to go."
-- "another one. {current}/{goal}."
-- "{totalOz} oz and counting."
-- "check."
-
-Playful/personality:
-- "glug glug glug."
-- "hydration station. {current}/{goal}."
-- "your cells thank you."
-- "water is just boneless soup."
-- "technically this is a chemistry experiment. you're the beaker."
-- "h two... oh yeah."
-- "splish splash, bottle {current}."
-- "liquid acquired."
-- "fun fact: you are now slightly more water than you were a minute ago."
-- "nice nice nice."
-- "{totalOz} oz. that's like... a small aquarium."
-- "the mitochondria is the powerhouse of the cell and water is the powerhouse of you."
-- "your kidneys just sent me a thank you card."
-- "hydrated and humble."
-- "water: the original zero-calorie drink."
-
-Progress-aware (show when remaining <= 2):
-- "ooh, {remaining} more and you've got it."
-- "almost there. just {remaining} to go."
-- "you can practically taste the goal. it tastes like water."
-- "{current} of {goal}. the finish line is right there."
-
-Absurd/unhinged:
-- "hydrate or diedrate motherfucker!"
-- "you just drank water. in THIS economy."
-- "bold of you to be 60% water and still need more."
-- "imagine being a cactus. couldn't be you."
-- "water bottle goes brrr."
-- "somewhere a fish just felt a disturbance in the force."
-- "you: *drinks water* your organs: *standing ovation*"
-- "water is just cloud juice if you think about it."
-- "the ancient romans had aqueducts. you have a bottle. same energy."
-- "congratulations you've unlocked: not being a raisin."
-- "plot twist: the water was inside you all along. literally."
-- "every time you drink water a tiny cell somewhere does a backflip."
-- "you're basically speedrunning hydration at this point."
-- "this water has more personality than most people i've met."
-- "the government doesn't want you to know this but the water in the lake is free."
-
-Science fun facts:
-- "fun fact: your brain is 75% water. you just topped it off."
-- "water molecules in your body right now are older than the sun. you're drinking ancient stuff."
-- "hot water freezes faster than cold water sometimes. science doesn't know why. anyway, bottle {current}."
-- "the water you just drank might have been dinosaur pee at some point. the water cycle is wild."
-- "your blood is 90% water. you just gave it a raise."
-- "it takes about 5 minutes for water to reach your bloodstream. your cells are placing their orders now."
-- "fun fact: a 2% drop in hydration can cut your focus by 25%. you just bought yourself some brain power."
-- "water is the only natural substance found in all three states on earth. and now also in your stomach."
-- "the average human body contains enough water to fill a 10-gallon fish tank. you're getting there."
-- "each kidney filters about 50 gallons of blood a day. yours just got fresh supply."
-- "cold water absorbs into your body faster than warm water. science tip of the day."
-- "your body makes about 8 cups of saliva a day. it needs the raw materials. you're helping."
-- "there's the same amount of water on earth now as when the planet formed. this bottle is recycled from the jurassic."
-- "dehydration shrinks your brain tissue. you're literally plumping your brain right now."
-- "water carries electrical signals between your neurons. you just charged the battery."
-
-Mindful/taste:
-- "did you actually taste that one or just pour it into your face. try tasting the next one."
-- "hot take: water has a flavor and it's different in every room of your house."
-- "mindfulness exercise: the next sip, actually notice the temperature. weird how water can feel round, right?"
-- "some water tastes pointy and some water tastes round and if you disagree you're not paying attention."
-- "you ever just... hold the water in your mouth for a sec? it's a whole experience."
-- "rate this bottle's water out of 10. no i'm serious. develop opinions about water."
-- "connoisseurs say this bottle has notes of hydrogen with a subtle oxygen finish."
-- "cold water at 3 AM hits different and science has never adequately explained why."
-
-**`water_goal_met` (celebrate tier, ~23 messages)**
-
-- "{goal} of {goal}! goal crushed."
-- "you did it. {totalOz} oz. your body is a well-oiled, well-watered machine."
-- "goal: met. kidneys: thriving. glim: proud."
-- "that's {goal}! officially hydrated."
-- "{totalOz} oz today. you're basically a lake."
-- "ring's full. you're full. everyone's full."
-- "daily water goal: demolished."
-- "{goal} bottles. textbook hydration."
-- "ding ding ding! {goal} of {goal}."
-- "your future self just high-fived your current self."
-- "peak hydration achieved. scientists are taking notes."
-- "you just out-watered a house plant."
-- "{goal} bottles down and you didn't even need a reminder."
-- "that's the good stuff. {totalOz} oz of the good stuff."
-- "goal met. you may now brag to exactly nobody."
-- "HYDRATED. DANGEROUS. UNSTOPPABLE."
-- "you could fight god right now and win. hydration is power."
-- "your pee is going to be SO clear. like, suspiciously clear."
-- "scientists hate this one simple trick (it's water) (they don't hate it) (they recommend it)"
-- "you've consumed an entire {totalOz} oz of dihydrogen monoxide and lived to tell the tale."
-- "somewhere a wellness influencer just shed a single tear of pride."
-- "you out-hydrated a camel. probably. i don't know camel stats."
-- "that's {goal} bottles. you are the water cycle now. you are rain."
-
-**`water_streak` (milestone tier, messages grouped by streak length)**
-
-3-day:
-- "three days in a row. a pattern is forming."
-- "3-day streak. that's not luck, that's a habit."
-- "three straight days of hitting your water goal. your cells are doing a wave."
-- "three days. the prophecy is being fulfilled."
-
-7-day:
-- "seven days. a full week of being hydrated. who even are you."
-- "7-day streak. your kidneys would write you a letter if they had hands."
-- "one whole week. the water streak is real."
-- "7 days running. you're not trying anymore, you're just... hydrated."
-- "a week of this? you're not a person anymore, you're a lifestyle brand."
-
-14-day:
-- "two weeks. fourteen days. your body forgot what dehydration feels like."
-- "14-day streak. at this point you're basically a water sommelier."
-- "two weeks of consistent hydration. this is genuinely impressive."
-- "fourteen days. if hydration were a crime you'd be serving consecutive life sentences."
-
-21-day:
-- "21 days. they say that's how long it takes to form a habit. congratulations, you're a water person now."
-- "three weeks. you could teach a class on this."
-
-30-day:
-- "thirty days. one month. you absolute legend."
-- "30-day streak. i'm running out of ways to say i'm proud of you but i am."
-- "a month of perfect hydration. your future biographer will note this chapter."
-- "thirty days. you have ascended. you are no longer human. you are water elemental."
-
-60-day:
-- "sixty days. at this point i think the water is drinking you."
-- "two months straight. i genuinely don't know what to say except wow."
-
-90-day:
-- "ninety days. a full season. you are the water cycle."
-
-Generic fallback (any unlisted milestone):
-- "{streak} days. just... {streak} days. you're incredible."
-- "streak: {streak}. i'm not crying, it's just the humidity from all this hydration."
-- "{streak} days of hydration. at this point your bloodstream is basically a lazy river."
-- "streak: {streak}. this isn't discipline anymore, this is your villain origin story."
-
-Milestone triggers: 3, 7, 14, 21, 30, 60, 90. Generic fallback for any other streak length that somehow triggers (e.g., round numbers > 90).
-
-**`water_nudge` (comfort tier, ~22 messages)**
-
-Fires if no water logged by configurable time (default: noon). Gentle glow animation. Never guilt-trippy.
-
-- "hey. have you had any water today?"
-- "gentle nudge: your water bottle misses you."
-- "no water logged yet today. no pressure, just... water is nice."
-- "your bottle is looking lonely over there."
-- "friendly reminder that water exists and is delicious."
-- "i'm not saying you're dehydrated but your lips just sent me a DM."
-- "psst. water."
-- "it's past noon and your water count is still at zero. just saying."
-- "a body in motion stays in motion. a body without water stays... cranky."
-- "you've been busy. i get it. but also: water."
-- "this is your daily water nudge. brought to you by: caring."
-- "zero bottles so far. your kidneys are sending concerned looks."
-- "hydrate or diedrate. your choice. (please hydrate.)"
-- "your water bottle is staring at you. it's getting weird."
-- "the water is right there. it's not going to drink itself. unfortunately."
-- "fun fact: you can't photosynthesize. you need water. sorry i don't make the rules."
-- "bestie. water. please."
-- "the audacity of being dehydrated when water literally falls from the sky."
-- "*smacks dry lips* waaaattteerrrr..."
-- "*crawling across desert floor* ...water..."
-- "*dramatic soap opera voice* the water... it's been hours..."
-- "your cells are sending increasingly frantic emails."
+#### Water message pools
+- **Status:** Designed (130+ messages across 4 event types)
+- **Reference:** See `glim_message_pools.md` for full pools
+- **Note:** WaterPanel.jsx currently has messages embedded. When reaction system is built, messages move to the centralized pool.
 
 #### Add home screen summary widgets
-- **Assigned to:** Claude Code (implementation, design is complete)
+- **Assigned to:** Claude Code (design is complete)
 - **Priority:** High (part of water tracker delivery)
-- **Description:** Implement the 3-widget row on the home screen (above nav bar, below creature): steps ring (teal #5eead4), water ring (blue #60a5fa), tasks done count with checkmark (purple #a78bfa, shows "N done" not a fraction). Initially only water is functional; steps and tasks show placeholder state. Tapping a widget opens the corresponding panel or focus screen. Ring SVG technique: two overlapping circles (track + progress via stroke-dasharray). Widget containers: rgba(255,255,255,0.06) bg, 12px border-radius.
-- **Context/References:** [See Project Docs Section 8.10: Home screen summary widgets], `glim-homescreen-mockup.html` (exact colors, sizes, SVG technique)
-- **Acceptance criteria:** Three widgets render below Glim. Water widget reflects live data. Tapping water widget opens the water panel. Layout matches mockup.
+- **Description:** 3-widget row: steps ring (teal #5eead4), water ring (blue #60a5fa), tasks done count (purple #a78bfa, "N done"). Ring SVG: two overlapping circles (track + progress via stroke-dasharray). Widget containers: rgba(255,255,255,0.06) bg, 12px border-radius. Only water is functional initially.
+- **Context/References:** [See Project Docs Section 8.10: Home screen summary widgets], `glim-homescreen-mockup.html`
+- **Acceptance criteria:** Three widgets render below Glim. Water widget reflects live data. Tapping water opens panel.
 
 ---
 
 ### PHASE 3: Second companion-mode tracker
 
-#### Build step tracking
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
+#### Wire step tracking Firestore sync
+- **Assigned to:** Claude Code
 - **Priority:** High
-- **Description:** Companion mode panel with numpad-style number input (replace-style: latest entry for the day wins). Progress ring fills through tier milestones (2,500 / 5,000 / 7,500 / 10,000). Integrates with `glimReact()` for tier-reached and milestone reactions. Home screen widget updates.
-- **Context/References:** [See Project Docs Section 8.3: Step tracking], [See Project Docs Section 8.8: Steps schema]
-- **Acceptance criteria:** User can type step count, see progress through tiers, and see Glim react to milestones. Replace-style logic works (second entry same day overwrites first). Home screen steps widget is live.
+- **Description:** Add steps domain to `sync.js`. Follow water sync pattern. Steps uses replace-style entries (latest per date wins). Store and panel (`StepsPanel.jsx`, `useStepsStore.js`) already exist and work with localStorage.
+- **Context/References:** [See Project Docs Section 8.8: Steps schema], [See Project Docs Section 8.11: Sync Architecture]
+- **Acceptance criteria:** Step entries sync to Firestore. Cross-device: log steps on phone, see them on desktop after sync cycle.
 
-#### Build nutrition quick-add panel
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
+#### Build step tracking message pools
+- **Assigned to:** Claude.ai (design)
 - **Priority:** High
-- **Description:** Companion mode panel with: progress rings for protein/fiber/fruit/veg at top, scrollable grid of frequent library items, "raw add" button for direct nutrient entry, "new food" button to add to library. Tapping a library item logs 1 unit immediately with undo toast. Long-press for quantity adjustment. Fruit and veggie are separate in the panel, combined on home screen.
-- **Context/References:** [See Project Docs Section 8.8: Nutrition and Nutrition Library schemas]
-- **Acceptance criteria:** User can quick-add from library, raw-add nutrients, and create new food items. Progress rings update. Data persists.
+- **Description:** Write message pools for step tracking events (steps_logged, steps_tier_reached, steps_milestone, steps_streak). Follow water message pool structure. ~100+ messages across event types.
+- **Context/References:** [See `glim_message_pools.md` for water pool format]
+- **Acceptance criteria:** Messages written in Glim's voice. Cover all tier milestones and streak days.
 
 ---
 
@@ -649,465 +217,161 @@ Fires if no water logged by configurable time (default: noon). Gentle glow anima
 #### Build focus mode transition
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
 - **Priority:** High (prerequisite for to-do list)
-- **Description:** Build the focus mode UI shell: creature/background fade out over 300ms, full-screen view fades in, mini-Glim (face only, ~40px mobile / ~48px desktop) appears in top-right header corner. Back arrow returns to companion mode. Mini-Glim still shows speech bubbles and reactions.
+- **Description:** Creature/background fade out (300ms), full-screen view fades in, mini-Glim (~40px mobile / ~48px desktop) in top-right corner. Back arrow returns to companion mode.
 - **Context/References:** [See Project Docs Section 8.10: Focus mode details]
-- **Acceptance criteria:** Smooth transition between companion and focus modes. Mini-Glim renders with eyes, pupils, antennae bobbles, blush. Speech bubbles work on mini-Glim. Back navigation works on both mouse and touch.
+- **Acceptance criteria:** Smooth transition. Mini-Glim renders with eyes, pupils, antennae, blush. Speech bubbles work on mini-Glim.
 
 #### Build to-do list
 - **Assigned to:** Claude.ai (design) + Claude Code (implementation)
 - **Priority:** High
-- **Description:** Focus mode screen. Recurring tasks (Approach 2: definitions + daily completion logs) pinned at top. One-off tasks below with add, complete, delete, reorder. Completed tasks move to collapsible "done (N)" section after 500ms checkmark animation. Tapping completed task un-completes it. No subtasks. No daily goals integration. Integrates with `glimReact()`. Home screen tasks widget shows total completed today.
-- **Context/References:** [See Project Docs Section 8.4: To-do lists], [See Project Docs Section 8.8: Todos schema]
-- **Acceptance criteria:** Can add one-off and recurring tasks. Recurring tasks reappear unchecked each day. Completed tasks in done section. Reorder works. Glim reacts. Home screen widget is live.
+- **Description:** Focus mode. Recurring tasks (Approach 2: definitions + daily completion logs) pinned at top. One-off tasks below. Completed tasks move to collapsible "done (N)" section. Integrates with `glimReact()`.
+- **Context/References:** [See Project Docs Section 8.4], [See Project Docs Section 8.8: Todos schema]
+- **Acceptance criteria:** Add one-off and recurring tasks. Recurring reappear daily. Reorder works. Glim reacts. Home widget is live.
 
 ---
 
-### PHASE 5: Remaining features (any order, based on priority)
+### PHASE 5: Remaining features (any order)
 
 #### Build pomodoro / time tracking
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** High
-- **Description:** Focus mode screen. Pomodoro timer with configurable session/break durations. Custom work categories (user-defined: academic, housework, etc.). Auto-logs completed sessions. Manual session add for retroactive/partial logging. Session history for today. Per-category time totals.
-- **Context/References:** [See Project Docs Section 8.4: Pomodoro / time tracking], [See Project Docs Section 8.8: Pomodoro schema]
-- **Acceptance criteria:** Timer counts down, logs session on completion. Manual add works. Categories tracked. Glim reacts to completed sessions and breaks.
+- Focus mode. Configurable timer, custom work categories, manual session add, per-category totals.
+- [See Project Docs Section 8.4], [See Project Docs Section 8.8: Pomodoro schema]
 
 #### Build workout / exercise logging
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** Medium
-- **Description:** Focus mode screen. Predefined categories (cardio, strength, flexibility, sports, other) with custom types. Duration + intensity (light/moderate/vigorous) + notes. Per-category/intensity weekly minute goals. Resets move reminder timer on log.
-- **Context/References:** [See Project Docs Section 8.3: Exercise / workout tracking], [See Project Docs Section 8.8: Exercise schema]
-- **Acceptance criteria:** Can log workout with category, type, duration, intensity. Custom types persist. Goals tracked per category. Glim reacts with category-aware commentary.
+- Focus mode. Predefined categories, custom types, duration + intensity, per-category weekly goals.
+- [See Project Docs Section 8.3], [See Project Docs Section 8.8: Exercise schema]
 
 #### Build nutrition library management (focus mode)
-- **Assigned to:** Claude.ai (design) + Claude Code (implementation)
-- **Priority:** Medium
-- **Description:** Focus mode screen for managing the personal food library. Add new items (name, protein, fiber, fruit/veggie servings, unit label). Edit existing items. Hide/unhide items. Accessible from nutrition quick-add panel via "new food" button or from settings.
-- **Acceptance criteria:** Can create, edit, and hide food items. Changes reflected in quick-add panel immediately.
+- **Assigned to:** Claude Code
+- **Priority:** Medium (nutrition panel works without it via raw-add; needed once user wants to build a food library)
+- **Description:** Focus mode screen for CRUD on personal food library. Full design spec below.
+- **Context/References:** `library-management-mockup.html` (interactive mockup), `nutrition-store-spec.md` (store actions)
+
+**Layout:** Focus mode with standard header (back arrow, "food library" title, mini-Glim). Search bar below header. Scrollable compact row list sorted by usageCount descending.
+
+**Compact rows:** Each row shows: food name (15px, left), nutrient summary (12px, dimmed, non-zero values brighter: "6g P · 3g F · 1 fruit"), "per [unit]" label (11px, right), chevron. Tap row to open edit form.
+
+**Add flow:** Floating action button (52px circle, bottom-right, above nav bar). Tapping opens a slide-up form with fields: name (text), protein/fiber/fruit/veggie in a 2x2 grid (number inputs with color-coded dot labels), unit label (text with hint "how one unit is described"). Cancel + "add food" buttons.
+
+**Edit flow:** Tapping any row opens the same form pre-populated. Button row changes to: delete (red, left) + cancel + "save" (right). Delete soft-deletes the item (sets deletedAt).
+
+**Empty state:** When library has no items, hide search bar and item count. Show centered empty state: apple icon, "no foods yet", guidance text ("tap + to add your first food item").
+
+**No hide/unhide.** Delete only. Simplifies the UI. Re-add if needed later.
+
+**Files to create:**
+- `client/src/components/NutritionLibraryManager.jsx`
+
+**Files to update:**
+- Navigation routing to open this screen from the companion panel (add an edit/manage link in the library section header)
+
+**Acceptance criteria:**
+- Full CRUD: add, edit, delete food items
+- Search filters list in real time
+- New items appear in companion panel library list immediately
+- Delete removes item from both library manager and companion panel list
+- Empty state displays when no items exist
 
 #### Build dashboard (focus mode)
-- **Assigned to:** Claude.ai (design)
-- **Priority:** Medium
-- **Description:** Focus mode screen showing all tracker progress in one view. Progress rings/bars for each tracker, today's totals, streaks, recent activity. The comprehensive view that complements the 3-widget home screen summary.
-- **Acceptance criteria:** All active trackers visible with current progress. Tapping a tracker navigates to its panel/screen.
-
-#### ~~Sync service implementation~~ **DONE 2026-03-29**
-- Implemented in `sync.js`. Domains: journal, pokes, settings, water. See Completed Tasks and 2026-03-29 session log.
+- All tracker progress in one view. Rings/bars, today's totals, streaks, recent activity.
 
 #### Add service worker for offline support
-- **Assigned to:** Claude Code
-- **Priority:** Medium
-- **Description:** Install `vite-plugin-pwa` and configure a service worker for offline caching. Also prerequisite for Web Push notifications.
-- **Context/References:** [See Project Docs Section 6.2: Netlify PWA]
-- **Acceptance criteria:** Glim loads without internet connection after first visit. PWA passes Lighthouse installability audit.
+- `vite-plugin-pwa` configuration. Prerequisite for Web Push.
+- [See Project Docs Section 6.2]
 
 #### Implement Web Push notifications
-- **Assigned to:** Claude.ai (architecture) + Claude Code (implementation)
-- **Priority:** Medium (after service worker)
-- **Description:** Add push notification support using the Web Push API + Firebase Cloud Function backend.
-- **Context/References:** [See Project Docs Decision Register 2026-03-26: Enhanced PWA over native app]
-- **Acceptance criteria:** Notifications fire for at least one use case. Works on Android Chrome. Best-effort on iOS.
+- Web Push API + Firebase Cloud Function backend. After service worker.
+- [See Project History Decision Register 2026-03-26]
 
 #### Expand Firestore schemas as trackers are built
-- **Assigned to:** Claude.ai
-- **Priority:** Ongoing
-- **Description:** As each new tracker is built, design its Firestore subcollection schema following Pattern A. Register with sync service.
-- **Acceptance criteria:** Each new tracker has a documented Firestore path and document schema before implementation.
+- Ongoing. Each new tracker gets a subcollection schema following Pattern A.
 
 ---
 
-### BACKLOG (low priority, unphased)
+### BACKLOG (low priority)
 
 #### Implement off-screen adventure behavior
-- **Assigned to:** Claude.ai
-- **Priority:** Low
-- **Description:** Add 2% chance autonomous behavior where Glim drifts off-screen. Requires `isOffScreenRef`, `OFFSCREEN_RETURN` message array (20 messages), and pointer activity listeners.
-- **Acceptance criteria:** Glim drifts off-screen, returns on pointer activity after grace period.
+- 2% chance autonomous behavior. Glim drifts off-screen, returns on pointer activity.
+- [See Project Docs Section 4.1]
 
-## 3.2 Changes for Testing
+#### Tailwind removal
+- Replace remaining Tailwind utility classes with inline styles in new code. Low priority cleanup.
 
-> Items that need browser verification. Include file paths, what to look for.
-
-### 2026-03-25 iPhone installation
-- **How to test:** Open Netlify URL in Safari on iPhone → Share → Add to Home Screen
-- **What to verify:**
-  - Glim icon appears on home screen (purple/teal creature, not a blank page screenshot)
-  - App opens full screen with no browser chrome
-  - Glim renders and all interactions work on touch (note: touch events not yet implemented - tap/long-press via mouse fallback may be limited)
-
-### 2026-03-25 audit fixes
-- **File:** `glim.html` (from this session's outputs)
-- **What to verify:**
-  - Settings sliders: change intervals, refresh page, confirm values persist
-  - Purr then wait: confirm only one blink cycle runs (no accelerating blink rate after multiple purrs)
-  - General behavior: watch for 5-10 minutes, confirm behaviors fire at roughly expected rates
-  - Bug chase: over several chases, catches should outnumber misses (~60/40)
-  - All existing interactions still work: click, double-click, long press, drag, shake, rapid click
-
-## 3.3 Completed Tasks
-
-> **Entry format:** [Task name] - [Date completed] - [Output location]
-
-- Google account picker forced on sign-in - 2026-03-29 - `client/src/firebase.js` (`setCustomParameters({ prompt: 'select_account' })`)
-- Reset all data button - 2026-03-29 - `client/src/components/SettingsPanel.jsx` (typed "delete" confirmation, clears localStorage + Firestore, reloads)
-- PWA mobile-web-app-capable meta tag - 2026-03-29 - `client/index.html`
-- Firestore background sync service - 2026-03-29 - `client/src/sync.js`; domains: journal, pokes, settings, water; 60s interval + startup + visibilitychange
-- Water tracker (store + panel) - 2026-03-29 - `client/src/stores/useWaterStore.js`, `client/src/components/WaterPanel.jsx`; Firestore sync via sync.js
-- Nav bar shell - 2026-03-29 - `client/src/components/NavBar.jsx`; water replaces nutrition in main nav; 5 slots live
-- Companion mode panel mechanism - 2026-03-29 - `client/src/components/CompanionPanel.jsx`; routes to WaterPanel; placeholder for others
-- File separation (DesktopPet.jsx -> 9 files) - 2026-03-27 - `client/src/components/` (7 files), `client/src/glim-animations.css`; live on GitHub Pages
-- Zustand state migration - 2026-03-27 - `client/src/stores/` (6 stores + index), `client/src/utils.js`; live on GitHub Pages
-- Hosting migration to GitHub Pages - 2026-03-27 - `.github/workflows/deploy.yml`, `client/vite.config.js` (base path), `client/public/manifest.json` (updated paths), `client/src/SignIn.jsx` (BASE_URL fix); live at https://reitheheroine.github.io/Glim/
-- Splash screen implementation - 2026-03-27 - `client/src/SplashScreen.jsx`, `client/src/App.jsx` updated
-- PWA icon replacement - 2026-03-27 - `client/public/glim-icon.svg`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`
-- Sign-out button - 2026-03-27 - `client/src/components/SettingsPanel.jsx`
-- iPhone safe area and UI fixes - 2026-03-27 - `client/src/components/Background.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/JournalPanel.jsx`
-- Firebase setup and Google auth flow - 2026-03-26 - `client/src/firebase.js`, `client/src/SignIn.jsx`, `client/src/App.jsx` (auth gate), `firestore.rules`, `client/.env.local`, `client/.env.example`; live on Netlify
-- Firebase project setup (Console steps) - 2026-03-26 - Firestore database created, Google sign-in enabled, security rules deployed
-- Firestore schema design (current domains) - 2026-03-26 - Schema for journal, pokes, settings finalized. Pattern A (subcollections per domain). Auth model and pre-auth behavior decided. Documented in `glim_handoff.Rmd` (Session Log, Resolved Questions, Task Queue)
-- PWA setup and iPhone installation - 2026-03-25 - `client/public/manifest.json`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `glim-icon.svg`, `_redirects`; `client/index.html` updated
-- Netlify hosting - 2026-03-25 - auto-deploys from `main`, live URL in Netlify dashboard
-- GitHub repository - 2026-03-25 - `git@github.com:ReitheHeroine/Glim.git`
-- Vite migration verified in production - 2026-03-25 - live on Netlify, all interactions confirmed working
-- Vite migration and project scaffolding - 2026-03-25 - `client/src/DesktopPet.jsx`, `client/src/messages.js`, `client/src/storage.js`, `client/src/App.jsx`, `client/src/index.css`, `client/index.html`, `.gitignore`
-- Codebase audit and bug fixes - 2026-03-25 - `glim.html`, `glim_project_documentation.Rmd`/.docx
-- Architecture review and feature planning - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Section 8 rewrite), `glim_handoff.Rmd`/.docx
-- Tech stack evaluation - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Sections 2.1, 8.2, 11 updated)
-- Data model specification - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Section 8.8)
-- Reaction system design - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Section 8.9)
-- UI navigation system design - 2026-03-25 - `glim_project_documentation.Rmd`/.docx (Section 8.10), mockup HTML files
-- Project Documentation creation - 2026-03-24 - `glim_project_documentation.Rmd`
+#### Implement 3 AM logical day boundary
+- **Assigned to:** Claude Code
+- **Priority:** Medium
+- **Description:** Two-step implementation: (1) refactor all date logic into `utils/dateUtils.js` as a pure refactor with no behavior change, (2) change the boundary hour from midnight to 3 AM.
+- **Acceptance criteria:** Step 1: all existing tests still pass, all date derivation uses the new utility. Step 2: activity logged at 1 AM counts as "yesterday."
 
 ---
 
-# 4. Open Questions and Issues
+## 3.2 Completed Tasks
 
-## 4.1 Open Questions
+(Periodically summarize and compress older entries.)
 
-- **2026-03-25** - At what point should the codebase split into separate desktop/mobile entry points vs. continuing with `isMobile` feature flags? [See Project Docs Section 3.4] Decision deferred until 2-3 mobile-specific features are implemented.
-- **2026-03-25** - Should Tailwind CSS be removed before or after touch/responsive work? Removing it first simplifies the dependency story, but it's low-impact busywork. Removing it after means touch/responsive code would use Tailwind classes that later get replaced.
-- **2026-03-25** - The `glim-messages.txt` inventory file (referenced in Project Docs Section 2.2) was generated during the 03-23/24 session but was not uploaded for this audit. It may be out of sync with the current message pools. Needs regeneration.
-- **2026-03-25** - ~~Nutrition tracking scope: full macro/calorie tracking vs. simple meal logging?~~ **Resolved 2026-03-27.** See Resolved Questions.
-- **2026-03-25** - Enhanced journaling scope: what specifically makes it "enhanced"? Tagging? Search? Templates? Longer entries? Image attachment? Needs scoping before build.
-- **2026-03-25** - ~~Water tracker UI spec needs finalizing: progress display style (dots vs ring vs bar), logging interaction (just +1 vs custom amounts), and full panel layout.~~ **Resolved 2026-03-27.** See Resolved Questions.
-- **2026-03-25** - Should Glim's messages eventually be AI-powered? Discussed hybrid approach: static pools for frequent/fast/offline messages, Claude API for daily summaries, cross-tracker observations, journal-aware commentary. Deferred to after Firebase sync. Cost estimate: ~$0.60/month at 10 AI messages/day.
-
-## 4.2 Resolved Questions
-
-> **Entry format:** **Q:** [Question] **A:** [Answer] ([Date resolved])
-
-**Q:** Should behavior probabilities use cascading draws or weighted random? **A:** Single weighted random draw. Cascading draws caused effective probabilities to drift from documented values. (2026-03-25)
-
-**Q:** Should settings intervals persist across page loads? **A:** Yes, stored in `glim-settings` key alongside journal and pokes. (2026-03-25)
-
-**Q:** How should documentation handle features that were planned but never coded? **A:** Mark with [NOT IMPLEMENTED] tags. Don't remove from docs, but make status unambiguous. (2026-03-25)
-
-**Q:** Should Glim migrate from React to vanilla JavaScript? **A:** No. The planned feature set (10+ data-driven trackers with lists, forms, counters, multiple views) is exactly what React handles well. The creature-side timer tax is manageable with documented ref/cleanup patterns. (2026-03-25)
-
-**Q:** How should cross-device sync work? **A:** Firebase Firestore with offline-first design. Event-based data model (timestamped logs, not running totals) for merge-safe sync. Design data model now, build Firebase integration after trackers exist. (2026-03-25)
-
-**Q:** How should Glim's personality integrate with new tracker features? **A:** Centralized reaction system: `glimReact(eventType, data)`. Trackers emit events, the reaction system handles creature responses. Keeps personality separate from tracker code. (2026-03-25)
-
-**Q:** What build tool and framework should Glim use going forward? **A:** Vite for build, React (npm-managed) for framework, Zustand for state management, Tailwind (build version) for CSS. Svelte evaluated and rejected in favor of React's ecosystem and skill transferability. (2026-03-25)
-
-**Q:** How should data be stored across 15 tracker domains? **A:** One storage key per domain (not monolithic). UUIDs for IDs. Soft delete everywhere. All derived values computed from event logs, never stored. See Project Docs Section 8.8. (2026-03-25)
-
-**Q:** How should the UI handle 15+ features on a phone screen? **A:** Hybrid two-mode system. Companion mode: creature visible, simple trackers as bottom panels. Focus mode: full-screen feature view with mini-Glim in header corner. Customizable 4-slot bottom nav bar. See Project Docs Section 8.10. (2026-03-25)
-
-**Q:** What authentication model should Glim use for sync? **A:** Google sign-in (one-tap, most users have Google accounts). Lowest friction option. Firebase Auth handles session persistence. (2026-03-26)
-
-**Q:** Should Glim work without an account? **A:** No. Require sign-in on first launch. Eliminates the local-to-cloud migration problem entirely. Every event written to Firestore from the start, localStorage is purely an offline cache. (2026-03-26)
-
-**Q:** What Firestore structure should Glim use? **A:** Pattern A (subcollections per domain). Each tracker domain gets its own subcollection under `users/{userId}/`. Scales naturally, avoids 1MB document limit, writes are small and fast. Pattern B (flat documents with arrays) rejected due to size limits and inefficient writes. (2026-03-26)
-
-**Q:** How should pokes be stored in Firestore? **A:** Single counter document at `users/{userId}/pokes/counters` with `total` and `lastPoke` fields. Not an event log. Use Firestore `increment()` when online. Losing a few pokes during offline conflicts is acceptable. (2026-03-26)
-
-**Q:** Should Firestore schemas be designed for all 15 planned trackers upfront? **A:** No. Design only for current domains (journal, pokes, settings). Add schemas incrementally as each tracker is built. Subcollection-per-domain pattern makes additions trivial. (2026-03-26)
-
-**Q:** Should Glim be wrapped in a native app for mobile, or stay as a PWA? **A:** Stay as an enhanced PWA. The only meaningful capability gap is HealthKit/Google Fit (requires $99/year Apple Developer Program). Step tracking ships as manual entry instead. Web Push notifications available on both platforms (iOS requires home-screen install, supported since 16.4). If native API needs arise later, Capacitor (WebView wrapper, ~95% code reuse) is the documented escalation path. React Native and full native rejected due to massive rewrite cost for marginal benefit. See Project Docs Decision Register 2026-03-26. (2026-03-26)
-
-**Q:** What scope should nutrition tracking have? Full macro/calorie tracking or simple meal logging? **A:** Neither. Hybrid approach: personal food library with quick-add items that populate multiple counters (protein, fiber, fruit servings, veggie servings) simultaneously, plus a "raw add" mode for direct nutrient entry without a food item. No calorie tracking for v1. No starter library. Fruit and veggie tracked separately in panel, combined on home screen. See Project Docs Decision Register 2026-03-27. (2026-03-27)
-
-**Q:** What UI should the water tracker use? (Dots vs ring vs bar, +1 vs custom amounts.) **A:** Progress ring with tap-to-log (+1 per tap). Companion mode panel. Undo toast after each tap. Progress ring also appears as a home screen summary widget. (2026-03-27)
-
-**Q:** How should step tracking work? (Single entry, additive, or replace-style? Single goal or tiers?) **A:** Replace-style entry (user types current pedometer total, latest for the day wins). Tier milestone goals at 2,500 / 5,000 / 7,500 / 10,000 rather than single target. See Project Docs Decision Register 2026-03-27. (2026-03-27)
-
-**Q:** How should the to-do list handle recurring tasks? **A:** Approach 2: definitions + daily completion logs (same architecture as habits). Recurring tasks pinned at top of list. Task reappears unchecked each day because no log exists for today. Completed one-off tasks move to collapsible "done" section. See Project Docs Decision Register 2026-03-27. (2026-03-27)
-
-**Q:** How should time tracking / pomodoro work? **A:** Pomodoro timer as primary mechanism with manual session add for retroactive logging. Custom work categories (academic, housework, etc.) so time is tracked per category. Not integrated with daily goals yet. See Project Docs Decision Register 2026-03-27. (2026-03-27)
-
-**Q:** Should features be built framework-first or feature-driven? **A:** Inside-out (feature-driven). Build minimal scaffolding, then one feature at a time, growing the framework incrementally. 5 phases: (1) prerequisites + nav shell, (2) water tracker, (3) second companion tracker, (4) to-do list, (5) everything else. See Project Docs Section 8.2.1 and Decision Register 2026-03-27. (2026-03-27)
-
-**Q:** What should the nav bar layout be? **A:** Home (fixed, mountains+stars icon) + 3 customizable slots + more. Default order: home, focus (clock), tasks (double checkmarks), nutrition (leaf), more (dots). Home returns to companion mode. See `nav-icons-reference.md` for SVG paths and `glim-homescreen-mockup.html` for visual reference. (2026-03-27)
-
-**Q:** What summary widgets should appear on the home screen? **A:** Three widgets only (rings-only layout): steps progress ring, water progress ring, tasks completed count (checkmark + "N done", not a fraction). Keeps home screen clean with Glim large. Full detail lives in panels and the dashboard focus screen. (2026-03-27)
-
-**Q:** Should water's `bottleOz` and `goal` live in `useSettingsStore` or `useWaterStore`? **A:** `useWaterStore`. Self-contained; simplifies Firestore sync (one config doc, no cross-store reads during sync); cleaner component code (read one store, not two). Future trackers should follow the same pattern. (2026-03-29)
-
-**Q:** Should water undo be a soft-delete (like journal) or hard-delete? **A:** Hard-delete. The undo window is 4 seconds; sync interval is 60 seconds. Push-then-undo-then-pull in the same session is extremely unlikely, and the consequence is one extra bottle - low severity. Soft-delete would add complexity for negligible UX benefit. [FOLLOW-UP NEEDED] If cross-device undo reliability ever matters, switch to soft-delete by adding `deletedAt: null` to entry schema. (2026-03-29)
-
-**Q:** Is sync real-time? **A:** No. Polling only: on startup, every 60s, and on `visibilitychange` (tab gains focus). Both devices must be open simultaneously and one must regain focus or wait for the interval. No Firestore `onSnapshot` listeners. Acceptable for wellness tracking - simultaneous multi-device logging is not a common pattern. (2026-03-29)
+- **2026-04-04** - Build nutrition tracking (companion panel + stores): `useNutritionStore.js`, `useNutritionLibraryStore.js`, `NutritionPanel.jsx` implemented. Two-tone bars, inline raw-add, library quick-add, undo, streak footer, 200-message pool. 47 unit tests passed.
+- **2026-04-04** - Update nav bar with nutrition icon and "more" menu: `NavBar.jsx` updated (Icon I apple SVG, correct desktop/mobile slot assignments), `MoreMenu.jsx` created (slide-up overlay, 3-column grid, nutrition/settings available), `useUIStore.js` updated (showMoreMenu), `DesktopPet.jsx` updated (MoreMenu rendered).
+- **2026-04-04** - Build nutrition message pools: ~200 messages across 8 event types embedded directly in `NutritionPanel.jsx` (same stopgap pattern as WaterPanel). Full pool content in `nutrition-message-pools.md`.
 
 ---
 
-# 5. File System Map
+# 4. Open Questions and Blockers
 
-## 5.1 Directory Structure
+## 4.1 Blockers
 
-**Last updated:** 2026-03-29
+None currently.
 
-**Note:** Vite migration complete. `client/` is the active Vite project. Hosted on GitHub Pages at https://reitheheroine.github.io/Glim/. Netlify project still exists but is no longer active. `glim.html` kept as legacy reference.
+## 4.2 Open Questions
 
-**Current structure:**
+- **2026-03-25** - At what point should the codebase split into separate desktop/mobile entry points vs. continuing with `isMobile` feature flags? Decision deferred until 2-3 mobile-specific features are implemented.
+- **2026-03-25** - Should Tailwind CSS be removed before or after touch/responsive work? Low-impact either way.
+- **2026-03-25** - `glim-messages.txt` inventory file may be stale. Needs regeneration.
+- **2026-03-25** - Enhanced journaling scope: what specifically makes it "enhanced"? Needs scoping before build.
+- **2026-03-25** - Should Glim's messages eventually be AI-powered? Hybrid approach discussed (static pools + Claude API for daily summaries). Deferred to after sync layer is built. Cost estimate: ~$0.60/month at 10 AI messages/day.
 
-```
-glim/
-|
-+-- .github/
-|   +-- workflows/
-|       +-- deploy.yml                 # GitHub Actions: build + deploy to GitHub Pages
-+-- .gitignore                         # node_modules/, dist/, .DS_Store, *.log, .env.local
-+-- glim.html                          # Standalone HTML (legacy, kept as reference)
-+-- glim-messages.txt                  # Message inventory (needs regeneration - may be stale)
-+-- package.json                       # Root package.json (stub, not the active one)
-+-- tater.html                         # (reference artifact)
-+-- icon-splash-handoff.md             # Handoff doc from Claude.ai for icon/splash work (done)
-+-- nav-icons-reference.md             # Nav bar icon SVGs + React component structure (from Claude.ai)
-+-- glim-homescreen-mockup.html        # Pixel-accurate home screen mockup (open in browser for visual reference)
-+-- project documentation/
-|   +-- glim_handoff.Rmd               # This file
-|   +-- glim_project_documentation.Rmd # Project documentation source
-|   +-- glim_project_documentation.html
-|   +-- glim-water-panel-mockup.html   # Pixel-accurate water panel mockup (3 states)
-|   +-- figures/
-|       +-- glim_system_architecture.svg
-|       +-- glim_system_architecture.png
-|       +-- glim_data_flow_example.svg
-|       +-- glim_data_flow_example.png
-|       +-- mockup_companion_mode.html
-|       +-- mockup_focus_mode.html
-+-- client/                            # Active Vite project
-    +-- index.html                     # Vite entry HTML (title: Glim, owl favicon)
-    +-- vite.config.js                 # Vite config (React + Tailwind v4, base: '/Glim/')
-    +-- package.json                   # npm dependencies (React 19, Vite 8, Tailwind v4, Zustand, Firebase)
-    +-- .env.local                     # Firebase secrets (gitignored)
-    +-- .env.example                   # Template for Firebase env vars (committed)
-    +-- src/
-    |   +-- main.jsx                   # Entry point (renders App in StrictMode)
-    |   +-- App.jsx                    # Auth gate (SplashScreen / SignIn / DesktopPet)
-    |   +-- DesktopPet.jsx             # Main logic component (~430 lines, no sub-components)
-    |   +-- SplashScreen.jsx           # Auth-loading splash screen
-    |   +-- SignIn.jsx                 # Google sign-in screen
-    |   +-- firebase.js                # Firebase app init (exports auth, db, googleProvider; prompt: select_account)
-    |   +-- sync.js                    # Background Firestore sync (journal, pokes, settings, water; 60s + startup + visibilitychange)
-    |   +-- messages.js                # All message pool arrays (10 exports, ~726 lines)
-    |   +-- storage.js                 # window.storage polyfill (side-effect import)
-    |   +-- utils.js                   # getTimeOfDay(), getColors(), pickRandom()
-    |   +-- index.css                  # Tailwind v4 import + base styles
-    |   +-- glim-animations.css        # All CSS keyframes (extracted from DesktopPet)
-    |   +-- stores/
-    |   |   +-- index.js               # Barrel export for all stores
-    |   |   +-- useCreatureStore.js    # Mood, hue/sat, all animation + drag state
-    |   |   +-- useMessageStore.js     # Speech bubble, reminder state
-    |   |   +-- useSettingsStore.js    # Intervals with localStorage persistence
-    |   |   +-- useUIStore.js          # Panel visibility, nav state (activeNav, activePanel)
-    |   |   +-- useJournalStore.js     # Journal entries, localStorage, soft-delete, reload
-    |   |   +-- usePokesStore.js       # Poke counter with localStorage persistence, reload
-    |   |   +-- useWaterStore.js       # Water entries, bottleOz, goal, configUpdatedAt; reload
-    |   +-- components/
-    |       +-- Background.jsx         # Sky, stars, nebula, landscape, motes
-    |       +-- AmbientBugs.jsx        # 5 floating ambient bugs
-    |       +-- SpeechBubble.jsx       # Glim's speech bubble
-    |       +-- OwlMoth.jsx            # Creature SVG (pure render, all state via props)
-    |       +-- PersistentReminder.jsx # Move/eyes reminder bar
-    |       +-- SettingsPanel.jsx      # Gear button + settings panel + reset all data
-    |       +-- JournalPanel.jsx       # Journal button + panel (reads stores, onSave prop)
-    |       +-- NavBar.jsx             # Bottom nav bar (home, focus, tasks, water, more)
-    |       +-- CompanionPanel.jsx     # Slide-up panel shell; routes to WaterPanel or placeholder
-    |       +-- WaterPanel.jsx         # Water tracking UI (ring, button, undo toast, footer)
-    +-- public/
-    |   +-- manifest.json              # PWA manifest (start_url and icons use /Glim/ prefix)
-    |   +-- glim-icon.svg              # Multi-hue source icon (SVG)
-    |   +-- glim-icon-192.png          # PWA icon
-    |   +-- glim-icon-512.png          # PWA icon
-    |   +-- apple-touch-icon.png       # iOS home screen icon (180px)
-    |   +-- _redirects                 # Netlify routing rule (kept, harmless on GH Pages)
-    |   +-- favicon.svg                # Browser tab favicon
-    +-- dist/                          # Build output (gitignored)
-    +-- node_modules/                  # (gitignored)
-```
+## 4.3 Resolved Questions
 
-**Planned additions:**
+For resolved questions, see `glim_resolved_questions.md`. Significant resolved questions have been (or should be) promoted to Decision Register entries in `glim_project_history.Rmd`.
 
-```
-client/
-+-- public/
-    +-- sw.js                          # Service worker (blocked by vite-plugin-pwa task)
-```
+---
 
-## 5.2 Scripts Reference
+# 5. Integration Points
 
-Run all scripts from the `client/` directory.
+How modules interface with each other. Critical for implementation sessions where changes in one module affect another.
 
-| Script | Command | Description | Last Updated |
+## 5.1 Zustand Store Interfaces
+
+All stores are in `client/src/stores/`. React components never touch localStorage directly; stores are the sole interface.
+
+| Store | Key state | Key actions | Who reads it |
 |---|---|---|---|
-| Dev server | `npm run dev` | Starts Vite dev server at localhost:5173 with HMR | 2026-03-25 |
-| Production build | `npm run build` | Builds to `client/dist/` | 2026-03-25 |
-| Preview build | `npm run preview` | Serves production build locally for testing | 2026-03-25 |
-| Lint | `npm run lint` | ESLint check | 2026-03-25 |
+| `useCreatureStore` | mood, hue, sat, animation states, drag state, pupil offset | setMood, setSpecialAnim, setDragState, setPupilOffset | DesktopPet, OwlMoth, Background |
+| `useMessageStore` | message, showBubble, msgType, isWellness | setMessage, setShowBubble, clearMessage | SpeechBubble, WaterPanel (stopgap), PersistentReminder |
+| `useSettingsStore` | wellnessInterval, moveInterval, eyesInterval, lastModified | setInterval, reload | SettingsPanel, DesktopPet (timer scheduling) |
+| `useUIStore` | activeNav, activePanel, journalView, journalText | setActiveNav, setActivePanel, setJournalView | NavBar, CompanionPanel, JournalPanel |
+| `useJournalStore` | entries (array) | addEntry, softDelete, reload | JournalPanel |
+| `usePokesStore` | count | increment, reload | DesktopPet (click handler) |
+| `useWaterStore` | entries, bottleOz, goal, configUpdatedAt | logBottle, undoLast, setBottleOz, setGoal, reload | WaterPanel |
+| `useStepsStore` | entries (replace-style per date), streak, weeklyAvg | logSteps, reload | StepsPanel |
+| `useNutritionStore` | logs, goals ({ min, ideal } per nutrient), configUpdatedAt | logFromLibrary, logRaw, undoLast, setGoal, reload | NutritionPanel |
+| `useNutritionLibraryStore` | items (food library) | addItem, editItem, deleteItem, recordUsage, reload | NutritionPanel, NutritionLibraryManager |
 
-## 5.3 File System Update Instructions
+## 5.2 Sync Service Contract
 
-When creating, moving, or deleting files:
+`sync.js` calls `startSync(uid)` from `App.jsx` on auth. After pulling remote changes that modify localStorage, fires `glim-data-updated` CustomEvent with affected domain names. `DesktopPet` listens and calls the relevant store's `reload()`.
 
-1. Update the directory tree above
-2. Update the "Last updated" date
-3. Add notes for new directories or significant files
-4. Update Scripts Reference table if new scripts created
-5. Check if new files need GitHub inclusion/exclusion
+Sync strategies per domain: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`).
 
----
+**Planned (not yet wired):** nutrition logs at `users/{uid}/nutrition/{entryId}` (additive merge + soft-delete propagation), nutrition config at `users/{uid}/nutrition-config/current` (last-write-wins by `configUpdatedAt`), nutrition library at `users/{uid}/nutrition-library/{itemId}` (additive merge + edit propagation). Steps sync also pending.
 
-# 6. Computational Environment
+## 5.3 Future: Reaction System Contract
 
-## 6.1 Platform
-
-**Runtime:** Any modern web browser (Chrome, Firefox, Safari, Edge)
-
-**Development:** Local Vite dev server (`npm run dev` at `localhost:5173`). Run from `client/` directory.
-
-**Build:** `npm run build` via Vite. Produces optimized static files in `client/dist/`. Run from `client/` directory.
-
-## 6.2 Dependencies
-
-### Installed (`client/package.json`)
-
-| Dependency | Version | Purpose |
-|---|---|---|
-| vite | 8.0.2 | Build tool and dev server |
-| @vitejs/plugin-react | 6.0.1 | JSX transform for Vite |
-| react | 19.2.4 | UI framework |
-| react-dom | 19.2.4 | React rendering |
-| tailwindcss | 4.2.2 | Utility CSS (build-integrated) |
-| @tailwindcss/vite | 4.2.2 | Tailwind v4 Vite plugin |
-
-### Also installed
-
-| Dependency | Version | Purpose | Date |
-|---|---|---|---|
-| zustand | 5.x | Shared state management (7 domain stores) | 2026-03-27 |
-| firebase | 11.x | Firestore + Google Auth | 2026-03-26 |
-
-### Planned (not yet installed)
-
-| Dependency | Package | Purpose |
-|---|---|---|
-| chart.js | npm | Data visualization for tracker trends |
-| vite-plugin-pwa | npm | Service worker and PWA manifest generation |
-
-## 6.3 Storage
-
-**Current:** `localStorage` (primary read/write layer) + Firebase Firestore (background sync, built 2026-03-29)
-
-**Storage keys:** `glim-journal`, `glim-pokes`, `glim-settings`, `glim-water`, `glim-sync-meta`
-
-**Sync:** `sync.js` pushes/pulls all domains. See Project Docs Section 8.11 for full architecture.
-
-## 6.4 Repository Configuration
-
-**Repo:** `git@github.com:ReitheHeroine/Glim.git` (branch: `main`)
-**Hosting:** GitHub Pages - auto-deploys via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`. Build: `npm run build` in `client/`, deploy: `client/dist/` to `gh-pages` branch.
-**Live URL:** https://reitheheroine.github.io/Glim/
-
-**`.gitignore` contents (at repo root):**
-```
-node_modules/
-dist/
-.DS_Store
-*.log
-```
-
-**Include in version control (once repo is initialized):**
-```
-client/src/           # All source files
-client/index.html     # Vite entry HTML
-client/package.json   # Dependencies
-client/vite.config.js # Build config
-project documentation/ # Rmd docs
-glim.html             # Legacy reference
-.gitignore
-```
-
-**Note:** No `tailwind.config.js` - Tailwind v4 is configured via the Vite plugin, no config file needed.
+When `glimReact(eventType, data)` is built, it will be called by tracker stores/panels after data events. It reads from `useCreatureStore` (sleep check, cooldown) and writes to `useMessageStore` (message, animation). Currently, WaterPanel calls `useMessageStore` directly as a stopgap.
 
 ---
 
-# 7. Code and Style Preferences
+# 6. Current Session
 
-## 7.1 Code Header Format
+This section holds the in-progress session log entry. It is written during the session and flushed to `glim_session_log.Rmd` at session end (see Section 1.2, "At session end" for the flush procedure).
 
-```
-# title: [script_name.ext]
-# project: Glim
-# author: Reina Hastings
-# contact: reinahastings13@gmail.com
-# date created: [YYYY-MM-DD]
-# last modified: [YYYY-MM-DD]
-#
-# purpose:
-#   [Description of what the script does]
-#
-# inputs:
-#   - [Input files/parameters]
-#
-# outputs:
-#   - [Output files/locations]
-#
-# usage example:
-#   [How to run the script]
-#
-#   copy/paste: [single-line command]
-```
-
-## 7.2 Code Style Conventions
-
-**For build scripts (Bash/Python):**
-
-- Include argument parsing (`argparse` for Python, `getopts`/`getopt` for Bash) for script versatility
-- Include usage messages so scripts are easy to use by anyone
-- Include a copy/paste-ready command in the header's usage example section
-- Comment in a visually organized way:
-  - Use section headers to delineate major parts of the script
-  - Number steps in multi-step algorithms
-  - Explain the *why*, not just the *what*, for non-obvious logic
-- Write detailed inline comments for complex operations
-
-**For JSX/React code (Glim codebase):**
-
-- Use section dividers (`// ============ Section Name ============`) between major code blocks
-- Keep message arrays at the top of the file, logic below
-- Follow the ref sync pattern for any value that needs to be current inside async callbacks:
-  ```javascript
-  const someRef = useRef(false);
-  useEffect(() => { someRef.current = someState; }, [someState]);
-  ```
-- All recursive `setTimeout` schedulers must use a local timer ref with cleanup:
-  ```javascript
-  useEffect(() => {
-    const timer = { current: null };
-    const schedule = () => {
-      timer.current = setTimeout(() => { /* ... */ schedule(); }, delay);
-    };
-    schedule();
-    return () => clearTimeout(timer.current);
-  }, []);
-  ```
-- No em dashes anywhere in the codebase (use single hyphens)
-- Inline styles preferred over Tailwind classes for new code (Tailwind removal planned)
-
----
-
-# Archived Sessions
-
-[Old session log entries moved here after their content has been captured in the Project Documentation. Kept for reference but not expected to be read routinely.]
-
-(No archived entries yet.)
+[SESSION START]
+[SESSION END]
