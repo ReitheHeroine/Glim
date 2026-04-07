@@ -24,6 +24,7 @@ import { pickRandom } from './utils';
 import {
   useCreatureStore, useMessageStore, useSettingsStore,
   useUIStore, useJournalStore, usePokesStore, useWaterStore, useStepsStore,
+  useNutritionStore, useNutritionLibraryStore,
 } from './stores';
 import Background from './components/Background';
 import AmbientBugs from './components/AmbientBugs';
@@ -77,6 +78,8 @@ export default function DesktopPet() {
 
   const { reload: reloadWater } = useWaterStore();
   const { reload: reloadSteps } = useStepsStore();
+  const { reload: reloadNutrition } = useNutritionStore();
+  const { reload: reloadNutritionLibrary } = useNutritionLibraryStore();
 
   // ---- Drag refs ----
   const dragStartRef = useRef(null);
@@ -128,15 +131,17 @@ export default function DesktopPet() {
   // ---- Listen for sync service updates (cross-device data arriving) ----
   useEffect(() => {
     const handler = (e) => {
-      if (e.detail?.domains?.includes('journal'))  reloadJournal();
-      if (e.detail?.domains?.includes('pokes'))    reloadPokes();
-      if (e.detail?.domains?.includes('settings')) reloadSettings();
-      if (e.detail?.domains?.includes('water'))    reloadWater();
-      if (e.detail?.domains?.includes('steps'))    reloadSteps();
+      if (e.detail?.domains?.includes('journal'))           reloadJournal();
+      if (e.detail?.domains?.includes('pokes'))             reloadPokes();
+      if (e.detail?.domains?.includes('settings'))          reloadSettings();
+      if (e.detail?.domains?.includes('water'))             reloadWater();
+      if (e.detail?.domains?.includes('steps'))             reloadSteps();
+      if (e.detail?.domains?.includes('nutrition'))         reloadNutrition();
+      if (e.detail?.domains?.includes('nutrition-library')) reloadNutritionLibrary();
     };
     window.addEventListener('glim-data-updated', handler);
     return () => window.removeEventListener('glim-data-updated', handler);
-  }, [reloadJournal, reloadPokes, reloadSettings, reloadWater, reloadSteps]);
+  }, [reloadJournal, reloadPokes, reloadSettings, reloadWater, reloadSteps, reloadNutrition, reloadNutritionLibrary]);
 
   // ---- Eye tracking ----
   // Uses isSleepingRef so the callback is stable (no dep on specialAnim).

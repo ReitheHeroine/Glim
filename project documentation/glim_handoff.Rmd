@@ -107,7 +107,7 @@ Step [X] complete.
 
 **Current phase:** Phases 1-3 in parallel (infrastructure gaps from Phase 1 being filled alongside Phase 2-3 feature work).
 
-**Current focus:** Nutrition tracker live testing + NutritionLibraryManager (CRUD for food library, requires focus mode first). Step tracking completion (Firestore sync, message pools). Critical bug: localStorage cross-account contamination.
+**Current focus:** Nutrition library manager (CRUD for food library, requires focus mode first). Step tracking completion (Firestore sync, message pools). Critical bug: localStorage cross-account contamination.
 
 ## 2.2 Component/Module Status
 
@@ -123,9 +123,9 @@ Step [X] complete.
 | Reaction system | 2 | Not started | - | glimReact() - needed for all trackers |
 | Home screen widgets | 2 | Not started | - | 3 rings: steps, water, tasks |
 | Step tracker | 3 | Live (partial) | 2026-03-30 | Hero number panel. Firestore sync not wired. |
-| Nutrition tracker | 3 | Live (partial) | 2026-04-04 | Panel, two stores, more menu implemented. Library CRUD (NutritionLibraryManager) pending. Firestore sync not yet wired. |
+| Nutrition tracker | 3 | Live (partial) | 2026-04-07 | Panel, two stores, more menu, Firestore sync implemented. Library CRUD (NutritionLibraryManager) pending. |
 | More menu | 1 | Live | 2026-04-04 | Slide-up overlay, 3-column grid, settings + nutrition (mobile) available. |
-| Sync service | - | Live | 2026-03-29 | Domains: journal, pokes, settings, water. Steps not yet wired. |
+| Sync service | - | Live | 2026-04-07 | Domains: journal, pokes, settings, water, steps, nutrition (logs + config + library). 8 sync functions in syncAll. |
 | Journal | - | Live | 2026-03-27 | Entries with soft-delete, syncs via Firestore |
 | Settings | - | Live | 2026-03-27 | Intervals, sign-out, reset-all-data |
 | Zustand stores | - | Live | 2026-04-04 | 10 stores: creature, message, settings, UI, journal, pokes, water, steps, nutrition, nutrition-library. All have reload(). |
@@ -133,7 +133,7 @@ Step [X] complete.
 
 ### Latest session
 
-See `glim_session_log.Rmd` for full details. Most recent: 2026-04-04 (Claude Code) - Nutrition tracker implementation: created `useNutritionStore.js`, `useNutritionLibraryStore.js`, `NutritionPanel.jsx` (full 200-message pool, two-tone bars, inline raw-add, library quick-add, undo, streak footer), `MoreMenu.jsx`. Updated NavBar (correct slots + nutrition icon), useUIStore (showMoreMenu), CompanionPanel (routing), DesktopPet (MoreMenu render), stores/index.js (barrel exports). 47 unit tests passed. Build clean: 721KB JS / 223KB gzip.
+See `glim_session_log.Rmd` for full details. Most recent: 2026-04-07 (Claude Code) - Nutrition Firestore sync: added syncNutritionLogs, syncNutritionConfig, syncNutritionLibrary to sync.js. Added updatedAt to library store for edit conflict resolution. Wired reload listeners in DesktopPet. 87 sync tests passed. Build clean: 724KB JS / 223KB gzip.
 
 ---
 
@@ -311,6 +311,7 @@ Tasks organized by build phase (see Project Docs Section 8.2.1). Work within eac
 - **2026-04-04** - Build nutrition tracking (companion panel + stores): `useNutritionStore.js`, `useNutritionLibraryStore.js`, `NutritionPanel.jsx` implemented. Two-tone bars, inline raw-add, library quick-add, undo, streak footer, 200-message pool. 47 unit tests passed.
 - **2026-04-04** - Update nav bar with nutrition icon and "more" menu: `NavBar.jsx` updated (Icon I apple SVG, correct desktop/mobile slot assignments), `MoreMenu.jsx` created (slide-up overlay, 3-column grid, nutrition/settings available), `useUIStore.js` updated (showMoreMenu), `DesktopPet.jsx` updated (MoreMenu rendered).
 - **2026-04-04** - Build nutrition message pools: ~200 messages across 8 event types embedded directly in `NutritionPanel.jsx` (same stopgap pattern as WaterPanel). Full pool content in `nutrition-message-pools.md`.
+- **2026-04-07** - Wire nutrition Firestore sync: added `syncNutritionLogs` (additive merge + soft-delete), `syncNutritionConfig` (LWW by configUpdatedAt), `syncNutritionLibrary` (additive merge + edit propagation by updatedAt) to sync.js. Added `updatedAt` field to library store actions. Wired reload listeners in DesktopPet. 87 tests passed.
 
 ---
 
@@ -359,9 +360,7 @@ All stores are in `client/src/stores/`. React components never touch localStorag
 
 `sync.js` calls `startSync(uid)` from `App.jsx` on auth. After pulling remote changes that modify localStorage, fires `glim-data-updated` CustomEvent with affected domain names. `DesktopPet` listens and calls the relevant store's `reload()`.
 
-Sync strategies per domain: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`).
-
-**Planned (not yet wired):** nutrition logs at `users/{uid}/nutrition/{entryId}` (additive merge + soft-delete propagation), nutrition config at `users/{uid}/nutrition-config/current` (last-write-wins by `configUpdatedAt`), nutrition library at `users/{uid}/nutrition-library/{itemId}` (additive merge + edit propagation). Steps sync also pending.
+Sync strategies per domain: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`), steps (additive merge), nutrition logs (additive merge + soft-delete propagation), nutrition config (last-write-wins by `configUpdatedAt`), nutrition library (additive merge + edit propagation by `updatedAt`).
 
 ## 5.3 Future: Reaction System Contract
 

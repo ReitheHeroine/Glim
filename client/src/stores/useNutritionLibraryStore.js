@@ -61,6 +61,7 @@ export const useNutritionLibraryStore = create((set, get) => ({
       usageCount:    0,
       lastUsed:      null,
       createdAt:     new Date().toISOString(),
+      updatedAt:     new Date().toISOString(),
       deletedAt:     null,
     };
     set(state => {
@@ -78,7 +79,7 @@ export const useNutritionLibraryStore = create((set, get) => ({
       const next = {
         ...state,
         items: state.items.map(item =>
-          item.id === itemId ? { ...item, ...updates } : item
+          item.id === itemId ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
         ),
       };
       saveLibrary(next);
@@ -115,11 +116,12 @@ export const useNutritionLibraryStore = create((set, get) => ({
 
   // Soft-delete: sets deletedAt. Hidden-but-not-deleted items still appear in logs.
   deleteItem: (itemId) => {
+    const now = new Date().toISOString();
     set(state => {
       const next = {
         ...state,
         items: state.items.map(item =>
-          item.id === itemId ? { ...item, deletedAt: new Date().toISOString() } : item
+          item.id === itemId ? { ...item, deletedAt: now, updatedAt: now } : item
         ),
       };
       saveLibrary(next);
@@ -135,7 +137,7 @@ export const useNutritionLibraryStore = create((set, get) => ({
         ...state,
         items: state.items.map(item =>
           item.id === itemId
-            ? { ...item, usageCount: item.usageCount + 1, lastUsed: todayStr() }
+            ? { ...item, usageCount: item.usageCount + 1, lastUsed: todayStr(), updatedAt: new Date().toISOString() }
             : item
         ),
       };

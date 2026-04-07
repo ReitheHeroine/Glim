@@ -31,6 +31,14 @@ output:
 
 # Active Session Log
 
+### 2026-04-07 (Claude Code) - Nutrition Firestore sync
+
+- **Modified `client/src/sync.js`:** Added three sync functions. `syncNutritionLogs`: additive merge + soft-delete propagation at `users/{uid}/nutrition/{entryId}`, push filter on createdAt/deletedAt vs nutritionPushedAt, pull with Map-based O(1) ID lookup, soft-delete propagation (remote deletedAt newer than local). `syncNutritionConfig`: last-write-wins by configUpdatedAt at `users/{uid}/nutrition-config/current`, pushes/pulls goals object. `syncNutritionLibrary`: additive merge + edit propagation at `users/{uid}/nutrition-library/{itemId}`, push filter on createdAt/updatedAt vs nutritionLibraryPushedAt, pull with newer-updatedAt-wins conflict resolution via Object.assign. All three registered in syncAll (now 8 sync functions). Sync meta keys: nutritionPushedAt, nutritionLibraryPushedAt. Nutrition logs and library always advance pushedAt after sync (matching journal/water fix pattern).
+- **Modified `client/src/stores/useNutritionLibraryStore.js`:** Added `updatedAt` ISO timestamp field to `addItem`, `editItem`, `deleteItem`, `recordUsage` actions. Required for library sync edit conflict resolution.
+- **Modified `client/src/DesktopPet.jsx`:** Added imports for `useNutritionStore` and `useNutritionLibraryStore`. Destructured `reloadNutrition` and `reloadNutritionLibrary`. Added event listener branches for `'nutrition'` and `'nutrition-library'` domains. Added both reloads to useEffect dependency array.
+- **Tests:** 87 sync-specific tests passed (sync function existence, syncAll registration, pattern correctness for all 3 functions, sync metadata keys, library updatedAt field, DesktopPet wiring, domain isolation, pattern consistency with existing sync, error handling, edge cases, sync logic simulation with push filters/conflict resolution/soft-delete propagation).
+- **Build check:** 724KB JS / 223KB gzip (+3KB from sync functions). Clean, no new warnings. ESLint clean.
+
 ### 2026-04-04 (Claude Code) - Nutrition tracker implementation
 
 - **Created `client/src/stores/useNutritionStore.js`:** localStorage key `glim-nutrition`. Persists: `logs[]`, `goals{ protein/fiber/fruit/veggie: {min, ideal} }`, `configUpdatedAt`. Default goals: protein 80/100g, fiber 25/35g, fruit 2/3 srv, veggie 3/5 srv. Actions: `logFromLibrary`, `logRaw`, `undoLast` (soft-delete with `deletedAt`), `setGoal`, `reload`. Selectors: `getToday` (sums today, clamps to 0), `getProgress` (per-nutrient `{current, min, ideal, minMet, idealMet}`), `getStreak`, `getAllStreak`, `getWeeklyAvg`. Uses `fruitServings`/`vegServings` as log field names mapping to `fruit`/`veggie` in progress/goals.

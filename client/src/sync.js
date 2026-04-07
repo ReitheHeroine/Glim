@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-26
-// Last Modified: 2026-03-30
+// Last Modified: 2026-04-07
 // Purpose:     Background sync service. Pushes localStorage data to Firestore
 //              and pulls remote changes back into localStorage so data stays
 //              in sync across devices. localStorage remains the primary
@@ -104,10 +104,6 @@ async function syncJournal(uid) {
     }
   }
 
-  if (toPush.length > 0) {
-    setSyncMeta({ journalPushedAt: new Date().toISOString() });
-  }
-
   // --- PULL: Firestore entries not in localStorage ---
   let snapshot;
   try {
@@ -133,6 +129,11 @@ async function syncJournal(uid) {
     localSet('glim-journal', merged);
     notify(['journal']);
   }
+
+  // Always advance pushedAt, even when there was nothing to push locally.
+  // A device that only pulled remote entries would otherwise keep lastPushedAt
+  // at epoch and re-push all pulled entries on the next cycle.
+  setSyncMeta({ journalPushedAt: new Date().toISOString() });
 }
 
 // =============================================================================
@@ -241,10 +242,6 @@ async function syncWater(uid) {
     }
   }
 
-  if (toPush.length > 0) {
-    setSyncMeta({ waterPushedAt: new Date().toISOString() });
-  }
-
   // --- PULL: Firestore entries not in local ---
   let snapshot;
   try {
@@ -291,6 +288,11 @@ async function syncWater(uid) {
     localSet('glim-water', local);
     notify(['water']);
   }
+
+  // Always advance pushedAt, even when there was nothing to push locally.
+  // A device that only pulled remote entries would otherwise keep lastPushedAt
+  // at epoch and re-push all pulled entries on the next cycle.
+  setSyncMeta({ waterPushedAt: new Date().toISOString() });
 }
 
 // =============================================================================
@@ -359,6 +361,201 @@ async function syncSteps(uid) {
 }
 
 // =============================================================================
+//  Nutrition logs sync
+//  Strategy: additive merge + soft-delete propagation (same as journal).
+//  Firestore path: users/{uid}/nutrition/{entryId}
+//  Push: entries with createdAt or deletedAt newer than nutritionPushedAt
+//  Pull: entries not present locally, or remote deletedAt newer than local
+// =============================================================================
+
+async function syncNutritionLogs(uid) {
+  const meta         = getSyncMeta();
+  const lastPushedAt = meta.nutritionPushedAt ? new Date(meta.nutritionPushedAt) : new Date(0);
+
+  let local;
+  try {
+    const raw = localStorage.getItem('glim-nutrition');
+    local = raw ? JSON.parse(raw) : { logs: [], goals: {}, configUpdatedAt: null };
+  } catch {
+    return;
+  }
+
+  const logs      = Array.isArray(local.logs) ? local.logs : [];
+  const logsRef   = collection(db, 'users', uid, 'nutrition');
+
+  // --- PUSH: entries created or soft-deleted since last push ---
+  const toPush = logs.filter(e => {
+    const created = new Date(e.createdAt || 0);
+    const deleted = e.deletedAt ? new Date(e.deletedAt) : null;
+    return created > lastPushedAt || (deleted && deleted > lastPushedAt);
+  });
+
+  for (const entry of toPush) {
+    try {
+      await setDoc(doc(logsRef, String(entry.id)), entry, { merge: true });
+    } catch (e) {
+      console.warn('[glim sync] nutrition log push failed:', entry.id, e);
+    }
+  }
+
+  // --- PULL: Firestore entries not in localStorage, or with newer deletedAt ---
+  let snapshot;
+  try {
+    snapshot = await getDocs(logsRef);
+  } catch (e) {
+    console.warn('[glim sync] nutrition log pull failed:', e);
+    return;
+  }
+
+  const localById = new Map(logs.map(e => [String(e.id), e]));
+  const toAdd     = [];
+  let updated     = false;
+
+  snapshot.forEach(d => {
+    const remote  = d.data();
+    const localE  = localById.get(d.id);
+    if (!localE) {
+      toAdd.push(remote);
+    } else if (remote.deletedAt && (!localE.deletedAt || new Date(remote.deletedAt) > new Date(localE.deletedAt))) {
+      // Remote has a newer soft-delete - propagate it
+      localE.deletedAt = remote.deletedAt;
+      updated = true;
+    }
+  });
+
+  if (toAdd.length > 0 || updated) {
+    const merged = [...logs, ...toAdd].sort(
+      (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+    );
+    local = { ...local, logs: merged };
+    localSet('glim-nutrition', local);
+    notify(['nutrition']);
+  }
+
+  setSyncMeta({ nutritionPushedAt: new Date().toISOString() });
+}
+
+// =============================================================================
+//  Nutrition config sync
+//  Strategy: last-write-wins by configUpdatedAt (same as water config).
+//  Firestore path: users/{uid}/nutrition-config/current
+// =============================================================================
+
+async function syncNutritionConfig(uid) {
+  let local;
+  try {
+    const raw = localStorage.getItem('glim-nutrition');
+    local = raw ? JSON.parse(raw) : null;
+  } catch {
+    return;
+  }
+  if (!local) return;
+
+  const localGoals           = local.goals ?? {};
+  const localConfigUpdatedAt = local.configUpdatedAt ?? new Date(0).toISOString();
+  const configRef            = doc(db, 'users', uid, 'nutrition-config', 'current');
+
+  try {
+    const snap         = await getDoc(configRef);
+    const remoteConfig = snap.exists() ? snap.data() : null;
+    const localTime    = new Date(localConfigUpdatedAt);
+    const remoteTime   = remoteConfig?.configUpdatedAt ? new Date(remoteConfig.configUpdatedAt) : new Date(0);
+
+    if (!remoteConfig || localTime >= remoteTime) {
+      // Local is newer (or no remote): push
+      await setDoc(configRef, { goals: localGoals, configUpdatedAt: localConfigUpdatedAt }, { merge: true });
+    } else {
+      // Remote is newer: pull
+      local = { ...local, goals: remoteConfig.goals, configUpdatedAt: remoteConfig.configUpdatedAt };
+      localSet('glim-nutrition', local);
+      notify(['nutrition']);
+    }
+  } catch (e) {
+    console.warn('[glim sync] nutrition config sync failed:', e);
+  }
+}
+
+// =============================================================================
+//  Nutrition library sync
+//  Strategy: additive merge + edit propagation + soft-delete propagation.
+//  Firestore path: users/{uid}/nutrition-library/{itemId}
+//  Push: items with createdAt or updatedAt newer than nutritionLibraryPushedAt
+//  Pull: items not present locally (add), or remote updatedAt newer (update)
+// =============================================================================
+
+async function syncNutritionLibrary(uid) {
+  const meta         = getSyncMeta();
+  const lastPushedAt = meta.nutritionLibraryPushedAt ? new Date(meta.nutritionLibraryPushedAt) : new Date(0);
+
+  let local;
+  try {
+    const raw = localStorage.getItem('glim-nutrition-library');
+    local = raw ? JSON.parse(raw) : { items: [] };
+  } catch {
+    return;
+  }
+
+  const items    = Array.isArray(local.items) ? local.items : [];
+  const itemsRef = collection(db, 'users', uid, 'nutrition-library');
+
+  // --- PUSH: items created or updated since last push ---
+  const toPush = items.filter(e => {
+    const created  = new Date(e.createdAt || 0);
+    const modified = e.updatedAt ? new Date(e.updatedAt) : new Date(0);
+    return created > lastPushedAt || modified > lastPushedAt;
+  });
+
+  for (const item of toPush) {
+    try {
+      await setDoc(doc(itemsRef, String(item.id)), item, { merge: true });
+    } catch (e) {
+      console.warn('[glim sync] nutrition library push failed:', item.id, e);
+    }
+  }
+
+  // --- PULL: items not in localStorage, or remote version is newer ---
+  let snapshot;
+  try {
+    snapshot = await getDocs(itemsRef);
+  } catch (e) {
+    console.warn('[glim sync] nutrition library pull failed:', e);
+    return;
+  }
+
+  const localById = new Map(items.map(item => [String(item.id), item]));
+  const toAdd     = [];
+  let updated     = false;
+
+  snapshot.forEach(d => {
+    const remote = d.data();
+    const localItem = localById.get(d.id);
+
+    if (!localItem) {
+      // New item from another device
+      toAdd.push(remote);
+    } else {
+      // Existing item - check if remote is newer
+      const localTime  = localItem.updatedAt ? new Date(localItem.updatedAt) : new Date(0);
+      const remoteTime = remote.updatedAt    ? new Date(remote.updatedAt)    : new Date(0);
+      if (remoteTime > localTime) {
+        // Remote wins: overwrite local fields
+        Object.assign(localItem, remote);
+        updated = true;
+      }
+    }
+  });
+
+  if (toAdd.length > 0 || updated) {
+    const merged = [...items, ...toAdd];
+    local = { ...local, items: merged };
+    localSet('glim-nutrition-library', local);
+    notify(['nutrition-library']);
+  }
+
+  setSyncMeta({ nutritionLibraryPushedAt: new Date().toISOString() });
+}
+
+// =============================================================================
 //  Sync orchestrator
 // =============================================================================
 
@@ -371,6 +568,9 @@ async function syncAll() {
       syncSettings(currentUid),
       syncWater(currentUid),
       syncSteps(currentUid),
+      syncNutritionLogs(currentUid),
+      syncNutritionConfig(currentUid),
+      syncNutritionLibrary(currentUid),
     ]);
   } catch (e) {
     console.warn('[glim sync] syncAll failed:', e);
