@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-31
-// Last Modified: 2026-03-31
+// Last Modified: 2026-04-07
 // Purpose:     Shared date utility functions for the water and steps stores.
 //              Centralizes the "what day is it" logic so all stores agree on
 //              day boundaries. DAY_BOUNDARY_HOUR controls when the logical day
@@ -18,7 +18,7 @@
  * When set to 3, 1 AM on March 31 counts as March 30.
  * Set to 0 for standard midnight boundary.
  */
-const DAY_BOUNDARY_HOUR = 0;
+const DAY_BOUNDARY_HOUR = 3;
 
 /**
  * Converts a Date object to a logical-day date string (YYYY-MM-DD).
