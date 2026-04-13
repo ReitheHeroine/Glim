@@ -3,11 +3,12 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-26
-// Last Modified: 2026-03-29
+// Last Modified: 2026-04-13
 // Purpose:     Sign-in screen shown to unauthenticated users. Handles Google
-//              sign-in via Firebase Auth. Uses signInWithRedirect on iOS PWA
-//              (standalone mode) because WebKit blocks popups there; falls back
-//              to signInWithPopup on desktop and regular browser tabs.
+//              sign-in via Firebase Auth. Uses signInWithRedirect on mobile
+//              (viewport < 600px) and PWA standalone mode because mobile browsers
+//              navigate the current page instead of opening a popup, destroying
+//              the JS context. Falls back to signInWithPopup on desktop.
 // Inputs:      Firebase auth and googleProvider from firebase.js
 // Outputs:     Triggers onAuthStateChanged in App.jsx on successful sign-in
 // Usage:       Rendered by App.jsx when auth state is null (not signed in)
@@ -17,8 +18,11 @@ import { useState } from 'react';
 import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 
-// iOS PWA (standalone) blocks popups - detect and route accordingly
-const isStandalone =
+// Mobile browsers navigate the current page instead of opening a popup,
+// destroying the JS context that initiated signInWithPopup. Use redirect
+// flow on any mobile device (narrow viewport) or PWA standalone mode.
+const isMobileOrStandalone =
+  window.innerWidth < 600 ||
   window.navigator.standalone === true ||
   window.matchMedia('(display-mode: standalone)').matches;
 
@@ -45,7 +49,7 @@ export default function SignIn() {
     setError(null);
     setLoading(true);
     try {
-      if (isStandalone) {
+      if (isMobileOrStandalone) {
         // Redirect flow: page navigates to Google and back.
         // onAuthStateChanged in App.jsx fires automatically on return.
         await signInWithRedirect(auth, googleProvider);
