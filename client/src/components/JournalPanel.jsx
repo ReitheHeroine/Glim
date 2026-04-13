@@ -104,7 +104,7 @@ export default function JournalPanel({ onSave }) {
                   width: "100%", minHeight: 100, maxHeight: 200, padding: "10px 12px",
                   borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)",
                   background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.9)",
-                  fontFamily: "'Courier New', monospace", fontSize: 12,
+                  fontFamily: "'Courier New', monospace", fontSize: 16,
                   lineHeight: 1.5, resize: "vertical", outline: "none",
                   boxSizing: "border-box",
                 }}

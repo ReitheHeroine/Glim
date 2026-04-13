@@ -400,7 +400,7 @@ function InlineInputRow({ nutrient, onConfirm, onCancel }) {
         ref={inputRef} type="number" value={value}
         onChange={(e) => setValue(e.target.value)} onKeyDown={handleKey}
         placeholder="+/- amount"
-        style={{ flex: 1, height: 26, background: 'rgba(200,210,230,0.08)', border: '1px solid rgba(200,210,230,0.2)', borderRadius: 5, color: 'rgba(200,210,230,0.85)', fontFamily: "'Courier New', monospace", fontSize: 11, padding: '0 8px', outline: 'none' }}
+        style={{ flex: 1, height: 30, background: 'rgba(200,210,230,0.08)', border: '1px solid rgba(200,210,230,0.2)', borderRadius: 5, color: 'rgba(200,210,230,0.85)', fontFamily: "'Courier New', monospace", fontSize: 16, padding: '0 8px', outline: 'none' }}
       />
       {unit && (
         <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: 'rgba(200,210,230,0.4)', flexShrink: 0 }}>
@@ -679,7 +679,7 @@ export default function NutritionPanel() {
             type="text" value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="search library..."
-            style={{ width: '100%', height: 32, boxSizing: 'border-box', background: 'rgba(200,210,230,0.06)', border: '1px solid rgba(200,210,230,0.12)', borderRadius: 6, color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 11, padding: '0 10px', outline: 'none' }}
+            style={{ width: '100%', height: 36, boxSizing: 'border-box', background: 'rgba(200,210,230,0.06)', border: '1px solid rgba(200,210,230,0.12)', borderRadius: 6, color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 16, padding: '0 10px', outline: 'none' }}
           />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px' }}>

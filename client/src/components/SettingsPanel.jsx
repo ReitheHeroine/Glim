@@ -181,7 +181,7 @@ export default function SettingsPanel() {
                   width: "100%", boxSizing: "border-box",
                   padding: "6px 8px", borderRadius: 6, marginBottom: 8,
                   background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.25)",
-                  color: "rgba(255,255,255,0.7)", ...mono, fontSize: 11,
+                  color: "rgba(255,255,255,0.7)", ...mono, fontSize: 16,
                   outline: "none",
                 }}
               />

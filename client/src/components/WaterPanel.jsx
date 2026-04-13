@@ -312,8 +312,8 @@ export default function WaterPanel() {
               if (e.key === 'Escape') setEditingOz(false);
             }}
             style={{
-              width: 52, textAlign: 'center',
-              ...mono, fontSize: 10,
+              width: 60, textAlign: 'center',
+              ...mono, fontSize: 16,
               color: accent, background: accentBg,
               border: `1px solid ${accentBorder}`, borderRadius: 8,
               padding: '3px 6px', outline: 'none',
