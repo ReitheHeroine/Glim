@@ -5,26 +5,19 @@
 // Created:     2026-03-26
 // Last Modified: 2026-04-13
 // Purpose:     Sign-in screen shown to unauthenticated users. Handles Google
-//              sign-in via Firebase Auth. Uses signInWithRedirect on mobile
-//              (viewport < 600px) and PWA standalone mode because mobile browsers
-//              navigate the current page instead of opening a popup, destroying
-//              the JS context. Falls back to signInWithPopup on desktop.
+//              sign-in via Firebase Auth using signInWithPopup on all platforms.
+//              When the popup is blocked (installed PWA standalone webview),
+//              shows a fallback prompt to open Glim in Safari. Safari and the
+//              PWA share origin storage, so signing in via Safari authenticates
+//              the PWA on next launch via onAuthStateChanged.
 // Inputs:      Firebase auth and googleProvider from firebase.js
 // Outputs:     Triggers onAuthStateChanged in App.jsx on successful sign-in
 // Usage:       Rendered by App.jsx when auth state is null (not signed in)
 // -----------------------------------------------------------------------------
 
 import { useState } from 'react';
-import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
-
-// Mobile browsers navigate the current page instead of opening a popup,
-// destroying the JS context that initiated signInWithPopup. Use redirect
-// flow on any mobile device (narrow viewport) or PWA standalone mode.
-const isMobileOrStandalone =
-  window.innerWidth < 600 ||
-  window.navigator.standalone === true ||
-  window.matchMedia('(display-mode: standalone)').matches;
 
 // --- Google "G" logo SVG (inline, official brand colors) ---
 
@@ -44,21 +37,25 @@ function GoogleIcon() {
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showBrowserPrompt, setShowBrowserPrompt] = useState(false);
 
   async function handleSignIn() {
     setError(null);
     setLoading(true);
     try {
-      if (isMobileOrStandalone) {
-        // Redirect flow: page navigates to Google and back.
-        // onAuthStateChanged in App.jsx fires automatically on return.
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-        // App.jsx onAuthStateChanged fires and transitions to DesktopPet
-      }
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged in App.jsx handles the transition
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-browser') {
+        const isStandalone =
+          window.navigator.standalone === true ||
+          window.matchMedia('(display-mode: standalone)').matches;
+        if (isStandalone) {
+          setShowBrowserPrompt(true);
+        } else {
+          setError('popup was blocked - check your browser settings');
+        }
+      } else if (err.code !== 'auth/popup-closed-by-user') {
         setError('sign-in failed - try again');
       }
       setLoading(false);
@@ -160,6 +157,49 @@ export default function SignIn() {
           <GoogleIcon />
           {loading ? 'signing in...' : 'continue with google'}
         </button>
+
+        {/* PWA standalone fallback prompt */}
+        {showBrowserPrompt && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+              the pwa can't open sign-in directly - tap below to sign in through safari, then come back here
+            </div>
+            <button
+              onClick={() => window.open('https://reitheheroine.github.io/Glim/', '_blank')}
+              style={{
+                padding: '9px 18px',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                color: 'rgba(255,255,255,0.8)',
+                cursor: 'pointer',
+              }}
+            >
+              open in safari
+            </button>
+            <button
+              onClick={() => { setShowBrowserPrompt(false); setError(null); }}
+              style={{
+                padding: '4px',
+                background: 'none',
+                border: 'none',
+                fontSize: '0.75rem',
+                color: 'rgba(255,255,255,0.35)',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              try again
+            </button>
+          </div>
+        )}
 
         {/* Error message */}
         {error && (

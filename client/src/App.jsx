@@ -3,22 +3,21 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-25
-// Last Modified: 2026-03-29
+// Last Modified: 2026-04-13
 // Purpose:     Root application component. Gates the app behind Firebase Auth.
 //              Listens for auth state changes and routes to SignIn or DesktopPet.
 //              Creates the Firestore user document on first sign-in. Starts and
 //              stops the background sync service with the auth lifecycle.
 //              On sign-in, checks if the UID changed since last session; if so,
 //              clears all localStorage data and reloads stores to prevent
-//              cross-user data contamination. Calls getRedirectResult on mount
-//              to resolve pending iOS PWA redirect sign-ins.
+//              cross-user data contamination.
 // Inputs:      Firebase auth, db from firebase.js
 // Outputs:     Renders SignIn (unauthenticated), DesktopPet (authenticated),
 //              or a blank loading screen while auth state resolves.
 // -----------------------------------------------------------------------------
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { startSync, stopSync } from './sync';
@@ -58,10 +57,6 @@ export default function App() {
   const [user, setUser] = useState(undefined);
 
   useEffect(() => {
-    // Resolve any pending redirect sign-in (iOS PWA flow).
-    // onAuthStateChanged fires automatically on success; this call surfaces errors.
-    getRedirectResult(auth).catch(() => {});
-
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         await ensureUserDocument(currentUser);
