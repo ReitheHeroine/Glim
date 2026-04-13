@@ -396,45 +396,47 @@ export default function WaterPanel() {
           )}
         </svg>
 
-        {/* + button or undo toast */}
-        {showUndo ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            background: 'rgba(96,165,250,0.08)',
-            border: '1px solid rgba(96,165,250,0.18)',
-            borderRadius: 10, padding: '8px 14px',
-          }}>
-            <span style={{ ...mono, fontSize: 10, color: 'rgba(200,210,230,0.5)' }}>
-              logged 1 bottle
-            </span>
-            <button
-              onClick={handleUndo}
-              style={{
-                ...mono, fontSize: 10, color: '#60a5fa',
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              }}
-            >
-              undo
-            </button>
-          </div>
-        ) : (
+        {/* + button (always in DOM) */}
+        <button
+          onClick={handleLog}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: accentBg,
+            border: `1px solid ${accentBorder}`,
+            borderRadius: 12, padding: '8px 20px',
+            cursor: 'pointer',
+            ...mono, fontSize: 11, color: accent,
+            transition: 'background 0.3s ease, border-color 0.3s ease, color 0.3s ease',
+          }}
+        >
+          <span style={{ fontSize: 15, lineHeight: 1, marginRight: 2 }}>+</span>
+          bottle
+        </button>
+      </div>
+
+      {/* Undo toast (own row, appears below button row) */}
+      {showUndo && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+          background: 'rgba(96,165,250,0.08)',
+          border: '1px solid rgba(96,165,250,0.18)',
+          borderRadius: 10, padding: '6px 14px',
+          marginTop: 6,
+        }}>
+          <span style={{ ...mono, fontSize: 10, color: 'rgba(200,210,230,0.5)' }}>
+            logged 1 bottle
+          </span>
           <button
-            onClick={handleLog}
+            onClick={handleUndo}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: accentBg,
-              border: `1px solid ${accentBorder}`,
-              borderRadius: 12, padding: '8px 20px',
-              cursor: 'pointer',
-              ...mono, fontSize: 11, color: accent,
-              transition: 'background 0.3s ease, border-color 0.3s ease, color 0.3s ease',
+              ...mono, fontSize: 10, color: '#60a5fa',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             }}
           >
-            <span style={{ fontSize: 15, lineHeight: 1, marginRight: 2 }}>+</span>
-            bottle
+            undo
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Footer: streak | 7-day avg */}
       <div style={{
