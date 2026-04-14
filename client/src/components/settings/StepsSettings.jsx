@@ -21,7 +21,7 @@ const inputBase = {
   background: 'rgba(15,20,35,0.6)',
   border: '1px solid rgba(100,120,160,0.2)',
   borderRadius: 8, color: 'rgba(200,210,230,0.9)',
-  fontSize: 'var(--text-lg)', fontWeight: 600, textAlign: 'center',
+  fontSize: 'var(--glim-text-lg)', fontWeight: 600, textAlign: 'center',
   outline: 'none', fontVariantNumeric: 'tabular-nums',
   transition: 'border-color 0.15s',
 };
@@ -59,7 +59,7 @@ export default function StepsSettings() {
       {/* Daily goal input */}
       <div style={{ marginTop: 10 }}>
         <div style={{
-          fontSize: 'var(--text-sm)', color: 'rgba(200,210,230,0.5)', marginBottom: 6,
+          fontSize: 'var(--glim-text-sm)', color: 'rgba(200,210,230,0.5)', marginBottom: 6,
           fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px',
         }}>
           daily goal
@@ -80,7 +80,7 @@ export default function StepsSettings() {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(100,120,160,0.2)'; }}
             style={inputBase}
           />
-          <span style={{ fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.5)' }}>steps</span>
+          <span style={{ fontSize: 'var(--glim-text-base)', color: 'rgba(200,210,230,0.5)' }}>steps</span>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export default function StepsSettings() {
         borderRadius: 8, border: '1px solid rgba(100,120,160,0.12)',
       }}>
         <div style={{
-          fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.35)',
+          fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.35)',
           textTransform: 'uppercase', letterSpacing: '0.5px',
           marginBottom: 8, fontWeight: 500,
         }}>
@@ -111,7 +111,7 @@ export default function StepsSettings() {
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           {tiers.map((t, i) => (
             <span key={i} style={{
-              fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)',
+              fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)',
               fontVariantNumeric: 'tabular-nums',
             }}>
               {t.toLocaleString()}

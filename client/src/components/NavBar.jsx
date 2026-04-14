@@ -147,7 +147,7 @@ export default function NavBar() {
 
   // Sizing verified via DevTools on Rei's 1365x934 screen (desktop)
   const iconSize  = isMobile ? 29 : 28;
-  const labelSize = 'var(--text-md)';
+  const labelSize = 'var(--glim-text-md)';
   const padding   = isMobile
     ? 'calc(11px + env(safe-area-inset-bottom, 0px))'
     : 'calc(10px + env(safe-area-inset-bottom, 0px))';

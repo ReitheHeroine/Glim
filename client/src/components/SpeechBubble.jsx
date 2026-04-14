@@ -24,9 +24,9 @@ export default function SpeechBubble({ text, visible, isWellness }) {
         backdropFilter: "blur(12px)",
         border: isWellness ? "1px solid rgba(100, 220, 180, 0.3)" : "1px solid rgba(255,255,255,0.15)",
         color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace",
-        fontSize: 'var(--text-base)', letterSpacing: "0.3px",
+        fontSize: 'var(--glim-text-base)', letterSpacing: "0.3px",
       }}>
-        {isWellness && <span style={{ marginRight: 4, fontSize: 'var(--text-sm)', opacity: 0.7 }}>~</span>}
+        {isWellness && <span style={{ marginRight: 4, fontSize: 'var(--glim-text-sm)', opacity: 0.7 }}>~</span>}
         {text}
         <div className="absolute left-1/2 -bottom-1.5" style={{
           transform: "translateX(-50%) rotate(45deg)", width: 8, height: 8,

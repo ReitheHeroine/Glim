@@ -295,7 +295,7 @@ export default function WaterPanel() {
 
       {/* Header: label + oz pill */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <span style={{ ...mono, fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)', letterSpacing: '0.5px' }}>
+        <span style={{ ...mono, fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)', letterSpacing: '0.5px' }}>
           water
         </span>
 
@@ -313,7 +313,7 @@ export default function WaterPanel() {
             }}
             style={{
               width: 60, textAlign: 'center',
-              ...mono, fontSize: 'var(--text-lg)',
+              ...mono, fontSize: 'var(--glim-text-lg)',
               color: accent, background: accentBg,
               border: `1px solid ${accentBorder}`, borderRadius: 8,
               padding: '3px 6px', outline: 'none',
@@ -323,7 +323,7 @@ export default function WaterPanel() {
           <button
             onClick={() => { setOzDraft(String(bottleOz)); setEditingOz(true); }}
             style={{
-              ...mono, fontSize: 'var(--text-xs)',
+              ...mono, fontSize: 'var(--glim-text-xs)',
               color: accent, background: accentBg,
               border: `1px solid ${accentBorder}`, borderRadius: 8,
               padding: '3px 10px', cursor: 'pointer',
@@ -378,7 +378,7 @@ export default function WaterPanel() {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="rgba(255,255,255,0.85)"
-                style={{ ...mono, fontSize: 'var(--text-xs)', fontWeight: 'bold' }}
+                style={{ ...mono, fontSize: 'var(--glim-text-xs)', fontWeight: 'bold' }}
               >
                 {current}
               </text>
@@ -388,7 +388,7 @@ export default function WaterPanel() {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="rgba(255,255,255,0.3)"
-                style={{ ...mono, fontSize: 'var(--text-2xs)' }}
+                style={{ ...mono, fontSize: 'var(--glim-text-2xs)' }}
               >
                 {goal}
               </text>
@@ -405,11 +405,11 @@ export default function WaterPanel() {
             border: `1px solid ${accentBorder}`,
             borderRadius: 12, padding: '8px 20px',
             cursor: 'pointer',
-            ...mono, fontSize: 'var(--text-xs)', color: accent,
+            ...mono, fontSize: 'var(--glim-text-xs)', color: accent,
             transition: 'background 0.3s ease, border-color 0.3s ease, color 0.3s ease',
           }}
         >
-          <span style={{ fontSize: 'var(--text-md)', lineHeight: 1, marginRight: 2 }}>+</span>
+          <span style={{ fontSize: 'var(--glim-text-md)', lineHeight: 1, marginRight: 2 }}>+</span>
           bottle
         </button>
       </div>
@@ -423,13 +423,13 @@ export default function WaterPanel() {
           borderRadius: 10, padding: '6px 14px',
           marginTop: 6,
         }}>
-          <span style={{ ...mono, fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.5)' }}>
+          <span style={{ ...mono, fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.5)' }}>
             logged 1 bottle
           </span>
           <button
             onClick={handleUndo}
             style={{
-              ...mono, fontSize: 'var(--text-2xs)', color: '#60a5fa',
+              ...mono, fontSize: 'var(--glim-text-2xs)', color: '#60a5fa',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             }}
           >
@@ -441,7 +441,7 @@ export default function WaterPanel() {
       {/* Footer: streak | 7-day avg */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        ...mono, fontSize: 'var(--text-2xs)',
+        ...mono, fontSize: 'var(--glim-text-2xs)',
         color: 'rgba(200,210,230,0.35)',
         paddingTop: 10,
       }}>

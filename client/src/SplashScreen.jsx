@@ -163,7 +163,7 @@ export default function SplashScreen() {
       {/* Title */}
       <div style={{
         fontFamily: "-apple-system, system-ui, sans-serif",
-        fontSize: 'var(--text-splash-title)',
+        fontSize: 'var(--glim-text-splash-title)',
         fontWeight: 300,
         letterSpacing: "6px",
         color: "#c8d0e8",
@@ -176,7 +176,7 @@ export default function SplashScreen() {
       {/* Tagline (Glim's voice, randomized per mount) */}
       <div style={{
         fontFamily: "'Courier New', monospace",
-        fontSize: 'var(--text-splash-sub)',
+        fontSize: 'var(--glim-text-splash-sub)',
         color: "#8898c0",
         opacity: 0.55,
         letterSpacing: "0.5px",

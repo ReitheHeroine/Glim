@@ -421,7 +421,7 @@ export default function StepsPanel() {
               if (e.key === 'Escape') cancelEdit();
             }}
             style={{
-              fontSize: 'var(--text-hero)',
+              fontSize: 'var(--glim-text-hero)',
               fontWeight: 600,
               color: heroColor,
               background: 'transparent',
@@ -434,11 +434,11 @@ export default function StepsPanel() {
             }}
           />
         ) : (
-          <div style={{ fontSize: 'var(--text-hero)', fontWeight: 600, color: heroColor, lineHeight: 1 }}>
+          <div style={{ fontSize: 'var(--glim-text-hero)', fontWeight: 600, color: heroColor, lineHeight: 1 }}>
             {fmt(todayCount)}
           </div>
         )}
-        <div style={{ fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.4)', marginTop: 3 }}>
+        <div style={{ fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.4)', marginTop: 3 }}>
           {todayCount === 0 ? 'tap to log your steps' : 'steps today - tap to update'}
         </div>
       </div>
@@ -460,7 +460,7 @@ export default function StepsPanel() {
 
       {/* ===== TIER LABELS ===== */}
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px', marginBottom: 10 }}>
-        <span style={{ fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.2)' }}>0</span>
+        <span style={{ fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.2)' }}>0</span>
         {TIERS.map((t, i) => {
           const completed = todayCount >= t;
           const label     = t >= 1000 ? `${t / 1000}k` : String(t);
@@ -468,20 +468,20 @@ export default function StepsPanel() {
             ? (allCleared ? 'rgba(74,222,128,0.5)' : 'rgba(94,234,212,0.5)')
             : 'rgba(200,210,230,0.25)';
           return (
-            <span key={i} style={{ fontSize: 'var(--text-2xs)', color }}>{label}</span>
+            <span key={i} style={{ fontSize: 'var(--glim-text-2xs)', color }}>{label}</span>
           );
         })}
       </div>
 
       {/* ===== NEXT MILESTONE PILL ===== */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: pillColor, background: pillBg, padding: '3px 10px', borderRadius: 7 }}>
+        <div style={{ fontSize: 'var(--glim-text-xs)', color: pillColor, background: pillBg, padding: '3px 10px', borderRadius: 7 }}>
           {pillText}
         </div>
       </div>
 
       {/* ===== FOOTER ===== */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px', fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.35)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px', fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.35)' }}>
         <span>streak: {streak} {streak === 1 ? 'day' : 'days'}</span>
         <span>avg: {fmtAvg(weeklyAvg)} this week</span>
       </div>

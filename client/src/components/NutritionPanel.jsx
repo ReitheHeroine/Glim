@@ -333,7 +333,7 @@ function NutrientBar({ nutrient, progress, onPlus }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
+      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
         {label}
       </div>
 
@@ -348,13 +348,13 @@ function NutrientBar({ nutrient, progress, onPlus }) {
         )}
       </div>
 
-      <div style={{ width: 62, fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: countColor, fontWeight: countWeight, flexShrink: 0, whiteSpace: 'nowrap' }}>
+      <div style={{ width: 62, fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: countColor, fontWeight: countWeight, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {countText}
       </div>
 
       <button
         onClick={() => onPlus(key)}
-        style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(200,210,230,0.15)', background: 'rgba(200,210,230,0.06)', color: 'rgba(200,210,230,0.6)', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-lg)', lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+        style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(200,210,230,0.15)', background: 'rgba(200,210,230,0.06)', color: 'rgba(200,210,230,0.6)', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-lg)', lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
       >
         +
       </button>
@@ -386,24 +386,24 @@ function InlineInputRow({ nutrient, onConfirm, onCancel }) {
     border: `1px solid rgba(200,210,230,${primary ? 0.2 : 0.12})`,
     background: primary ? 'rgba(200,210,230,0.08)' : 'none',
     color: `rgba(200,210,230,${primary ? 0.7 : 0.4})`,
-    fontFamily: "'Courier New', monospace", fontSize: 'var(--text-base)',
+    fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-base)',
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0, padding: 0,
   });
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
+      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
         {label}
       </div>
       <input
         ref={inputRef} type="number" value={value}
         onChange={(e) => setValue(e.target.value)} onKeyDown={handleKey}
         placeholder="+/- amount"
-        style={{ flex: 1, height: 30, background: 'rgba(200,210,230,0.08)', border: '1px solid rgba(200,210,230,0.2)', borderRadius: 5, color: 'rgba(200,210,230,0.85)', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-lg)', padding: '0 8px', outline: 'none' }}
+        style={{ flex: 1, height: 30, background: 'rgba(200,210,230,0.08)', border: '1px solid rgba(200,210,230,0.2)', borderRadius: 5, color: 'rgba(200,210,230,0.85)', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-lg)', padding: '0 8px', outline: 'none' }}
       />
       {unit && (
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.4)', flexShrink: 0 }}>
+        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.4)', flexShrink: 0 }}>
           {unit}
         </div>
       )}
@@ -426,10 +426,10 @@ function LibraryItemRow({ item, isFlashing, onTap }) {
   return (
     <button
       onClick={() => onTap(item)}
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '5px 12px', background: isFlashing ? 'rgba(200,210,230,0.1)' : 'none', border: 'none', borderRadius: 5, cursor: 'pointer', color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', textAlign: 'left', transition: 'background 0.15s ease' }}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '5px 12px', background: isFlashing ? 'rgba(200,210,230,0.1)' : 'none', border: 'none', borderRadius: 5, cursor: 'pointer', color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', textAlign: 'left', transition: 'background 0.15s ease' }}
     >
       <span>{item.name}</span>
-      <span style={{ color: 'rgba(200,210,230,0.35)', fontSize: 'var(--text-2xs)' }}>{summary}</span>
+      <span style={{ color: 'rgba(200,210,230,0.35)', fontSize: 'var(--glim-text-2xs)' }}>{summary}</span>
     </button>
   );
 }
@@ -628,10 +628,10 @@ export default function NutritionPanel() {
 
       {/* ---- Header ---- */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px 6px', flexShrink: 0 }}>
-        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.75)', letterSpacing: '0.5px' }}>
+        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-base)', color: 'rgba(200,210,230,0.75)', letterSpacing: '0.5px' }}>
           nutrition
         </span>
-        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.35)' }}>
+        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.35)' }}>
           today
         </span>
       </div>
@@ -660,12 +660,12 @@ export default function NutritionPanel() {
       {/* ---- Undo toast ---- */}
       {undoToast && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 20px', flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.55)' }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.55)' }}>
             {undoToast.message}
           </span>
           <button
             onClick={handleUndo}
-            style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.55)', background: 'none', border: '1px solid rgba(200,210,230,0.15)', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
+            style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.55)', background: 'none', border: '1px solid rgba(200,210,230,0.15)', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
           >
             undo
           </button>
@@ -679,12 +679,12 @@ export default function NutritionPanel() {
             type="text" value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="search library..."
-            style={{ width: '100%', height: 36, boxSizing: 'border-box', background: 'rgba(200,210,230,0.06)', border: '1px solid rgba(200,210,230,0.12)', borderRadius: 6, color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 'var(--text-lg)', padding: '0 10px', outline: 'none' }}
+            style={{ width: '100%', height: 36, boxSizing: 'border-box', background: 'rgba(200,210,230,0.06)', border: '1px solid rgba(200,210,230,0.12)', borderRadius: 6, color: 'rgba(200,210,230,0.75)', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-lg)', padding: '0 10px', outline: 'none' }}
           />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px' }}>
           {visibleItems.length === 0 ? (
-            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.25)', textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.25)', textAlign: 'center', padding: '12px 0' }}>
               {searchQuery ? 'no matches' : 'library empty - add foods in the library manager'}
             </div>
           ) : (
@@ -701,13 +701,13 @@ export default function NutritionPanel() {
           onClick={() => setStreakExpanded(v => !v)}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '7px 20px', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.55)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.55)', display: 'flex', alignItems: 'center', gap: 6 }}>
             streak: {allStreak} {allStreak === 1 ? 'day' : 'days'}
             <svg viewBox="0 0 10 6" width={10} height={6} style={{ display: 'block', transform: streakExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', opacity: 0.4 }}>
               <path d="M1 1 L5 5 L9 1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.35)' }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.35)' }}>
             avg: {weeklyAvg}g protein/day
           </span>
         </button>
@@ -715,7 +715,7 @@ export default function NutritionPanel() {
         {streakExpanded && (
           <div style={{ padding: '0 20px 8px', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {perNutrientStreaks.map(({ label, color, days }) => (
-              <span key={label} style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.5)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span key={label} style={{ fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.5)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
                 {label} {days}d
               </span>

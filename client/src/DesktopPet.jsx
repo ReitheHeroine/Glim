@@ -745,11 +745,11 @@ export default function DesktopPet() {
 
         <div className="mt-1 text-center relative" style={{ zIndex: 10 }}>
           <div style={{
-            color: `hsla(${hue}, ${sat}%, 75%, 0.8)`, fontSize: 'var(--text-title)',
+            color: `hsla(${hue}, ${sat}%, 75%, 0.8)`, fontSize: 'var(--glim-text-title)',
             letterSpacing: "3px", textTransform: "uppercase",
           }}>glim</div>
           <div style={{
-            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.4)`, fontSize: 'var(--text-subtitle)', marginTop: 3, letterSpacing: "1px",
+            color: `hsla(${hue}, ${sat - 15}%, 55%, 0.4)`, fontSize: 'var(--glim-text-subtitle)', marginTop: 3, letterSpacing: "1px",
           }}>
             click to say hi{clickCount > 0 && ` · poked ${clickCount} time${clickCount > 1 ? "s" : ""}`}
           </div>
@@ -763,7 +763,7 @@ export default function DesktopPet() {
               showMessage(pickRandom(["nice! timer reset.", "got it, you moved!", "noted. clock restarted."]));
             }} style={{
               background: "none", border: "none", cursor: "pointer",
-              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 'var(--text-xs)',
+              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 'var(--glim-text-xs)',
               fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
               transition: "color 0.2s ease", padding: "6px 8px", minHeight: 44,
             }}
@@ -779,7 +779,7 @@ export default function DesktopPet() {
               showMessage(pickRandom(["good! eye timer reset.", "eyes rested! clock restarted.", "noted. see you in a bit."]));
             }} style={{
               background: "none", border: "none", cursor: "pointer",
-              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 'var(--text-xs)',
+              color: `hsla(${hue}, ${sat - 15}%, 55%, 0.25)`, fontSize: 'var(--glim-text-xs)',
               fontFamily: "'Courier New', monospace", letterSpacing: "0.5px",
               transition: "color 0.2s ease", padding: "6px 8px", minHeight: 44,
             }}

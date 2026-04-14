@@ -22,7 +22,7 @@ const tierInputBase = {
   background: 'rgba(15,20,35,0.6)',
   border: '1px solid rgba(100,120,160,0.2)',
   borderRadius: 6, color: 'rgba(200,210,230,0.9)',
-  fontSize: 'var(--text-lg)', fontWeight: 600, textAlign: 'center',
+  fontSize: 'var(--glim-text-lg)', fontWeight: 600, textAlign: 'center',
   outline: 'none', fontVariantNumeric: 'tabular-nums',
   transition: 'border-color 0.15s',
 };
@@ -75,14 +75,14 @@ function NutrientRow({ nutrient, goals, setGoal }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}
       onClick={(e) => e.stopPropagation()}>
       <div style={{
-        width: 56, fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.5)',
+        width: 56, fontSize: 'var(--glim-text-base)', color: 'rgba(200,210,230,0.5)',
         fontWeight: 500, flexShrink: 0,
       }}>
         {label}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
         <span style={{
-          fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)',
+          fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)',
           textTransform: 'uppercase', letterSpacing: '0.4px',
           width: 28, textAlign: 'right', flexShrink: 0,
         }}>min</span>
@@ -96,9 +96,9 @@ function NutrientRow({ nutrient, goals, setGoal }) {
           onBlur={blurStyle}
           style={tierInputBase}
         />
-        <span style={{ color: 'rgba(200,210,230,0.35)', fontSize: 'var(--text-xs)', flexShrink: 0 }}>-</span>
+        <span style={{ color: 'rgba(200,210,230,0.35)', fontSize: 'var(--glim-text-xs)', flexShrink: 0 }}>-</span>
         <span style={{
-          fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)',
+          fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)',
           textTransform: 'uppercase', letterSpacing: '0.4px',
           width: 28, textAlign: 'right', flexShrink: 0,
         }}>ideal</span>
@@ -112,7 +112,7 @@ function NutrientRow({ nutrient, goals, setGoal }) {
           onBlur={blurStyle}
           style={tierInputBase}
         />
-        <span style={{ fontSize: 'var(--text-xs)', color: 'rgba(200,210,230,0.35)', flexShrink: 0 }}>
+        <span style={{ fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.35)', flexShrink: 0 }}>
           {unit}
         </span>
       </div>
@@ -130,12 +130,12 @@ export default function NutritionSettings() {
         <div style={{ width: 56, flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
           <span style={{
-            fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)',
+            fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)',
             textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600,
             marginLeft: 30, width: 54, textAlign: 'center',
           }}>min</span>
           <span style={{
-            fontSize: 'var(--text-2xs)', color: 'rgba(200,210,230,0.35)',
+            fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)',
             textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600,
             marginLeft: 22, width: 54, textAlign: 'center',
           }}>ideal</span>

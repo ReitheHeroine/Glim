@@ -17,13 +17,13 @@ export default function PersistentReminder({ text, type, onDismiss }) {
   return (
     <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
       background: bg, border: `1px solid ${border}`, backdropFilter: "blur(10px)",
-      fontFamily: "'Courier New', monospace", fontSize: 'var(--text-base)', color: "rgba(255,255,255,0.9)",
+      fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-base)', color: "rgba(255,255,255,0.9)",
       animation: "reminderPulse 3s ease-in-out infinite", maxWidth: 560,
     }}>
       <div className="flex-1" style={{ lineHeight: 1.4 }}>{text}</div>
       <button onClick={onDismiss} className="flex-shrink-0 px-3 py-1 rounded-xl cursor-pointer" style={{
         background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
-        color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace", fontSize: 'var(--text-sm)',
+        color: "rgba(255,255,255,0.9)", fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-sm)',
         letterSpacing: "0.5px", transition: "all 0.2s ease",
       }}
         onPointerEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.25)"; }}

@@ -117,7 +117,7 @@ export default function SignIn() {
         {/* Name + tagline */}
         <div>
           <div style={{
-            fontSize: 'var(--text-splash-title)',
+            fontSize: 'var(--glim-text-splash-title)',
             fontWeight: '700',
             letterSpacing: '0.05em',
             color: 'transparent',
@@ -128,7 +128,7 @@ export default function SignIn() {
           }}>
             glim
           </div>
-          <div style={{ fontSize: 'var(--text-splash-sub)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 'var(--glim-text-splash-sub)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
             your little companion is waiting
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function SignIn() {
             background: loading ? 'rgba(255,255,255,0.7)' : 'white',
             border: 'none',
             borderRadius: '10px',
-            fontSize: 'var(--text-base)',
+            fontSize: 'var(--glim-text-base)',
             fontWeight: '600',
             color: '#1f2937',
             cursor: loading ? 'not-allowed' : 'pointer',
@@ -166,7 +166,7 @@ export default function SignIn() {
             alignItems: 'center',
             gap: '12px',
           }}>
-            <div style={{ fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 'var(--glim-text-sm)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
               the pwa can't open sign-in directly - tap below to sign in through safari, then come back here
             </div>
             <button
@@ -176,7 +176,7 @@ export default function SignIn() {
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
                 borderRadius: '8px',
-                fontSize: 'var(--text-sm)',
+                fontSize: 'var(--glim-text-sm)',
                 fontWeight: '600',
                 color: 'rgba(255,255,255,0.8)',
                 cursor: 'pointer',
@@ -190,7 +190,7 @@ export default function SignIn() {
                 padding: '4px',
                 background: 'none',
                 border: 'none',
-                fontSize: 'var(--text-xs)',
+                fontSize: 'var(--glim-text-xs)',
                 color: 'rgba(255,255,255,0.35)',
                 cursor: 'pointer',
                 textDecoration: 'underline',
@@ -203,13 +203,13 @@ export default function SignIn() {
 
         {/* Error message */}
         {error && (
-          <div style={{ fontSize: 'var(--text-sm)', color: '#f87171' }}>
+          <div style={{ fontSize: 'var(--glim-text-sm)', color: '#f87171' }}>
             {error}
           </div>
         )}
 
         {/* Footer note */}
-        <div style={{ fontSize: 'var(--text-xs)', color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 'var(--glim-text-xs)', color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
           sign-in keeps your data synced across devices
         </div>
 
