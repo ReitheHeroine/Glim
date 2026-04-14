@@ -31,7 +31,7 @@ import AmbientBugs from './components/AmbientBugs';
 import SpeechBubble from './components/SpeechBubble';
 import OwlMoth from './components/OwlMoth';
 import PersistentReminder from './components/PersistentReminder';
-import SettingsPanel from './components/SettingsPanel';
+import SettingsView from './components/SettingsView';
 import JournalPanel from './components/JournalPanel';
 import NavBar from './components/NavBar';
 import CompanionPanel from './components/CompanionPanel';
@@ -804,7 +804,7 @@ export default function DesktopPet() {
       {/* More menu - feature grid overlay, slides up above the nav bar */}
       <MoreMenu />
 
-      <SettingsPanel />
+      <SettingsView />
       <JournalPanel onSave={saveJournalEntry} />
     </div>
   );

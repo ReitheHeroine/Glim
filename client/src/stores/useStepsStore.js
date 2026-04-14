@@ -22,8 +22,21 @@ export { dateStr };
 
 const STORAGE_KEY = 'glim-steps';
 
-// Default tiers - hardcoded; custom tiers deferred to future config
-export const TIERS = [2500, 5000, 7500, 10000];
+// Default goal and auto-tier computation
+const DEFAULT_GOAL = 10000;
+
+// Compute four milestone tiers from a single goal value.
+// First three round to nearest 100; fourth is the exact goal.
+export function computeTiers(goal) {
+  const fractions = [0.25, 0.5, 0.75, 1.0];
+  return fractions.map((f, i) => {
+    if (i === 3) return goal;
+    return Math.round((goal * f) / 100) * 100;
+  });
+}
+
+// Exported for consumers that still read TIERS directly
+export const TIERS = computeTiers(DEFAULT_GOAL);
 
 // --- Persistence helpers ---
 
@@ -32,12 +45,16 @@ function loadSteps() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
-  return { entries: [] };
+  return { entries: [], goal: DEFAULT_GOAL };
 }
 
 function saveSteps(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ entries: state.entries }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      entries: state.entries,
+      goal: state.goal,
+      configUpdatedAt: state.configUpdatedAt,
+    }));
   } catch { /* ignore */ }
 }
 
@@ -86,6 +103,18 @@ const initial = loadSteps();
 
 export const useStepsStore = create((set, get) => ({
   entries: initial.entries ?? [],
+  goal: initial.goal ?? DEFAULT_GOAL,
+  configUpdatedAt: initial.configUpdatedAt ?? null,
+
+  // Update the daily step goal. Tiers auto-derive via computeTiers().
+  setGoal: (n) => {
+    const goal = Math.max(100, Math.round(n));
+    set(state => {
+      const next = { ...state, goal, configUpdatedAt: new Date().toISOString() };
+      saveSteps(next);
+      return next;
+    });
+  },
 
   // Creates a new log entry. Replace-style resolution happens at the derived
   // value layer (countForDate picks the latest entry per date), not here.
@@ -101,7 +130,11 @@ export const useStepsStore = create((set, get) => ({
   // Called by sync service after a pull that updates localStorage
   reload: () => {
     const data = loadSteps();
-    set({ entries: data.entries ?? [] });
+    set({
+      entries: data.entries ?? [],
+      goal: data.goal ?? DEFAULT_GOAL,
+      configUpdatedAt: data.configUpdatedAt ?? null,
+    });
   },
 
   // Computed selectors - read current state via get()

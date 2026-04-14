@@ -187,7 +187,7 @@ export default function MoreMenu() {
     setShowMoreMenu,
     setActiveNav,
     setActivePanel,
-    setShowSettings,
+    setFocusView,
     navBarHeight,
   } = useUIStore();
 
@@ -228,7 +228,7 @@ export default function MoreMenu() {
   const openSettings = () => {
     close();
     setTimeout(() => {
-      setShowSettings(true);
+      setFocusView('settings');
     }, 150);
   };
 

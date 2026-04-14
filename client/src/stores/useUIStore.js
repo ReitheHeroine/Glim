@@ -25,6 +25,7 @@ export const useUIStore = create((set) => ({
   navBarHeight: 80,       // measured via ResizeObserver in NavBar.jsx
   requestClose: false,    // signal from NavBar to CompanionPanel to animate closed
   showMoreMenu: false,    // controls the "more" feature grid overlay
+  focusView: null,        // null | 'settings' | 'library' (focus mode screen routing)
 
   // Journal panel internal state
   journalView:   "write",
@@ -32,6 +33,7 @@ export const useUIStore = create((set) => ({
   journalPrompt: pickRandom(JOURNAL_PROMPTS),
 
   setShowMoreMenu: (v) => set({ showMoreMenu: v }),
+  setFocusView:    (v) => set({ focusView: v }),
   setShowSettings: (v) => set({ showSettings: v }),
   setShowJournal:  (v) => set({ showJournal: v }),
   setActiveNav:    (v) => set({ activeNav: v }),
