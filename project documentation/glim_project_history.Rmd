@@ -1,0 +1,548 @@
+---
+title: "Glim -- Project History"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 3
+    theme: default
+---
+
+**Last Updated:** 2026-04-01
+
+**Working Project Name:** Glim
+
+**Purpose:** This document is the chronological record of Glim's design decisions and development work. It contains the Decision Register (all significant methodological, architectural, and design decisions with full rationale) and the Development Log (chronological record of substantive work sessions). Together, these sections provide a complete, traceable history of how the project reached its current state.
+
+**Relationship to other documents:** This is one of three tiers of Glim documentation:
+
+- **Master project documentation** (`glim_project_documentation.Rmd`): Current-state reference describing what Glim is and how it is designed. Architecture, component summaries, infrastructure, roadmap, testing, limitations, references.
+- **This document** (`glim_project_history.Rmd`): Chronological record of how the project got to its current state. Decision Register and Development Log.
+- **Companion files:** `glim_handoff.Rmd` (operational coordination), `glim_session_log.Rmd` (session-level work log), `glim_environment.Rmd` (platform/deploy reference), `glim_file_map.Rmd` (directory structure), `glim_message_pools.md` (tracker message content).
+
+**Decision Register scope:** This document holds cross-cutting and architectural decisions that affect the project as a whole or span multiple components. The entry format uses dashes (not em dashes) per project convention.
+
+---
+
+# 1. Decision Register
+
+Significant methodological, architectural, and design decisions logged in a consistent format.
+
+> **Entry template:**
+>
+> ### [DATE] -- [Decision Title]
+>
+> **Decision:** [What was decided.]
+>
+> **Rationale:** [Why this choice was made.]
+>
+> **Alternatives considered:** [What else was evaluated and why it was rejected.]
+>
+> **Impact:** [What this decision affects downstream.]
+
+### 2026-03-03 - Creature redesign from Blorb to owl-cat-moth
+
+**Decision:** Abandoned the original blob creature design in favor of an owl-cat-moth spirit with defined features (eyes, wings, antennae, tail).
+**Rationale:** The blob was too abstract to convey personality through animation. The owl-cat-moth form allows for expressive eyes, wing movements, and antenna reactions that communicate emotion.
+**Alternatives considered:** Moth-axolotl-cat hybrid ("Mochi"), chunky forest creature ("Sprig"). Mochi was too complex; Sprig was too earthy and lost the cute-weird charm.
+**Impact:** Defined the entire visual language and animation system.
+
+### 2026-03-24 - Perpetual twilight sky (no sun)
+
+**Decision:** All time-of-day backgrounds maintain a moody, twilight atmosphere. No sun. Stars always visible. Moon only at late night.
+**Rationale:** User rejected the full-daylight morning/afternoon mockups as too bright and inconsistent with Glim's aesthetic. The perpetual twilight maintains the atmospheric, cozy feel across all times.
+**Alternatives considered:** Realistic day/night cycle with sun positioning. Rejected because full daylight looked wrong with Glim's glowy translucent design.
+**Impact:** Background system uses 5 gradient layers with opacity crossfade rather than a single transitioning gradient.
+
+### 2026-03-24 - Squish-to-line eye closing
+
+**Decision:** Eyes close by transitioning the ellipse `ry` from 12 to 1.5, creating a horizontal line. Pupils and highlights hidden when closed.
+**Rationale:** User preferred this over curved smile arcs and half-moon crescents. The squish is clean, anime-inspired, and works well for sleep, purr, and blink without extra geometry.
+**Alternatives considered:** Curved smile arcs (too dramatic for blinks), half-moon crescents (too complex, previous rectangle attempt looked mechanical).
+**Impact:** Eyes are now ellipses rather than circles in all states.
+
+### 2026-03-24 - Messages persist until replaced
+
+**Decision:** Removed auto-hide timer. Messages stay on screen until the next message fires.
+**Rationale:** User was missing messages when looking away from the screen. Since idle chatter cycles every 15-40s anyway, old messages don't linger forever.
+**Impact:** Removed all hardcoded duration arguments from `showMessage` calls. `calcDuration` function was later removed entirely during the 2026-03-24 audit.
+
+### 2026-03-24 - isSleepingRef pattern for async callbacks
+
+**Decision:** Introduced `isSleepingRef` (and later `isPurringRef`) as refs that stay in sync with state via dedicated effects. All timer callbacks check `.current` instead of captured state.
+**Rationale:** Multiple bugs where Glim talked in its sleep were caused by stale closures in `useEffect` callbacks capturing `specialAnim` at effect creation time. The ref pattern ensures callbacks always see the latest value.
+**Alternatives considered:** Adding `specialAnim` to every dependency array. Rejected because it causes effects to re-run and reset timers unnecessarily.
+**Impact:** Pattern should be followed for any new timer-based feature that needs to check sleep or purr state.
+
+### 2026-03-24 - One codebase for desktop and mobile
+
+**Decision:** Maintain a single file that adapts to both platforms via responsive detection (`isMobile` flag) and dual event handlers (mouse + touch).
+**Rationale:** Separate codebases would require maintaining 800+ messages and all behavior logic in two places. The divergence is currently small (layout and tap targets).
+**Impact:** Mobile-specific features will use `isMobile` to show/hide UI. Decision should be revisited if platform divergence becomes significant.
+**Note (2026-03-24 audit):** Neither `isMobile` nor touch handlers are implemented yet. Decision stands as the planned approach.
+
+### 2026-03-24 - Single weighted random draw for behavior system
+
+**Decision:** Replaced cascading independent `Math.random()` draws in the autonomous behavior scheduler with a single `Math.random() * 100` roll against defined weight buckets.
+**Rationale:** The cascading approach caused effective probabilities to drift from documented values. Discovery was documented as 30% but had an effective rate of ~17.5% because each check was conditional on all prior checks failing. The weighted draw guarantees exact percentages.
+**Alternatives considered:** Keeping cascading draws and updating documentation with effective rates. Rejected because the code intent is clearer with a single draw that matches the labels, and the "nothing happens" bucket is now explicit (19%) rather than implicit.
+**Impact:** Behavior percentages are now: secret spin 3%, sleep 3%, fly 20%, chase 25%, discovery 30%, nothing 19%. Sleep probability corrected from 10% to 3% to match "very rare by design" intent. Bug catch rate corrected from 50/50 to documented 60/40.
+
+### 2026-03-24 - Persist settings intervals to storage
+
+**Decision:** Settings slider values (wellness, move, eye break intervals) are now saved to `glim-settings` storage key and restored on page load.
+**Rationale:** Journal entries and poke count were already persisted, but settings reset on every refresh. Users who customize their reminder intervals would lose those changes.
+**Alternatives considered:** Leaving settings as session-only. Rejected because the inconsistency with other persisted state was confusing, and the implementation cost was trivial.
+**Impact:** New storage key `glim-settings`. Uses `settingsInitRef` guard to prevent save-before-load race condition.
+
+### 2026-03-24 - Timer cleanup pattern for recursive schedulers
+
+**Decision:** All recursive `setTimeout` schedulers now use local timer refs with proper `useEffect` cleanup returns. The blink effect was refactored to use `isPurringRef` instead of `isPurring` state in its dependency array, reducing it to `[]` (mount-only).
+**Rationale:** The blink scheduler had an active memory leak: its `[isPurring]` dependency meant each purr cycle spawned a new parallel timer chain. The twitch and shooting star schedulers had the same structural fragility. While not actively leaking (empty deps), they had no cleanup path if the component ever remounted.
+**Alternatives considered:** None. This was a correctness fix.
+**Impact:** Pattern for all future schedulers: use a local `{ current: null }` timer object, clear it in the cleanup return. Avoid state dependencies in scheduler effects - use refs instead.
+
+### 2026-03-25 - Stay on React (not migrate to vanilla JS)
+
+**Decision:** Continue building Glim on React rather than migrating to vanilla JavaScript.
+**Rationale:** The planned feature set (to-do lists, nutrition tracking, water tracking, step tracking, habit tracking, mood tracking, etc.) involves complex data-driven UI with lists, forms, counters, and multiple views of shared state. This is React's core strength. While the creature/timer system pays a "React tax" (refs, sync effects, cleanup returns), the productivity/wellness tracker features that make up the bulk of future development would be significantly harder to build and maintain in vanilla JS. The trade-off favors React given the project's direction.
+**Alternatives considered:** (1) Full migration to vanilla JS - rejected because the planned features are exactly what React handles well. (2) Hybrid approach keeping JSX/Babel but dropping React state management - rejected as too novel/unsupported. (3) Stay on React but adopt a state machine - adopted as a complementary improvement (see data model and reaction system decisions).
+**Impact:** React, ReactDOM, and Babel remain as dependencies. The ref/cleanup patterns documented in the audit remain the standard for timer-based code. New features should use React's state model for UI and the planned reaction system for creature personality integration.
+
+### 2026-03-25 - Cross-device sync via Firebase (design now, build later)
+
+**Decision:** Glim will use Firebase (Firestore) for cross-device sync. The sync-ready data model will be designed before building any new trackers, but the Firebase integration itself will be built after trackers exist.
+**Rationale:** Cross-device sync is essential to the product vision (phone for active tracking throughout the day, desktop for passive companion during work). Designing the data model for sync from the start is cheap. Retrofitting sync onto a data model designed for local-only storage is expensive and error-prone. But building the actual Firebase integration before having features that generate data to sync would be premature.
+**Alternatives considered:** (1) Manual JSON export/import - rejected as too cumbersome for daily use across two devices. (2) Build sync first - rejected because we don't know the exact data shapes yet. (3) Different backend (Supabase, custom server) - Firebase chosen for generous free tier, built-in auth, real-time listeners, and offline-first support.
+**Impact:** All tracker data models must use timestamped events (not running totals) for merge-safe sync. See Section 8.8 for data model design notes. Firebase SDK installed via npm as of 2026-03-26. See Section 8.11 for Firestore schema and sync architecture.
+
+### 2026-03-25 - Event-based data model for all trackers
+
+**Decision:** All tracker data will be stored as timestamped event logs rather than running totals or current-state snapshots.
+**Rationale:** Event logs are trivially mergeable across devices (combine lists, deduplicate by ID). Running totals create conflicts when two devices modify the same value independently. Event logs also enable historical trend analysis, daily/weekly summaries, and cross-tracker correlations without maintaining separate aggregation tables.
+**Alternatives considered:** Running totals with conflict resolution heuristics. Rejected because the resolution logic would be different for each tracker type, is error-prone, and loses information (you can derive a total from events but can't derive events from a total).
+**Impact:** Every tracker must assign unique IDs and timestamps to each event. Derived values (daily totals, streaks, progress toward goals) are computed from the event log, not stored directly. See Section 8.8 for the planned unified storage structure.
+
+### 2026-03-25 - Centralized Glim reaction system
+
+**Decision:** Glim's personality responses to tracker events will be handled by a centralized reaction system rather than being baked into each feature's code.
+**Rationale:** With 10+ planned trackers, each needing personality integration (Glim celebrates, nudges, comments, notices patterns), embedding reaction logic in each tracker would scatter personality code across the entire codebase. A centralized `glimReact(event, data)` function keeps the personality layer as a single maintainable system that all trackers call into.
+**Alternatives considered:** Per-tracker reaction code (current journal save pattern). Rejected because it doesn't scale to 10+ features and makes personality consistency hard to maintain.
+**Impact:** New design pattern for all features: trackers emit events, the reaction system handles creature responses. The current journal save reaction (inline `showMessage` + `triggerHappy`) should eventually be refactored to use this system.
+
+### 2026-03-25 - Adopt Vite build system
+
+**Decision:** Migrate from in-browser CDN loading (React, Babel, Tailwind CDNs) to a Vite-based build system with npm-managed dependencies.
+**Rationale:** The single-file, no-build approach doesn't scale to 25+ features. In-browser Babel compilation (~800KB loaded on every page open) is slow and unnecessary. A build tool enables: multiple source files with proper imports, optimized production builds, dev server with hot reload, proper dependency versioning, PWA auto-generation via vite-plugin-pwa, and Tailwind build-time scanning (eliminates the CDN console warning). The codebase is projected to grow from ~2460 lines to 5000-8000+, which requires file separation.
+**Alternatives considered:** (1) Continue with CDN-only approach - rejected because it can't support multiple source files, proper imports, or build-time optimization. (2) Webpack - rejected because Vite is faster, simpler to configure, and the current industry standard for new projects. (3) Parcel - rejected as less mature than Vite for this use case.
+**Impact:** Development workflow changes from "edit HTML file, open in browser" to "run `npm run dev`, edit source files, see changes instantly." Deployment changes from "download HTML" to "`npm run build`, push to GitHub Pages." Requires Node.js + npm on dev machine. Claude Code handles setup.
+
+### 2026-03-25 - React over Svelte for UI framework
+
+**Decision:** Stay on React rather than migrating to Svelte or SvelteKit.
+**Rationale:** Evaluated both frameworks against Glim's full feature roadmap. Svelte offers a simpler programming model that eliminates the stale closure / ref sync pattern issues in timer-heavy creature code. However, React's ecosystem advantages are decisive for this project: (1) vastly more tutorials, Stack Overflow answers, and example code for every feature Glim needs (Firebase integration, chart libraries, PWA setup), (2) skills transfer to other projects and the broader web development field, (3) Claude has deeper training on React patterns, and (4) existing 2460-line codebase doesn't require rewriting. The timer-side complexity is manageable with documented patterns.
+**Alternatives considered:** Svelte / SvelteKit - genuine technical advantages for Glim's creature code (no stale closures, simpler reactive model, smaller bundle), but smaller ecosystem, less transferable skills, and rewrite cost (~1200 lines of logic).
+**Impact:** React remains the framework. Zustand adopted for state management (replaces 30+ useState calls with a shared store). All React patterns documented in the audit (ref sync, timer cleanup) remain the standard.
+
+### 2026-03-25 - Zustand for state management
+
+**Decision:** Adopt Zustand as a shared state management library, replacing the current pattern of 30+ `useState` calls in the DesktopPet component with a centralized store.
+**Rationale:** As features grow from 1 main component to 15+ tracker panels, passing state through props becomes unworkable. Zustand provides a simple shared store that any component can read from without prop drilling or React Context boilerplate. At 1KB, it adds negligible bundle weight.
+**Alternatives considered:** (1) React Context - built-in but verbose and causes unnecessary re-renders in consuming components. (2) Redux - powerful but heavy boilerplate, overkill for this project. (3) Jotai/Recoil - atom-based, good but less intuitive than Zustand's single-store model.
+**Impact:** State will be organized into domain stores (creature state, tracker data, UI state, settings). Any component can access any store directly. Existing useState calls will be migrated incrementally as components are extracted.
+
+### 2026-03-25 - One storage key per domain
+
+**Decision:** Each tracker gets its own storage key (`glim-water`, `glim-todos`, etc.) rather than a single monolithic `glim-data` object.
+**Rationale:** (1) Smaller, faster writes (only the changed domain is written). (2) Failed writes only affect one domain. (3) Maps cleanly to Firebase documents/subcollections. (4) Maps cleanly to Zustand stores. (5) Loading one feature doesn't require loading all data into memory.
+**Alternatives considered:** Single `glim-data` key containing everything. Simpler for export/import (one blob) but every save writes the entire dataset, growing slower as data accumulates. Also, a partial write failure could corrupt everything.
+**Impact:** 15 storage keys defined. Export/import collects all keys into one JSON. Firebase sync maps each key to a Firestore document or subcollection.
+
+### 2026-03-25 - Soft delete for all domains
+
+**Decision:** Deleting any entry sets a `deletedAt` timestamp rather than removing it from storage. Items with `deletedAt` are filtered out of UI. Permanent purge after 30 days.
+**Rationale:** Hard delete breaks sync. If Device A deletes an entry and Device B hasn't synced, Device B pushes the entry back on next sync. Soft delete ensures both devices see the deletion. Also enables free undo.
+**Alternatives considered:** Hard delete with a separate "tombstone" log tracking deleted IDs. More complex, achieves the same result with more code.
+**Impact:** Every schema includes a `deletedAt` field. All UI queries must filter on `!deletedAt`. Periodic cleanup job removes entries where `deletedAt` > 30 days.
+
+### 2026-03-26 - Google sign-in for authentication
+
+**Decision:** Use Google sign-in as the sole authentication method for Glim.
+**Rationale:** Lowest friction option (one tap for most users, nearly everyone has a Google account). Firebase Auth handles session persistence automatically. Avoids building a full email/password sign-up flow with password reset, email verification, etc.
+**Alternatives considered:** (1) Email/password - most portable but requires building a full auth flow with recovery. (2) Anonymous auth first, upgrade to account later - most user-friendly at onboarding but creates a complex data migration moment when the user links an account, and anonymous accounts are lost if browser data is cleared.
+**Impact:** Firebase Auth with Google provider configured. `SignIn.jsx` component handles the sign-in flow. App is gated behind auth (no anonymous usage).
+
+### 2026-03-26 - Require sign-in on first launch (no anonymous mode)
+
+**Decision:** Glim requires Google sign-in before any functionality is available. There is no local-only or anonymous mode.
+**Rationale:** Eliminates the local-to-cloud data migration problem entirely. If Glim worked without an account, all accumulated localStorage data would need to be pushed to Firestore the first time a user signs in, with potential merge conflicts if they'd used Glim on multiple devices anonymously. Requiring sign-in from the start means every event is written to Firestore from day one. localStorage becomes purely an offline cache, not a primary data store.
+**Alternatives considered:** (1) Fully local by default, sync opt-in - preserves current zero-friction onboarding but creates the hardest migration problem. (2) Local first, prompt to sign in after a few days - gentler onboarding but same migration complexity, plus the user may have already accumulated data they care about.
+**Impact:** `App.jsx` renders a loading screen (auth state unknown), sign-in screen (not authenticated), or DesktopPet (authenticated). User document created in Firestore on first sign-in.
+
+### 2026-03-26 - Firestore Pattern A (subcollections per domain)
+
+**Decision:** Organize Firestore data as subcollections under `users/{userId}/`, with one subcollection per tracker domain.
+**Rationale:** Pattern A uses many small documents, which is Firestore's intended data model. Writes are fast (one small document per event, not rewriting an entire array). No document size ceiling (Pattern B hits the 1MB limit as data accumulates). Queries within a domain are efficient. Adding new tracker domains is trivial (just create a new subcollection). Maps cleanly to the existing one-key-per-domain localStorage architecture.
+**Alternatives considered:** Pattern B (flat documents per domain) - each domain is a single Firestore document containing all events as an array field. Simpler structure, mirrors localStorage exactly, but hits the 1MB document size limit, requires rewriting the entire document on every write, and doesn't leverage Firestore's strengths.
+**Impact:** Firestore path structure: `users/{userId}/{domain}/{documentId}`. Security rules match on `users/{userId}/{document=**}`. See Section 8.11 for full schema.
+
+### 2026-03-26 - Pokes as single counter document (not event log)
+
+**Decision:** Store pokes as a single counter document (`users/{userId}/pokes/counters`) with `total` and `lastPoke` fields, rather than one document per poke event.
+**Rationale:** Pokes are a vanity counter, not analytically meaningful data. An event log would generate hundreds of tiny documents for no practical benefit. The single-document approach is simpler and cheaper. The trade-off is that offline conflicts may lose a few poke counts (if both devices poke while offline, last-write-wins on the total), but this is acceptable for a counter that exists purely for fun.
+**Alternatives considered:** Event log (one document per poke, derive total by counting). Merge-safe by design but generates excessive documents for low-value data.
+**Impact:** Use Firestore `increment()` for online pokes. Accept minor count loss during offline conflicts.
+
+### 2026-03-26 - Incremental Firestore schema design (not speculative)
+
+**Decision:** Design Firestore schemas only for currently implemented domains (journal, pokes, settings). Future tracker schemas will be designed when each tracker is built.
+**Rationale:** Designing schemas for features that don't exist yet is speculative and likely to need revision once the features are actually built and the real data shapes become clear. The subcollection-per-domain pattern makes incremental additions trivial: each new tracker just gets a new subcollection, with no changes to existing collections or infrastructure.
+**Alternatives considered:** Designing all 15 domain schemas upfront (as originally planned in the task queue). Rejected because it front-loads speculative work that doesn't provide value until the features exist.
+**Impact:** The sync service, security rules, and Firestore structure are designed to accommodate new domains without modification. Each new tracker's schema is documented in Section 8.11 when built.
+
+### 2026-03-26 - Enhanced PWA over native app
+
+**Decision:** Stay on the enhanced PWA path for mobile rather than wrapping in a native app (Capacitor/React Native) or building natively (Swift/Kotlin). If native APIs become necessary later, Capacitor is the planned escalation path.
+**Rationale:** Evaluated four options: (1) Enhanced PWA, (2) Capacitor (WebView wrapper), (3) React Native, (4) Full native (Swift/Kotlin). The PWA path preserves 100% of the existing codebase, requires no new toolchain, no app store fees, no review process, and no Mac/Xcode dependency. Web Push notifications work on Android (fully) and iOS (since 16.4, with add-to-home-screen requirement). The only capabilities a PWA cannot provide are HealthKit/Google Fit integration, true background processing, home screen widgets, and App Store distribution. Of these, only HealthKit matters for Glim's roadmap (automatic step import), and the data model already supports manual step entry as a fallback (`source: "manual"`). Capacitor would provide HealthKit access but requires a $99/year Apple Developer Program membership, Xcode on a Mac, and native project maintenance. The cost-benefit doesn't justify it for eliminating one manual interaction per day.
+**Alternatives considered:** (1) Capacitor - wraps the existing web app in a native shell with plugin access to HealthKit, push via APNs, and App Store distribution. ~95% code reuse, but adds $99/year Apple fee, Xcode dependency, and native config maintenance. Best escalation path if PWA limitations become blocking. (2) React Native - truly native rendering, but requires rewriting all visual components (~2460 lines), losing CSS transitions/gradients/SVG rendering approach, and abandoning the desktop browser version. ~30% code reuse (logic only). Not justified given Glim's UI is not performance-constrained. (3) Full native (Swift/Kotlin) - maximum platform access but requires learning new languages, maintaining two separate codebases, and discarding the entire existing investment. No advantages over Capacitor for Glim's use case.
+**Impact:** Mobile deployment continues as Netlify-hosted PWA. Service worker and Web Push implementation are now on the critical path for mobile parity. Step tracking ships as manual entry. Capacitor migration deferred indefinitely but documented as the fallback if a concrete native API need arises.
+
+### 2026-03-27 - Hybrid nutrition tracking (library + raw add)
+
+**Decision:** Nutrition tracking uses a hybrid approach: a personal food library where quick-add items populate multiple nutrient counters simultaneously, plus a "raw add" mode for logging nutrients directly without a food item. Tracks protein (grams), fiber (grams), fruit servings, and veggie servings as separate goals. Fruit and veggie are tracked separately in the nutrition panel but combined on the home screen widget. No calorie tracking for v1. No starter food library (user builds their own).
+**Rationale:** Three options evaluated: (1) unified meal logger with multiple fields per entry, (2) separate simple counters per nutrient, (3) hybrid with food library + raw add. Option 1 is accurate but high-friction (multiple fields every meal). Option 2 is fast per-tap but means opening four trackers after each meal. The hybrid combines the speed of tap-to-log with the data connectivity of a unified system. The raw add mode prevents the library from being a bottleneck: you can always just type "+20g protein" without creating a food entry.
+**Alternatives considered:** (1) Full meal logging with macros (MyFitnessPal style) - rejected as too clinical and high-friction for Glim's personality. (2) Separate counter per nutrient - rejected because logging four things per meal is more annoying than one tap on a library item.
+**Impact:** Two new storage keys (`glim-nutrition` redesigned, `glim-nutrition-library` added). Nutrition quick-add is a companion-mode panel. Library management is a focus-mode screen.
+
+### 2026-03-27 - Pomodoro-based time tracking with work categories
+
+**Decision:** Pomodoro timer is the primary time tracking mechanism, with manual session logging as a backup. Custom work categories (e.g., "academic," "housework") allow tracking time per category. Not integrated with daily goals system yet.
+**Rationale:** Collapses two roadmap features (pomodoro timer + time worked tracking) into one. The timer provides accurate tracking without requiring the user to remember start/stop times. Manual add covers retroactive logging. Work categories answer "where does my time go?" without overcomplicating the UI.
+**Alternatives considered:** (1) Separate pomodoro timer and time tracker - rejected as redundant. (2) Simple manual time log without timer - rejected because the timer is the core value of pomodoro methodology. (3) Timer only without manual add - rejected because forgetting to start the timer shouldn't mean losing the data.
+**Impact:** New storage key `glim-pomodoro`. Focus mode UI. Pomodoro gets a default nav bar slot ("focus").
+
+### 2026-03-27 - Recurring tasks via definition + completion logs (Approach 2)
+
+**Decision:** Recurring tasks are implemented as definitions (like habits) with daily completion logs, not by generating new task instances each day. Recurring tasks are pinned at the top of the to-do list, above one-off tasks.
+**Rationale:** Approach 2 (definitions + logs) is cleaner for storage, sync-safe (each completion is its own event with its own ID), and architecturally identical to the habits tracker. Approach 1 (generate new instances daily) creates many redundant entries over time and requires a day-boundary job to spawn them. Approach 2's "reappears unchecked because no log exists for today" behavior is simpler and doesn't require background processing.
+**Alternatives considered:** Approach 1 (generate new instances daily) - simpler mental model but generates excessive storage, requires day-boundary processing, and the same entry pattern already exists in habits.
+**Impact:** `glim-todos` schema expanded with `recurring` and `recurringLogs` arrays alongside `items`.
+
+### 2026-03-27 - Steps use replace-style entry with tier milestones
+
+**Decision:** Step tracking uses replace-style entry (user types current pedometer total, latest entry for the day wins) with tier milestone goals at 2,500 / 5,000 / 7,500 / 10,000 rather than a single target.
+**Rationale:** Replace-style matches how people naturally read a pedometer ("I'm at 7,100"). No mental math required (unlike additive mode where you'd subtract your last entry). Tier milestones provide multiple achievement points throughout the day rather than a single pass/fail threshold, which is more encouraging and matches how step counts actually accumulate.
+**Alternatives considered:** (1) Single daily entry at end of day - simplest but no mid-day feedback. (2) Additive entries - requires subtraction, error-prone. (3) Single goal (e.g., 10,000) - binary pass/fail, less motivating.
+**Impact:** `glim-steps` uses latest-entry-wins logic. `glim-settings.goals.steps` stores tier array instead of single amount.
+
+### 2026-03-29 - Water store holds bottleOz and goal (not delegated to useSettingsStore)
+
+**Decision:** `useWaterStore` holds `bottleOz`, `goal`, and `configUpdatedAt` directly. The original design in Section 8.3 delegated these to `useSettingsStore`.
+**Rationale:** Self-containment simplifies Firestore sync: water config syncs as a single document (`water-config/current`) with no cross-store reads. The water panel reads one store instead of two. Keeping tracker-specific settings inside the tracker store matches Zustand's per-domain ownership model.
+**Alternatives considered:** Keep bottleOz/goal in useSettingsStore as designed. Rejected because it would require sync.js to read from two stores (or one composite query) to produce a single Firestore document, and would couple the water sync to the settings sync.
+**Impact:** `useSettingsStore` does not need water-related fields. Future tracker stores should follow the same pattern: hold their own config values locally rather than delegating to settings.
+
+### 2026-03-29 - Additive merge (not soft-delete) for water entries
+
+**Decision:** Water entry sync uses additive merge. Undoing a bottle in-app does a hard-delete from localStorage, not a soft-delete. If the entry was already pushed to Firestore before the undo, it reappears on next pull.
+**Rationale:** The undo window is 4 seconds. The sync interval is 60 seconds. Push-then-undo-then-pull in the same session is extremely unlikely. The consequence is one extra bottle in the count - low severity. Implementing soft-delete (setting `deletedAt` and filtering in the pull) would add complexity to both the store and the sync function without meaningfully improving UX.
+**Alternatives considered:** Soft-delete matching the journal pattern. Rejected as over-engineering for this edge case.
+**Impact:** [FOLLOW-UP NEEDED] If undo reliability across devices ever becomes important, switch to soft-delete by adding `deletedAt: null` to the entry schema and filtering in `countToday`, `computeStreak`, and `computeWeeklyAvg`.
+
+### 2026-03-27 - Inside-out feature build order (incremental framework growth)
+
+**Decision:** Build features one at a time, growing the framework incrementally around real needs, rather than building the full navigation/panel framework first. Phased: (1) minimal scaffolding + prerequisites, (2) water tracker as pattern-prover, (3) second companion tracker, (4) first focus-mode feature (to-do list), (5) everything else.
+**Rationale:** Industry standard for single-developer projects. Building framework in isolation means making decisions without feedback from real feature needs. The first real feature (water) will reveal patterns and problems that can't be predicted from abstract architecture. Each subsequent feature validates and extends the framework.
+**Alternatives considered:** (1) Framework-first (build full nav shell, panel system, focus mode, routing, then fill in features) - rejected because it front-loads speculative architecture that inevitably needs revision once real features are built. (2) All features simultaneously - rejected as overwhelming and prevents learning from each feature.
+**Impact:** See Section 8.2.1 for detailed build plan. Prerequisite infrastructure (Zustand, file separation, touch/responsive) must happen first.
+
+
+---
+
+# 2. Development Log
+
+Chronological record of substantive work sessions. Each entry summarizes what was accomplished, what outputs were produced, and what follow-up work was identified.
+
+> **Entry template:**
+>
+> ### [DATE] -- [Session Title]
+>
+> **Work performed:** [What was done.]
+>
+> **Outputs:** [Files created or modified.]
+>
+> **Next steps identified:** [What needs to happen next.]
+
+### 2026-03-03 - Initial build (Blorb)
+
+**Work performed:** Built original desktop companion "Blorb" as a bioluminescent blob with wellness reminders, personalized messages, and time-aware behaviors.
+**Outputs:** Initial `desktop-pet.jsx`, standalone HTML
+**Key findings:** Blob creature was too abstract; needed a more expressive form.
+**Next steps identified:** Redesign creature.
+
+### 2026-03-23/24 - Major feature session (Blorb to Glim)
+
+**Work performed:** Complete creature redesign through Mochi, Sprig, and final owl-cat-moth form. Named "Glim." Built: eye tracking, all interaction types (click, double-click, long press, drag, shake, rapid click, startled), autonomous behaviors (sleep, fly, chase, discover, secret spin, wandering), background system (sky crossfade, landscape, stars, shooting stars, nebulae, ambient bugs, motes), journal system (prompts, persistent storage, past entries), wellness reminders (with proactive reset), settings panel, squish-to-line eye closing, purr rocking animation, 775+ personalized messages across 29 categories, science self-care facts (35), drag system rewrite (unified pointer, smooth return), sleep system rewrite (isSleepingRef pattern), persistent poke count, time-of-day sky crossfade.
+**Note (added 2026-03-24 audit):** Off-screen adventure, touch event support, responsive sizing, and `isMobile` flag were planned but not implemented during this session. Documentation was corrected to mark these as [NOT IMPLEMENTED].
+**Outputs:** `desktop-pet.jsx` (~2450 lines), `glim.html`, `glim-messages.txt`, `eye-comparison.jsx`, `sky-mockup.jsx`, `sky-mockup-v2.jsx`
+**Key findings:** Stale closure pattern in useEffect callbacks caused multiple sleep-related bugs. CSS gradient transitions require opacity crossfade workaround. Drag return animation requires requestAnimationFrame double-buffering to avoid snap.
+**Decisions made:** See Decision Register entries for 2026-03-24.
+**Next steps identified:** Complete PWA setup for mobile, test touch interactions on real devices, implement mobile-specific features (water tracking, enhanced journaling, to-do lists), set up GitHub Pages deployment.
+
+### 2026-03-24 - Project documentation
+
+**Work performed:** Created project documentation .rmd file adapted from research project template. Discussed and finalized section structure. Documented full technical state, all features, message inventory, decision history, and roadmap.
+**Outputs:** `glim_project_documentation.Rmd`
+**Decisions made:** Documentation format: .rmd (consistent with user's research workflow). Structure: 12 sections covering vision, technical design, platforms, features, messages, deployment, limitations, roadmap, decisions, log, references, and Claude instructions.
+**Next steps identified:** Keep documentation updated as features are added. Create PWA files.
+
+### 2026-03-24 - Codebase audit and bug fixes
+
+**Work performed:** Full line-by-line audit of `glim.html` against project documentation. Identified and fixed 6 bugs/issues, corrected documentation-code mismatches, and added missing feature.
+
+**Fixes applied:**
+
+1. Timer memory leaks in `scheduleBlink` (active leak via `[isPurring]` dep spawning parallel chains), `scheduleTwitch`, and shooting star scheduler. All now use local timer refs with cleanup returns.
+2. Orphaned `wanderDriftRef` timeout on wander effect teardown.
+3. Behavior system rewritten from cascading independent draws to single weighted random draw. Sleep corrected from 10% to 3%. Catch rate corrected from 50/50 to 60/40. Added explicit "nothing happens" bucket (19%).
+4. Eye tracking `handleMouseMove` callback stabilized by switching from `specialAnim` state check to `isSleepingRef.current`, eliminating unnecessary event listener churn.
+5. Dead code removed: `calcDuration` function, unused `durationOverride` parameter in `showMessage`.
+6. Settings persistence added: wellness/move/eyes intervals now saved to `glim-settings` storage key with `settingsInitRef` guard against save-before-load race.
+
+**Documentation corrections:**
+
+- Marked off-screen adventure, touch events, responsive layout, and `isMobile` flag as [NOT IMPLEMENTED]
+- Removed `isOffScreenRef` and `OFFSCREEN_RETURN` from code organization descriptions
+- Fixed message count from 795 to 775 (20 off-screen return messages not in codebase)
+- Updated behavior probability table with exact weighted-draw percentages
+- Added `glim-settings` to persistent storage table
+- Added `isPurringRef` and `settingsInitRef` to critical refs list
+- Added Section 7.1 (Resolved Issues) documenting all fixes with rationale
+- Added 4 new Decision Register entries
+
+**Outputs:** Updated `glim.html`, updated `glim_project_documentation.Rmd`
+**Key findings:** The most significant gap was between documentation and code: several features described as "in progress" or existing had zero implementation. The timer leak in `scheduleBlink` was the only actively harmful bug (spawning parallel chains on each purr). The behavior probability drift was subtle but meaningful (discovery at 17.5% effective vs 30% documented).
+**Decisions made:** See Decision Register entries for 2026-03-24 (weighted draw, settings persistence, timer cleanup pattern).
+**Next steps identified:** Implement touch event support (primary mobile blocker). Implement responsive layout. Implement off-screen adventure. Consider removing Tailwind dependency.
+
+### 2026-03-25 - Architecture review and feature planning
+
+**Work performed:** Comprehensive review of Glim's technical architecture in light of expanded feature vision. Evaluated React vs. vanilla JS migration. Discussed vanilla DOM manipulation concepts, React's purpose and trade-offs, and why Glim's planned feature set (10+ productivity/wellness trackers) favors staying on React. Explored cross-device sync requirements and Firebase as the sync backend. Designed sync-safe event-based data model. Cataloged full feature roadmap across 7 categories with ~25 features total. Created Handoff File for cross-session coordination.
+
+**Outputs:** Updated `glim_project_documentation.Rmd` (Section 8 rewritten as comprehensive feature catalog with data model design notes), `glim_handoff.Rmd` and `.docx`, 4 new Decision Register entries.
+
+**Key decisions:**
+
+1. Stay on React - planned features (to-do lists, nutrition, water, steps, habits, mood, etc.) are data-driven UI that React handles well. Creature-side timer tax is manageable.
+2. Cross-device sync via Firebase - design data model now, build integration later after trackers exist.
+3. Event-based data model - all tracker data stored as timestamped event logs for merge-safe sync and historical analysis.
+4. Centralized reaction system - Glim's personality responses handled by a single `glimReact(event, data)` system rather than scattered per-feature.
+
+**Key architectural insight:** Glim is really two systems coexisting: (A) the creature and its world (timer-driven, animation-driven, fights React's model) and (B) the productivity/wellness tools (data-driven UI, React's strength). Both share Glim's personality layer, which should be a separate system that both call into.
+
+**Next steps identified:** Design sync-ready data model in detail. Build infrastructure items (touch events, responsive layout, build script, reaction system) before starting tracker features. Water tracking as first tracker (simplest data model, proves the pattern).
+
+### 2026-03-25 - Tech stack evaluation
+
+**Work performed:** Evaluated the full technology stack against the 25-feature roadmap. Assessed 7 layers: build system, framework, state management, styling, data visualization, backend/sync, and PWA generation. Conducted detailed comparison of React vs Svelte including code examples of the blink scheduler in both frameworks. Discussed vanilla DOM manipulation concepts and framework trade-offs from first principles.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Section 2.1 expanded with planned stack, Section 8.2 updated, Section 11 expanded, 3 new Decision Register entries), updated `glim_handoff.Rmd`
+**Key decisions:** Adopt Vite as build tool (eliminates Babel CDN, enables file separation). Stay on React over Svelte (ecosystem, skill transfer). Adopt Zustand for state management. Tailwind migrates from CDN to build version. Chart.js for visualization. vite-plugin-pwa for PWA generation.
+**Next steps identified:** Detailed data model design. Then Vite migration as first implementation task.
+
+### 2026-03-25 - Data model, reaction system, and UI navigation design
+
+**Work performed:** Designed the complete data model for all 15 storage domains. Established foundational decisions: one key per domain, UUIDs for IDs, local dates derived from UTC timestamps, soft delete for all domains. Specified full schemas with field definitions, migration paths, sync strategies, derived value computations, and Glim reaction event types. Designed the reaction system: 4-tier pipeline (comfort/acknowledge/celebrate/milestone), template interpolation, context evaluation, multi-event sequences, nudge events. Walked through water and mood tracking examples. Designed the UI navigation system: hybrid companion/focus modes, customizable 4-slot bottom nav bar, mini-Glim spec. Created HTML mockups of both modes.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Sections 8.8-8.10 fully specified, 2 new Decision Register entries), `mockup_companion_mode.html`, `mockup_focus_mode.html`
+**Key decisions:** One storage key per domain (maps to Firebase and Zustand). Soft delete everywhere. Hybrid companion/focus UI modes. Customizable nav bar.
+**Key findings:** The nutrition tracker's scope needs deliberate narrowing - full macro/calorie tracking requires a food database. Starting with simple meal logging provides awareness value without the overhead. AI-powered messages (hybrid static + Claude API) discussed and deferred to after Firebase.
+**Next steps identified:** Finalize water tracker detailed spec. Draft water tracker message pools.
+
+### 2026-03-25 - Vite migration
+
+**Work performed:** Migrated Glim from standalone HTML (CDN-based) to a Vite + React project in `client/`. Extracted message pools to a separate file. Configured Tailwind v4 (build-integrated). Verified build and dev server.
+
+**Outputs:** `client/src/DesktopPet.jsx`, `client/src/messages.js`, `client/src/storage.js`, `client/src/App.jsx`, `client/src/index.css`, `client/index.html`, `.gitignore`
+
+**Key findings:**
+- Build is clean and fast (135ms). Bundle: 285KB JS / 10.8KB CSS.
+- React 19 was installed instead of planned React 18; no issues.
+- Tailwind v4 does not use `tailwind.config.js` - configuration is handled via the `@tailwindcss/vite` plugin and `@import "tailwindcss"` in CSS.
+- `glim.html` kept as legacy reference but is no longer the active source.
+
+**Decisions made:** None new. Execution of the Vite migration decision from 2026-03-25 tech stack evaluation.
+
+**Next steps identified:** Browser verification of Vite build (see Handoff Changes for Testing). GitHub repo setup. Zustand state migration (Claude.ai). GitHub Pages deployment configuration.
+
+### 2026-03-25 - Netlify hosting and PWA setup
+
+**Work performed:** Set up Netlify hosting with auto-deploy from GitHub. Added PWA files for iPhone installation. Created custom Glim icon (SVG + PNG exports). Configured manifest and iOS meta tags.
+
+**Outputs:** `client/public/manifest.json`, `glim-icon.svg`, `glim-icon-192.png`, `glim-icon-512.png`, `apple-touch-icon.png`, `_redirects`; updated `client/index.html`
+
+**Key findings:**
+- Netlify required a `_redirects` file (`/* /index.html 200`) to route correctly - standard for Vite SPA deployments.
+- GitHub Pages rejected because repo is private (requires paid plan). Netlify free tier supports private repos.
+- `base: '/Glim/'` in vite.config.js (added for GitHub Pages) had to be removed for Netlify - Netlify serves from root.
+- iOS Safari uses `apple-touch-icon` for home screen icon, not the PWA manifest icons. Both are needed.
+- Glim is installable on iPhone via Safari Share → Add to Home Screen. Opens full screen with no browser chrome.
+- Touch interactions not yet implemented - primary limitation for mobile usability.
+
+**Decisions made:** Netlify chosen over GitHub Pages (private repo support, free tier) and Cloudflare Pages (simpler first-time setup). See session discussion.
+
+**Next steps identified:** Implement touch event support (primary mobile usability blocker). Add service worker for offline support. Test installation on Android.
+
+### 2026-03-26 - Firestore schema design and sync architecture decisions
+
+**Work performed:** Reviewed three sync approaches from the previous session's brainstorm. Confirmed Approach 2 (localStorage-primary with background Firebase sync) as the implementation path. Made five foundational decisions: Google sign-in for auth, require sign-in on first launch (no anonymous mode), Pattern A (subcollections per domain) for Firestore structure, single counter document for pokes, and incremental schema design (current domains only, not speculative). Designed concrete Firestore schema for the three current domains (journal, pokes, settings). Taught Firestore concepts (documents, collections, subcollections, the alternating rule) from first principles.
+
+**Outputs:** Updated `glim_handoff.Rmd` (session log, 5 new pending tasks, 6 new resolved questions, 1 new completed task). Updated `glim_project_documentation.Rmd` (this document: Sections 2.1, 2.2, 2.4, 8.2, 8.11 new, 5 new Decision Register entries, 2 new Project Log entries).
+
+**Key decisions:**
+1. Google sign-in (lowest friction, Firebase Auth handles persistence).
+2. Required sign-in on first launch (eliminates local-to-cloud migration problem).
+3. Pattern A subcollections (Firestore's intended model, no size ceiling, cheap writes).
+4. Pokes as counter document (not event log, acceptable conflict trade-off).
+5. Incremental schema design (design when building, not speculatively).
+
+**Key architectural insight:** Requiring sign-in from day one is a significant simplification. It means localStorage is purely an offline cache, not a primary data store. There is no "migration moment" where accumulated local data needs to merge with cloud data. The sync service only needs to handle the straightforward case of pushing/pulling events between localStorage and Firestore, not reconciling two potentially divergent data histories.
+
+**Next steps identified:** Firebase project setup (user does console steps), Firebase SDK installation and auth flow implementation (Claude Code), then sync service implementation.
+
+### 2026-03-26 - Firebase setup and Google auth flow
+
+**Work performed:** (Claude Code session.) Installed Firebase SDK. Created Firebase initialization module, Google sign-in screen, and auth-gated app flow. Wrote and deployed Firestore security rules. Set up environment variable configuration for Firebase credentials.
+
+**Outputs:** `client/src/firebase.js`, `client/src/SignIn.jsx`, `client/src/App.jsx` (updated with auth gate), `firestore.rules`, `client/.env.local`, `client/.env.example`. Live on Netlify.
+
+**Key findings:**
+- Firebase SDK adds ~100KB gzipped to the JS bundle (628KB total, 194KB gzip). Over Vite's 500KB warning threshold but cosmetic only.
+- Sign-in screen uses twilight aesthetic matching Glim's visual style.
+- User document creation uses `getDoc` check before `setDoc` so `createdAt` is never overwritten on subsequent sign-ins.
+- Google sign-in provider must be manually enabled in Firebase Console.
+
+**Decisions made:** Firebase config stored in `.env.local` (gitignored) with `.env.example` template committed. Vite's `VITE_` prefix used for environment variables.
+
+**Next steps identified:** Build the background sync service. Wire existing localStorage reads/writes through the sync layer.
+
+### 2026-03-26 - Mobile platform strategy evaluation
+
+**Work performed:** (Claude.ai session.) Evaluated four mobile deployment options against Glim's feature roadmap and budget constraints: enhanced PWA, Capacitor (WebView wrapper), React Native, and full native (Swift/Kotlin). Analyzed which native device APIs Glim actually needs vs. what PWAs can provide. Identified HealthKit/Google Fit as the only meaningful capability gap, gated behind $99/year Apple Developer Program. Confirmed Web Push notifications work on iOS for home-screen PWAs (since iOS 16.4). Documented decision to stay on PWA path with Capacitor as future escalation.
+**Outputs:** Updated `glim_project_documentation.Rmd` (platform strategy in Section 8.1, decision register entry, project log entry), updated `glim_handoff.Rmd` (new Web Push task, service worker priority bump, session log entry).
+**Key findings:**
+- HealthKit and Google Fit both require native app wrappers. On iOS, this additionally requires a $99/year Apple Developer Program membership (free provisioning profiles cannot access HealthKit entitlements).
+- On Android, a Capacitor-built APK can be sideloaded for free with full Health Connect access, but this doesn't help iOS users.
+- Web Push on iOS requires the PWA to be installed via Add to Home Screen in Safari, then opened from the home screen (not Safari). The flow is clunky but functional for a personal app.
+- React Native would require rewriting all visual components (SVG creature, CSS gradient sky, animations), losing ~70% of the existing codebase. Not justified.
+- The existing data model already accommodates manual step entry (`source: "manual"`) as a fallback for the absence of HealthKit.
+**Decisions made:** Enhanced PWA over native app (see Decision Register 2026-03-26).
+**Next steps identified:** Finish service worker (offline support). Implement Web Push notifications (Firebase Cloud Function backend). Complete touch event support and responsive layout (existing pending tasks, prerequisites for usable mobile experience).
+
+### 2026-03-27 - Feature design brainstorm and build plan
+
+**Work performed:** (Claude.ai session.) Designed the full tracker feature suite: nutrition hybrid system (food library + raw add for protein/fiber/fruit/veggie tracking), pomodoro-based time tracking with custom work categories, to-do list with recurring tasks (Approach 2), replace-style step tracking with tier milestones, and category-based workout logging with per-type goals. Designed the home screen layout with summary widgets and nav bar (home/focus/tasks/nutrition/more). Mockupped companion mode panels and home screen variations. Established the inside-out feature build plan (5 phases). Also designed and finalized the multi-hue app icon (accurate Glim creature from DesktopPet.jsx) and splash screen with randomized taglines.
+**Outputs:** Updated `glim_project_documentation.Rmd` (Sections 8.2.1 build plan, 8.3 daily tracking, 8.4 productivity, 8.8 data models for todos/steps/exercise/nutrition/pomodoro, 8.10 nav system updates, 6 decision register entries, project log). Updated `glim_handoff.Rmd` (task queue restructured by build phase, session log, resolved questions). `glim-icon-multihue.svg`, `SplashScreen.jsx`, `icon-splash-handoff.md` (implementation files for Claude Code).
+**Key findings:**
+- Hybrid nutrition approach (library + raw add) balances data quality with low friction. Raw add prevents the library from being a bottleneck.
+- Recurring tasks share architecture with habits (definitions + completion logs), avoiding redundant patterns.
+- Pomodoro timer + time tracking collapse into one feature. Work categories answer "where does my time go?" cheaply.
+- Replace-style step entry matches pedometer mental model better than additive logging.
+- Inside-out build order (one feature at a time, growing framework incrementally) is standard practice and avoids speculative architecture.
+- Home screen works best with Glim large and just 3 summary widgets (steps ring, water ring, tasks done count). Full detail lives in panels and dashboard.
+**Decisions made:** See Decision Register entries for 2026-03-27 (6 entries: hybrid nutrition, pomodoro time tracking, recurring tasks Approach 2, replace-style steps, inside-out build order, and nav bar design).
+**Next steps identified:** Begin Phase 1 (Zustand migration, file separation, touch/responsive, nav shell). Then Phase 2 (water tracker as pattern-prover).
+
+### 2026-03-29 - Water tracker and Firestore sync implementation
+
+**Work performed:** (Claude Code session.) Implemented the water tracker (Phase 2 first feature) and wired up the Firestore background sync service.
+
+**Water tracker:**
+- Created `useWaterStore.js` with localStorage persistence (`glim-water`), `logBottle` / `undoLast` / `setBottleOz` / `setGoal` actions, and computed selectors (`getToday`, `getStreak`, `getWeeklyAvg`). Store holds `bottleOz` and `goal` directly (not delegated to useSettingsStore as originally designed) for self-containment and sync simplicity.
+- Created `WaterPanel.jsx` with a circular progress ring (r=30, circumference=188, viewBox 72x72), green/blue color states for goal-met vs. in-progress, tappable oz pill for inline bottle size editing, +bottle button, 4-second undo toast, and footer showing streak + 7-day average.
+- Embedded all 130+ messages from the water message pools (water_logged sub-pools: first-bottle, simple, playful, progress-aware, absurd, science, mindful; water_goal_met; water_streak by milestone day). Streak milestone messages take priority over generic goal-met messages.
+- Updated `NavBar.jsx`: replaced NutritionIcon with WaterIcon (teardrop SVG); nutrition moved to more section (not yet implemented). Updated `CompanionPanel.jsx` to route `activePanel === 'water'` to `<WaterPanel />`. Updated `stores/index.js` and `useUIStore.js` for the new panel type.
+
+**Firestore sync service:**
+- Created `sync.js` with `startSync(uid)` / `stopSync()`. Called from `App.jsx` on auth state change. Triggers: immediate on startup, every 60s, and on `visibilitychange`.
+- Implemented per-domain sync functions: `syncJournal` (additive merge + soft-delete propagation), `syncPokes` (take-the-max), `syncSettings` (last-write-wins by `lastModified`), `syncWater` (additive entry merge + last-write-wins config by `configUpdatedAt`).
+- After pulls that change localStorage, fires `glim-data-updated` CustomEvent with affected domain names. DesktopPet listens and calls the relevant store's `reload()` method.
+- Fixed one post-deploy bug: `configUpdatedAt` was `undefined` in existing localStorage entries (field added after initial water store deployment), causing Firestore to reject the write. Fixed by falling back to epoch string in `syncWater`.
+
+**Outputs:** `client/src/stores/useWaterStore.js` (new), `client/src/components/WaterPanel.jsx` (new), `client/src/sync.js` (new), updated `NavBar.jsx`, `CompanionPanel.jsx`, `stores/index.js`, `useUIStore.js`, `DesktopPet.jsx`. Also: `client/index.html` updated with `mobile-web-app-capable` meta tag alongside Apple variant.
+
+**Known limitations:**
+- Undo is a hard-delete (not soft-delete). If an entry is pushed to Firestore before the user undoes it, it will reappear on next pull. Low risk given 60s sync interval.
+- Sync is not real-time. Both devices must be open simultaneously and wait up to 60s (or regain tab focus) for changes to propagate.
+- Water count uses UTC dates for day boundaries. Users in western timezones may see today's count reset after midnight UTC but before midnight local time.
+
+**Next steps identified:** Home screen summary widgets (water ring + steps placeholder + tasks placeholder). Touch event support (Pointer Events API migration, currently the primary mobile usability gap).
+
+### 2026-03-30 - Background polishing, NavBar redesign, mobile landscape alignment
+
+**Work performed:** (Two Claude.ai sessions + Claude Code implementation.) Comprehensive background visual polishing, platform-specific NavBar redesign, and mobile landscape SVG alignment fix.
+
+**Background polishing (5 batches, all applied by Claude Code):**
+- Fixed flat mountain peak in both desktop and mobile SVGs (replaced flat segment with single sharp point)
+- Removed 120px ground div and ground rects from both SVGs (outer container background serves as ground color)
+- Extended star y-range from 70% to 88%
+- Added 4th nebula wisp
+- Refactored desktop SVG to fixed-size rendering (3200px wide, 300px tall, centered)
+- Scaled all trees 1.5x larger in both desktop and mobile SVGs
+- Made mountains fully opaque (far: 0.8 to 1, near: 0.9 to 1)
+- Removed horizon glow div entirely (caused visible color seam between sky gradient and landscape)
+
+**NavBar platform-specific redesign:**
+- Desktop: 6 items (home, water, steps, tasks, focus, more), icons 28px, labels 15px, solid background
+- Mobile: 5 items (home, water, steps, tasks, more; focus hidden), icons 29px, labels 14px, solid background
+- Paw print icon designed for steps (replaces generic icon)
+- Sizing values chosen via interactive mockup (`glim-mobile-navbar-mockup.html`)
+
+**Mobile landscape viewBox fix:**
+- Diagnosed: mobile SVG at `height: 28vh` created scale factor ~0.505, burying tree bases behind 80px NavBar
+- Solution: viewBox camera crop (`"0 200 800 200"`) + fixed `height: 200px`. No path coordinate changes needed. Tree bases now align with NavBar top on all phone widths.
+
+**Step tracking panel (design completed, implementation by Claude Code):**
+- `StepsPanel.jsx` and `useStepsStore.js` created
+- Tappable hero number (36px, teal), replace-style entries, tier progress bar (2.5k/5k/7.5k/10k), next milestone pill, streak + 7-day average footer
+
+**Key development workflow insight:** CSS properties survive React re-renders and can be tested live in DevTools; SVG path `d` attributes get overwritten by React on re-render and cannot be reliably tested via console. Created `glim-background-devtools-cheatsheet.md` documenting this.
+
+**Outputs:** Updated `Background.jsx`, `NavBar.jsx`, new `StepsPanel.jsx`, `useStepsStore.js`. Mockup files: `glim-mobile-navbar-mockup.html`, `paw-icon-reference.md`, `glim-background-devtools-cheatsheet.md`.
+
+**Next steps identified:** Step tracking Firestore sync. Home screen summary widgets. Reaction system (`glimReact()`). Touch event support.
+
+
+---
+
+# 3. Instructions for Claude
+
+This section governs how Claude should interact with this document across sessions. These rules apply whenever this document is provided as context.
+
+## 3.1 Core Editing Rules
+
+**This document is append-only.** Content in Sections 1 (Decision Register) and 2 (Development Log) is never deleted or modified except to fix factual errors. The full history of the project's development reasoning must remain intact and traceable.
+
+When updating this document, preserve all existing information and details. New entries are appended to the appropriate section.
+
+## 3.2 What Claude Should Always Do
+
+- **Date everything.** Every log entry, decision, and significant update gets a date.
+- **Document the "why."** Never record a methodological or design choice without its rationale. If the rationale is uncertain, say so explicitly.
+- **Flag uncertainty.** Use language like "tentative," "requires validation," or "assuming X holds" rather than presenting uncertain conclusions as settled.
+- **Flag follow-ups** with a **[FOLLOW-UP NEEDED]** tag so they are not lost between sessions.
+- **State limitations proactively** when recording design decisions.
+- **Maintain consistency.** If a decision recorded here contradicts content in the master project documentation, surface the contradiction and update the relevant documents.
+- **Cross-reference appropriately.** Decision Register entries that have component-level implications should reference the relevant section. Development Log entries should reference the Decision Register entries from the same session.
+
+## 3.3 What Claude Should Never Do
+
+- **Never silently overwrite content.** Changes and their reasons must be visible.
+- **Never fabricate citations or technical details.** Flag uncertainty rather than stating guesses as fact.
+- **Never omit caveats.** This is an internal development record, not marketing material.
+- **Never assume context not present in this document.** Ask rather than guess.
+- **Never use em dashes.** Use single hyphens per Glim project convention.
+
+## 3.4 Tone and Voice
+
+Direct, precise, academic style. No filler, no fluff, no motivational framing. The goal is a record the developer can trust as accurate and complete.

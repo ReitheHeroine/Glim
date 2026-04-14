@@ -31,6 +31,20 @@ output:
 
 # Active Session Log
 
+### 2026-04-13 (Claude Code) - Mobile sign-in fix + iOS auto-zoom fix
+
+- **Fix mobile Google sign-in (Option C):** Three approaches tried and failed before landing on popup-first:
+  1. `signInWithRedirect` on mobile (viewport < 600px) - third-party storage blocking on mobile Safari caused `getRedirectResult()` to return `null`
+  2. Changed `authDomain` to `reitheheroine.github.io` - 404 because GitHub Pages doesn't serve `/__/auth/handler`
+  3. Final fix (Option C): Use `signInWithPopup()` everywhere. Works on desktop and mobile Safari. For installed PWA where popup is blocked, show "open in safari" fallback. Safari and PWA share origin storage, so sign-in persists across both.
+- **SignIn.jsx:** Removed `signInWithRedirect` import and `isMobileOrStandalone` conditional. Added `showBrowserPrompt` state and fallback UI (message + "open in safari" button + "try again" link).
+- **App.jsx:** Removed `getRedirectResult` import and the silent `.catch(() => {})` call on mount.
+- **`.env.local`:** Reverted `VITE_FIREBASE_AUTH_DOMAIN` to `glim-da8c2.firebaseapp.com`. GitHub Secret also reverted by Rei.
+- **Fix iOS auto-zoom on input focus:** Bumped all sub-16px form inputs to fontSize 16: JournalPanel textarea (12->16), NutritionPanel raw-add inputs (11->16) and search input (11->16), SettingsPanel delete confirm (11->16), WaterPanel oz editor (10->16). Adjusted container heights/widths to fit larger text. No viewport meta changes (pinch-to-zoom preserved).
+- **Files modified:** `client/src/SignIn.jsx`, `client/src/App.jsx`, `client/.env.local`, `client/src/components/JournalPanel.jsx`, `client/src/components/NutritionPanel.jsx`, `client/src/components/SettingsPanel.jsx`, `client/src/components/WaterPanel.jsx`
+- **Build:** Clean (724KB JS / 223KB gzip). Both fixes verified by Rei on phone.
+- **Commits:** `4fdd0af`, `9df4efd` (sign-in), `1d3877b` (iOS zoom fix)
+
 ### 2026-04-07 (Claude Code) - Nutrition Firestore sync
 
 - **Modified `client/src/sync.js`:** Added three sync functions. `syncNutritionLogs`: additive merge + soft-delete propagation at `users/{uid}/nutrition/{entryId}`, push filter on createdAt/deletedAt vs nutritionPushedAt, pull with Map-based O(1) ID lookup, soft-delete propagation (remote deletedAt newer than local). `syncNutritionConfig`: last-write-wins by configUpdatedAt at `users/{uid}/nutrition-config/current`, pushes/pulls goals object. `syncNutritionLibrary`: additive merge + edit propagation at `users/{uid}/nutrition-library/{itemId}`, push filter on createdAt/updatedAt vs nutritionLibraryPushedAt, pull with newer-updatedAt-wins conflict resolution via Object.assign. All three registered in syncAll (now 8 sync functions). Sync meta keys: nutritionPushedAt, nutritionLibraryPushedAt. Nutrition logs and library always advance pushedAt after sync (matching journal/water fix pattern).

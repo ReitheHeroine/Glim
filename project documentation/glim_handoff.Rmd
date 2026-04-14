@@ -10,7 +10,7 @@ output:
     theme: default
 ---
 
-**Last Updated:** 2026-04-04 (nutrition tracker implemented: stores, panel, more menu, nav bar corrections; build verified)
+**Last Updated:** 2026-04-13 (Settings panel expansion designed: focus mode, collapsible sections, per-tracker goal config)
 
 **Purpose:** Operational coordination across Claude instances and across sessions. Tracks current development state, active tasks, blockers, and data contracts. Updated every session.
 
@@ -107,33 +107,33 @@ Step [X] complete.
 
 **Current phase:** Phases 1-3 in parallel (infrastructure gaps from Phase 1 being filled alongside Phase 2-3 feature work).
 
-**Current focus:** Nutrition library manager (CRUD for food library, requires focus mode first). Step tracking completion (Firestore sync, message pools). Critical bug: localStorage cross-account contamination.
+**Current focus:** Nutrition tracker live testing + NutritionLibraryManager (CRUD for food library, requires focus mode first). Step tracking completion (Firestore sync, message pools). Critical bug: localStorage cross-account contamination. Day boundary: complete. UTC-to-local fix and `DAY_BOUNDARY_HOUR = 3` both applied in `dateUtils.js`. Mobile sign-in: fixed (popup-first + PWA Safari fallback). iOS auto-zoom: fixed (all inputs at 16px+).
 
 ## 2.2 Component/Module Status
 
 | Component | Phase | Status | Last Touched | Notes |
 |---|---|---|---|---|
 | Creature + world | 1 | Live | 2026-03-30 | Desktop + mobile SVG landscapes, autonomous behaviors, all mouse interactions |
-| Auth | 1 | Live | 2026-03-26 | Google sign-in, auth gate in App.jsx |
+| Auth | 1 | Live | 2026-04-13 | Google sign-in via popup on all platforms. PWA standalone: fallback prompt to open in Safari (shared origin storage). `authDomain`: `glim-da8c2.firebaseapp.com`. |
 | Nav bar | 1 | Live | 2026-04-04 | Desktop: 6 items (home, water, steps, tasks, nutrition, more). Mobile: 5 items (home, water, steps, tasks, more). |
 | Companion panel | 1 | Live | 2026-03-30 | Slide-up, drag-to-dismiss, routes to panels |
 | Touch events | 1 | Not started | - | Primary mobile blocker. Spec complete in Project Docs Section 4.2 |
 | Responsive layout | 1 | Not started | - | isMobile flag, scaling, tap targets |
-| Water tracker | 2 | Live | 2026-03-29 | Ring UI, log/undo, streak/avg, Firestore sync |
+| Water tracker | 2 | Live | 2026-04-13 | Ring UI, log/undo, streak/avg, Firestore sync. +bottle button always in DOM (no longer swapped with undo toast). |
 | Reaction system | 2 | Not started | - | glimReact() - needed for all trackers |
 | Home screen widgets | 2 | Not started | - | 3 rings: steps, water, tasks |
 | Step tracker | 3 | Live (partial) | 2026-03-30 | Hero number panel. Firestore sync not wired. |
-| Nutrition tracker | 3 | Live (partial) | 2026-04-07 | Panel, two stores, more menu, Firestore sync implemented. Library CRUD (NutritionLibraryManager) pending. |
+| Nutrition tracker | 3 | Live (partial) | 2026-04-04 | Panel, two stores, more menu implemented. Library CRUD (NutritionLibraryManager) pending. Firestore sync not yet wired. |
 | More menu | 1 | Live | 2026-04-04 | Slide-up overlay, 3-column grid, settings + nutrition (mobile) available. |
-| Sync service | - | Live | 2026-04-07 | Domains: journal, pokes, settings, water, steps, nutrition (logs + config + library). 8 sync functions in syncAll. |
+| Sync service | - | Live | 2026-03-29 | Domains: journal, pokes, settings, water. Steps not yet wired. |
 | Journal | - | Live | 2026-03-27 | Entries with soft-delete, syncs via Firestore |
-| Settings | - | Live | 2026-03-27 | Intervals, sign-out, reset-all-data |
+| Settings | - | Redesign planned | 2026-04-13 | Current: gear-icon corner panel (reminder sliders + sign-out). Redesign: full-screen focus mode, collapsible sections, per-tracker goal config. Accessed via "more" menu. See Phase 5 task. |
 | Zustand stores | - | Live | 2026-04-04 | 10 stores: creature, message, settings, UI, journal, pokes, water, steps, nutrition, nutrition-library. All have reload(). |
 | Background landscape | - | Live (polished) | 2026-03-30 | Desktop: 3200px fixed. Mobile: 200px viewBox crop. |
 
 ### Latest session
 
-See `glim_session_log.Rmd` for full details. Most recent: 2026-04-07 (Claude Code) - Nutrition Firestore sync: added syncNutritionLogs, syncNutritionConfig, syncNutritionLibrary to sync.js. Added updatedAt to library store for edit conflict resolution. Wired reload listeners in DesktopPet. 87 sync tests passed. Build clean: 724KB JS / 223KB gzip.
+See `glim_session_log.Rmd` for full details. Most recent: 2026-04-13 (Claude Code) - Fixed mobile Google sign-in. Popup-first on all platforms, PWA standalone gets "open in safari" fallback. Removed redirect flow and getRedirectResult. Reverted authDomain to firebaseapp.com. Verified working on mobile.
 
 ---
 
@@ -232,6 +232,83 @@ Tasks organized by build phase (see Project Docs Section 8.2.1). Work within eac
 
 ### PHASE 5: Remaining features (any order)
 
+#### Expand settings panel (focus mode)
+- **Assigned to:** Claude Code
+- **Priority:** Medium (functional without it; current corner panel covers reminders. Needed once nutrition/steps goals need user configuration.)
+- **Description:** Replace the current gear-icon floating panel with a full-screen focus mode settings view, accessed via the "more" menu. Collapsible accordion sections with single-expand behavior (opening one section auto-collapses any other). Each collapsed row shows a summary of current values. Full design spec below.
+- **Context/References:** `glim-settings-panel-mockup.html` (interactive mockup), [See Project Docs Section 8.10: Feature-to-mode assignment (Settings = Focus)]
+- **Mockup file:** `glim-settings-panel-mockup.html`
+
+**Design decisions (2026-04-13):**
+
+1. **Focus mode, not corner panel.** Settings moves from the gear-icon floating panel to a full-screen focus mode view. Accessed only through the "more" menu grid. The gear icon in the top-right corner is removed.
+2. **Collapsible sections with single-expand.** Accordion pattern. Opening a section auto-collapses any other open section. Collapsed rows show a summary line of current values (e.g., "6 bottles/day, 24 oz each"). Scales to 15+ tracker domains (one row per domain).
+3. **Settings panel reads/writes tracker stores directly.** Imports `useWaterStore`, `useStepsStore`, `useNutritionStore`, etc. and calls their existing setter actions. No duplication of goal values into `useSettingsStore`. `useSettingsStore` continues to hold only reminder intervals and app-level settings.
+4. **Water inline bottle-size editor kept.** Both the oz pill editor in WaterPanel and the bottle size field in Settings write to `useWaterStore.setBottleOz()`. Two UI paths, one data source.
+5. **Steps: single goal input with auto-derived tiers.** User sets one daily step goal. Four tiers auto-calculate as 25%/50%/75%/100%. First three tiers round to nearest 100. Fourth tier is always the exact goal. Example: goal 7,500 -> tiers 1,900 / 3,800 / 5,600 / 7,500.
+6. **Nutrition: two-tier min/ideal per nutrient.** Four nutrients (protein, fiber, fruit, veg) each get min and ideal fields. These drive the three visual bar states in the nutrition companion panel. Eight total inputs, four rows with inline min/ideal pairs.
+7. **Per-section component files.** Each settings section is its own component (e.g., `WaterSettings.jsx`, `StepsSettings.jsx`, `NutritionSettings.jsx`, `RemindersSettings.jsx`). Parent settings view manages `activeSection` state and renders the appropriate expanded component.
+
+**Layout:** Focus mode with standard header (back arrow, "settings" title, mini-Glim). Scrollable body with collapsible sections. Sign-out button at bottom, outside any section.
+
+**Initial sections (v1):**
+
+| Section | Icon | Collapsed summary | Fields |
+|---|---|---|---|
+| Reminders | Use existing reminder/bell icon or design one | "wellness 20m, move 45m, eyes 20m" | 3 sliders (wellness 10-60, move 15-90, eyes 10-60) with amber accent |
+| Water | Teardrop (from NavBar) | "6 bottles/day, 24 oz each" | Bottle size (number input, oz), daily goal (number input, bottles), computed oz total shown |
+| Steps | Paw print (from NavBar) | "goal: 10,000/day" | Daily goal (number input, steps), auto-tier preview bar with computed milestone labels |
+| Nutrition | Apple (from NavBar) | "protein 50-80g, fiber 20-25g, fruit 3-5, veg 3-5" | 4 rows x 2 inputs each (min + ideal): protein (g), fiber (g), fruit (srv), veg (srv) |
+| Display | Design new icon | "water avg: bottles, theme: auto" | Placeholder for v1. Future: water avg format (bottles vs oz), theme |
+
+**Section icons:** Use the existing SVG icons from `NavBar.jsx` for water (teardrop), steps (paw print), and nutrition (apple). Reminders and display need new icons designed at implementation time, or simple placeholder SVGs.
+
+**Styling:** Match Glim's existing frosted glass aesthetic. Section backgrounds: `rgba(30, 40, 65, 0.6)` with `rgba(100, 120, 160, 0.2)` border. Hover: `rgba(40, 55, 80, 0.7)`. Section icon backgrounds use each domain's accent color at low opacity (water blue, steps teal, nutrition green, reminders amber). Slider thumbs and number input focus borders match domain accent colors. See mockup for exact values.
+
+**Interaction:**
+- Tap section header to expand/collapse (single-expand: other sections auto-close)
+- Expand/collapse animates via `max-height` transition (300ms ease)
+- Chevron rotates 180deg on expand
+- Number inputs: tap to edit, shows native numeric keyboard on mobile
+- Sliders: drag to adjust, value label updates live
+- All changes persist immediately to the relevant store (no "save" button)
+
+**Steps auto-tier algorithm:**
+```
+function computeTiers(goal) {
+  const fractions = [0.25, 0.5, 0.75, 1.0];
+  return fractions.map((f, i) => {
+    if (i === 3) return goal; // top tier = exact goal
+    return Math.round((goal * f) / 100) * 100; // round to nearest 100
+  });
+}
+```
+
+**Files to create:**
+- `client/src/components/SettingsView.jsx` (parent focus-mode settings screen, manages `activeSection` state, renders section list)
+- `client/src/components/settings/RemindersSettings.jsx`
+- `client/src/components/settings/WaterSettings.jsx`
+- `client/src/components/settings/StepsSettings.jsx`
+- `client/src/components/settings/NutritionSettings.jsx`
+
+**Files to update:**
+- `client/src/components/SettingsPanel.jsx` - Remove or gut. The gear icon and floating panel are replaced by `SettingsView.jsx`. Sign-out moves to the new settings view.
+- `client/src/components/MoreMenu.jsx` - Settings entry should open focus mode settings (route to `SettingsView`)
+- `client/src/stores/useUIStore.js` - Add settings to focus mode routing if not already supported
+- `client/src/components/DesktopPet.jsx` - Remove gear icon rendering, wire up focus mode settings view
+
+**Acceptance criteria:**
+- Settings opens in focus mode from "more" menu
+- Gear icon no longer appears in the top-right corner
+- Single-expand behavior: only one section open at a time
+- Collapsed summaries show current values
+- Reminder sliders update `useSettingsStore` immediately
+- Water fields update `useWaterStore.setBottleOz()` and `useWaterStore.setGoal()` immediately
+- Steps goal updates `useStepsStore` and tier preview reflects auto-derived milestones with rounding
+- Nutrition min/ideal fields update `useNutritionStore.setGoal()` immediately
+- Water panel inline bottle-size editor continues to work independently
+- Sign-out button works from new location
+
 #### Build pomodoro / time tracking
 - Focus mode. Configurable timer, custom work categories, manual session add, per-category totals.
 - [See Project Docs Section 8.4], [See Project Docs Section 8.8: Pomodoro schema]
@@ -296,22 +373,19 @@ Tasks organized by build phase (see Project Docs Section 8.2.1). Work within eac
 #### Tailwind removal
 - Replace remaining Tailwind utility classes with inline styles in new code. Low priority cleanup.
 
-#### Implement 3 AM logical day boundary
-- **Assigned to:** Claude Code
-- **Priority:** Medium
-- **Description:** Two-step implementation: (1) refactor all date logic into `utils/dateUtils.js` as a pure refactor with no behavior change, (2) change the boundary hour from midnight to 3 AM.
-- **Acceptance criteria:** Step 1: all existing tests still pass, all date derivation uses the new utility. Step 2: activity logged at 1 AM counts as "yesterday."
-
 ---
 
 ## 3.2 Completed Tasks
 
 (Periodically summarize and compress older entries.)
 
+- **2026-04-13** - Fix water panel rapid logging: The +bottle button and undo toast were in a conditional render (button OR toast). During the 4-second undo window the button was removed from the DOM, blocking successive taps. Moved undo toast to its own row below the button; button is always rendered. Timer logic unchanged. Commit: `985f838`.
+- **2026-04-13** - Fix iOS auto-zoom on input focus: Bumped all sub-16px form inputs to fontSize 16 across JournalPanel (textarea 12->16), NutritionPanel (raw-add inputs 11->16, search input 11->16), SettingsPanel (delete confirm 11->16), WaterPanel (oz editor 10->16). Adjusted container heights/widths to fit. Pinch-to-zoom unaffected. Commit: `1d3877b`.
+- **2026-04-13** - Fix mobile Google sign-in: Switched to popup-first on all platforms (removed redirect flow). PWA standalone gets "open in safari" fallback when popup is blocked (shared origin storage means Safari sign-in authenticates the PWA). Reverted `authDomain` to `glim-da8c2.firebaseapp.com`. Removed `getRedirectResult` from `App.jsx`. Commits: `4fdd0af`, `9df4efd`. GitHub Secret `VITE_FIREBASE_AUTH_DOMAIN` also reverted.
+- **2026-04-07** - Set day boundary to 3 AM: Changed `DAY_BOUNDARY_HOUR` from `0` to `3` in `dateUtils.js`. Late-night activity (before 3 AM) now counts toward the previous day. Build verified clean.
 - **2026-04-04** - Build nutrition tracking (companion panel + stores): `useNutritionStore.js`, `useNutritionLibraryStore.js`, `NutritionPanel.jsx` implemented. Two-tone bars, inline raw-add, library quick-add, undo, streak footer, 200-message pool. 47 unit tests passed.
 - **2026-04-04** - Update nav bar with nutrition icon and "more" menu: `NavBar.jsx` updated (Icon I apple SVG, correct desktop/mobile slot assignments), `MoreMenu.jsx` created (slide-up overlay, 3-column grid, nutrition/settings available), `useUIStore.js` updated (showMoreMenu), `DesktopPet.jsx` updated (MoreMenu rendered).
 - **2026-04-04** - Build nutrition message pools: ~200 messages across 8 event types embedded directly in `NutritionPanel.jsx` (same stopgap pattern as WaterPanel). Full pool content in `nutrition-message-pools.md`.
-- **2026-04-07** - Wire nutrition Firestore sync: added `syncNutritionLogs` (additive merge + soft-delete), `syncNutritionConfig` (LWW by configUpdatedAt), `syncNutritionLibrary` (additive merge + edit propagation by updatedAt) to sync.js. Added `updatedAt` field to library store actions. Wired reload listeners in DesktopPet. 87 tests passed.
 
 ---
 
@@ -347,20 +421,22 @@ All stores are in `client/src/stores/`. React components never touch localStorag
 |---|---|---|---|
 | `useCreatureStore` | mood, hue, sat, animation states, drag state, pupil offset | setMood, setSpecialAnim, setDragState, setPupilOffset | DesktopPet, OwlMoth, Background |
 | `useMessageStore` | message, showBubble, msgType, isWellness | setMessage, setShowBubble, clearMessage | SpeechBubble, WaterPanel (stopgap), PersistentReminder |
-| `useSettingsStore` | wellnessInterval, moveInterval, eyesInterval, lastModified | setInterval, reload | SettingsPanel, DesktopPet (timer scheduling) |
+| `useSettingsStore` | wellnessInterval, moveInterval, eyesInterval, lastModified | setInterval, reload | SettingsPanel (current) / RemindersSettings (planned), DesktopPet (timer scheduling) |
 | `useUIStore` | activeNav, activePanel, journalView, journalText | setActiveNav, setActivePanel, setJournalView | NavBar, CompanionPanel, JournalPanel |
 | `useJournalStore` | entries (array) | addEntry, softDelete, reload | JournalPanel |
 | `usePokesStore` | count | increment, reload | DesktopPet (click handler) |
-| `useWaterStore` | entries, bottleOz, goal, configUpdatedAt | logBottle, undoLast, setBottleOz, setGoal, reload | WaterPanel |
-| `useStepsStore` | entries (replace-style per date), streak, weeklyAvg | logSteps, reload | StepsPanel |
-| `useNutritionStore` | logs, goals ({ min, ideal } per nutrient), configUpdatedAt | logFromLibrary, logRaw, undoLast, setGoal, reload | NutritionPanel |
+| `useWaterStore` | entries, bottleOz, goal, configUpdatedAt | logBottle, undoLast, setBottleOz, setGoal, reload | WaterPanel, WaterSettings (planned) |
+| `useStepsStore` | entries (replace-style per date), streak, weeklyAvg | logSteps, reload | StepsPanel, StepsSettings (planned) |
+| `useNutritionStore` | logs, goals ({ min, ideal } per nutrient), configUpdatedAt | logFromLibrary, logRaw, undoLast, setGoal, reload | NutritionPanel, NutritionSettings (planned) |
 | `useNutritionLibraryStore` | items (food library) | addItem, editItem, deleteItem, recordUsage, reload | NutritionPanel, NutritionLibraryManager |
 
 ## 5.2 Sync Service Contract
 
 `sync.js` calls `startSync(uid)` from `App.jsx` on auth. After pulling remote changes that modify localStorage, fires `glim-data-updated` CustomEvent with affected domain names. `DesktopPet` listens and calls the relevant store's `reload()`.
 
-Sync strategies per domain: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`), steps (additive merge), nutrition logs (additive merge + soft-delete propagation), nutrition config (last-write-wins by `configUpdatedAt`), nutrition library (additive merge + edit propagation by `updatedAt`).
+Sync strategies per domain: journal (additive merge + soft-delete propagation), pokes (take-the-max), settings (last-write-wins by `lastModified`), water entries (additive merge, no soft-delete), water config (last-write-wins by `configUpdatedAt`).
+
+**Planned (not yet wired):** nutrition logs at `users/{uid}/nutrition/{entryId}` (additive merge + soft-delete propagation), nutrition config at `users/{uid}/nutrition-config/current` (last-write-wins by `configUpdatedAt`), nutrition library at `users/{uid}/nutrition-library/{itemId}` (additive merge + edit propagation). Steps sync also pending.
 
 ## 5.3 Future: Reaction System Contract
 
@@ -373,4 +449,14 @@ When `glimReact(eventType, data)` is built, it will be called by tracker stores/
 This section holds the in-progress session log entry. It is written during the session and flushed to `glim_session_log.Rmd` at session end (see Section 1.2, "At session end" for the flush procedure).
 
 [SESSION START]
+
+**Date:** 2026-04-13
+**Instance:** Claude Code (Opus 4.6)
+
+### Work completed
+- **Fixed water panel rapid logging bug** - Diagnosed that `WaterPanel.jsx` used a conditional render (`showUndo ? <toast> : <button>`) that removed the +bottle button from the DOM during the 4-second undo window. Timer logic (clear/set pattern at lines 272-274) was correct; the problem was purely the conditional render gating. Fix: button always rendered, undo toast moved to its own row below the button. Commit `985f838`, pushed.
+
+### Files modified
+- `client/src/components/WaterPanel.jsx` - Replaced ternary conditional render with always-present button + separate undo toast row
+
 [SESSION END]

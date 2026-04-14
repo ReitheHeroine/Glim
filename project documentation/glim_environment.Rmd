@@ -1,0 +1,129 @@
+---
+title: "Glim - Environment & Infrastructure Reference"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 3
+    theme: default
+---
+
+**Purpose:** Stable reference for platform details, deployment workflow, environment setup, and version control configuration. Read on demand when working with infrastructure, setting up environments, or committing code.
+
+**Last Updated:** 2026-04-01
+
+---
+
+# 1. Platform
+
+**Local machine:** macOS (development, documentation, VCS). Primary development screen: 1365 x 934 (browser window inner dimensions) - used for pixel-accurate layout calculations.
+
+**Testing environments:**
+
+- Chrome DevTools: console for live CSS testing, mobile emulator (with known limitations - does not match real iPhone rendering). DevTools docked to bottom, not side, because side-docking triggers the `isMobile` breakpoint (below 600px viewport width) and causes the mobile SVG to render.
+- Chrome profiles: simultaneous multi-account desktop testing for Firestore sync verification.
+- Vite `--host` flag: real device testing via local network. Preferred over DevTools mobile emulator for final verification.
+
+**Key DevTools notes:**
+
+- CSS properties survive React re-renders and can be tested live in the Styles panel or Console.
+- SVG path `d` attributes get overwritten by React on re-render and cannot be reliably tested via console. Always test SVG changes by editing source and rebuilding.
+
+---
+
+# 2. Development Workflow
+
+**Local development:**
+```bash
+cd client
+npm run dev      # Dev server at localhost:5173 with hot module replacement
+```
+
+**Production build:**
+```bash
+cd client
+npm run build    # Production build to client/dist/
+npm run preview  # Preview production build locally
+```
+
+**Real device testing:**
+```bash
+cd client
+npm run dev -- --host   # Exposes dev server on local network for phone testing
+```
+
+**Deployment:** Push to `main` triggers GitHub Actions build + deploy to GitHub Pages. The workflow (`.github/workflows/deploy.yml`) builds with Firebase secrets injected from repository secrets, deploys `client/dist/` to `gh-pages` branch.
+
+**Build output:** `client/dist/index.html` + `client/dist/assets/` (JS + CSS bundles). As of 2026-03-26: 628KB JS (gzip: 194KB), CSS ~11KB. Firebase SDK adds ~100KB gzipped. Over Vite's 500KB warning threshold, cosmetic only.
+
+---
+
+# 3. Environment Setup
+
+**Prerequisites:** Node.js + npm
+
+**Initial setup:**
+```bash
+git clone git@github.com:ReitheHeroine/Glim.git
+cd Glim/client
+npm install
+cp .env.example .env.local   # Then fill in Firebase config values
+```
+
+**Firebase configuration:** `.env.local` must contain `VITE_FIREBASE_*` variables (API key, auth domain, project ID, etc.). See `.env.example` for the required variable names. These are injected as GitHub Actions secrets for production builds.
+
+**Key dependencies:**
+
+| Package | Version | Purpose |
+|---|---|---|
+| react | 19.2.4 | UI framework |
+| react-dom | 19.2.4 | React rendering |
+| vite | 8.0.2 | Build tool, dev server, production optimization |
+| @vitejs/plugin-react | 6.0.1 | JSX transform for Vite |
+| tailwindcss | 4.2.2 | Utility CSS (build-integrated via @tailwindcss/vite). Removal planned for new code. |
+| zustand | 5.x | Shared state management. 8 domain stores. |
+| firebase | 11.x | Cloud database (Firestore), authentication (Google sign-in) |
+
+**Planned (not yet installed):**
+
+| Package | Purpose |
+|---|---|
+| chart.js | Data visualization for trends, progress charts |
+| vite-plugin-pwa | Service worker and manifest auto-generation |
+
+**Build notes:**
+
+- Vite config (`client/vite.config.js`): React + Tailwind v4 plugins, `base: '/Glim/'` for GitHub Pages path prefix.
+- Tailwind v4 does not use `tailwind.config.js` - configuration handled via `@tailwindcss/vite` plugin and `@import "tailwindcss"` in CSS.
+
+---
+
+# 4. Version Control
+
+**Remote:** `git@github.com:ReitheHeroine/Glim.git`
+
+**Live URL:** https://reitheheroine.github.io/Glim/
+
+**Branch strategy:** `main` only. No feature branches unless discussed.
+
+**What gets committed:**
+
+- All source files in `client/src/`
+- Config files (`vite.config.js`, `eslint.config.js`, `package.json`, `.env.example`)
+- Public assets (`client/public/`)
+- Infrastructure (`.github/workflows/`, `firestore.rules`)
+- Documentation files (`.Rmd`, `.md`)
+- Legacy reference files (`glim.html`, `tater.html`)
+
+**What does NOT get committed** (handled by .gitignore):
+
+- `node_modules/`
+- `client/dist/` (built by CI)
+- `client/.env.local` (contains Firebase secrets)
+- Any files containing API keys or credentials
+
+**GitHub Actions workflow:** `.github/workflows/deploy.yml` builds with Firebase secrets injected from repository secrets, deploys to `gh-pages` branch.
+
+**localStorage keys (reference for debugging):** `glim-journal`, `glim-pokes`, `glim-settings`, `glim-water`, `glim-steps`, `glim-sync-meta`

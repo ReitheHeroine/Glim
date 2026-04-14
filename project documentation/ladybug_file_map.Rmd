@@ -1,0 +1,196 @@
+---
+title: "Ladybug PopGen -- File System Map"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 3
+    theme: default
+---
+
+# Ladybug PopGen -- File System Map
+
+**Purpose:** Reference for project directory structure, script locations, and output file layout. Read on demand when creating or locating files. Updated by Claude Code at session end when files are created, moved, or deleted.
+
+**Last Updated:** 2026-01-13 (migrated from old handoff -- **[NEEDS VERIFICATION BY CLAUDE CODE]**)
+
+---
+
+# 1. Directory Structure
+
+```
+BIOL624_Project_Fall_2025/
+|
+├── README.md
+├── METHODS.md
+├── .gitignore
+|
+├── metadata/                          # Sample and population info
+|   ├── samples.tsv                    # Full metadata (88 individuals)
+|   ├── popmap.txt                     # Sample-to-population mapping
+|   ├── pop_CHI.txt                    # China population samples (n=5)
+|   ├── pop_EEU.txt                    # Eastern Europe samples (n=18)
+|   ├── pop_WEU.txt                    # Western Europe samples (n=25)
+|   ├── pop_USA.txt                    # USA samples (n=40)
+|   └── C7_samples_locations*.xlsx     # Location spreadsheets
+|
+├── data/
+|   ├── coccinella_septempunctata_/    # Reference genome
+|   |   └── ncbi_dataset/data/GCA_907165205.1/
+|   |       ├── GCA_907165205.1_*.fna  # Genome assembly
+|   |       └── genomic.gff            # Gene annotations
+|   |
+|   ├── VARIANTS_BY_CHR/               # Per-chromosome VCFs
+|   |   └── FILTERED_CHR_VCFS/         # *** USE THESE -- filtered VCFs ***
+|   |       └── NC_058*.filtered.vcf.gz
+|   |
+|   ├── VARIANTS_BY_SAMPLE/            # Per-sample VCFs
+|   ├── WG_VARIANTS/                   # *** UNFILTERED -- never use directly ***
+|   |
+|   ├── plink/                         # PLINK binary format
+|   |   ├── ladybug_snps.bed           # 803,821 variants x 88 individuals
+|   |   ├── ladybug_snps.bim
+|   |   ├── ladybug_snps.fam
+|   |   └── ladybug_snps_qc.imiss      # Per-individual missingness
+|   |
+|   ├── go_annotations/                # GO annotation databases
+|   |   └── tribolium_gene2go.tsv
+|   |
+|   ├── blast_db/                      # BLAST databases
+|   |
+|   ├── harmonia_axyridis_ncbi_dataset/      # Comparative genomes
+|   ├── leptinotarsa_decemlineata_ncbi_dataset/
+|   └── tribolium_castaneum_ncbi_dataset/
+|
+├── scripts/                           # Analysis scripts (~25 files)
+|   └── [see Scripts Reference below]
+|
+├── results/
+|   ├── whole_pop_results/             # Whole-population analyses
+|   |   ├── tajima/                    # Per-chromosome Tajima's D
+|   |   ├── pi/                        # Windowed nucleotide diversity
+|   |   ├── pi_sites/                  # Site-level diversity
+|   |   ├── summary/                   # Summary reports and tables
+|   |   ├── figs/                      # Visualizations
+|   |   ├── combined_outliers/         # Selection scan results
+|   |   └── logs/
+|   |
+|   ├── CHI_results/                   # Population-specific diversity
+|   ├── EEU_results/                   # (each: pi/, tajima/, summary/)
+|   ├── WEU_results/
+|   ├── USA_results/
+|   |
+|   ├── fst_CHI_vs_EEU_results/        # Pairwise FST (6 comparisons)
+|   ├── fst_CHI_vs_USA_results/        # Each contains:
+|   ├── fst_CHI_vs_WEU_results/        #   fst/ (windowed), fst_genomewide/,
+|   ├── fst_EEU_vs_USA_results/        #   snp/, outflank_vcf_results/,
+|   ├── fst_EEU_vs_WEU_results/        #   figs/, summary/, logs/
+|   ├── fst_USA_vs_WEU_results/
+|   |
+|   ├── outflank_results/              # Consolidated OutFLANK outputs
+|   |
+|   ├── outflank_diagnostic/           # OutFLANK diagnostic analysis
+|   |   ├── [per-comparison subdirectories]
+|   |   ├── concordance/               # OutFLANK-percentile concordance
+|   |   |   ├── concordance_summary.tsv
+|   |   |   ├── concordance_summary.txt
+|   |   |   └── concordance_plot.png
+|   |   └── diagnostic_summary_all.tsv
+|   |
+|   ├── unified_selection_scan/        # Unified percentile results
+|   |   ├── outliers_*pct.tsv
+|   |   ├── pattern_summary_*.tsv
+|   |   └── unified_scan_summary.txt
+|   |
+|   ├── pcadapt/                       # pcadapt results (PENDING)
+|   |
+|   └── sample_qc/                     # Per-individual missingness (if vcftools method used)
+|
+├── project_notes/                     # Documentation
+|   ├── ladybug_handoff.Rmd
+|   ├── ladybug_master_doc.Rmd
+|   ├── ladybug_project_history.Rmd
+|   ├── ladybug_session_log.Rmd
+|   ├── ladybug_environment.Rmd
+|   ├── ladybug_file_map.Rmd           # THIS FILE
+|   └── [legacy .docx files]
+|
+└── .claude/
+    └── templates/
+        └── script_header.txt          # Script header boilerplate
+```
+
+**[CLAUDE CODE: Verify this tree against actual filesystem. Flag missing directories, extra files, or incorrect paths.]**
+
+---
+
+# 2. Scripts Reference
+
+### Core Analysis Pipelines
+
+| File | Description | Last Updated |
+|---|---|---|
+| `diversity.sh` | Tajima's D, windowed pi, site-level pi from per-chromosome VCFs via vcftools | 2025-12-08 |
+| `fst.sh` | Genome-wide + windowed Weir & Cockerham FST via vcftools. Raw output only -- use summarize_fst.R for reporting. | 2026-01-13 |
+| `summarize_fst.R` | Cumulative FST summary across all comparisons. Statistics only, no interpretations. | 2026-01-13 |
+| `comprehensive_selection_scan.R` | Original dual-method scan (OutFLANK + percentile). Superseded by unified_selection_scan.R for primary analysis. | 2025-12-06 |
+| `unified_selection_scan.R` | Unified percentile method (0.5%, 1%, 2%) applied to all 6 comparisons. Pattern categorization. | 2026-01-09 |
+| `run_outflank_from_vcf.R` | OutFLANK scan with multi-allelic site fixes and pop vector formatting. | 2025-12-06 |
+| `outflank_diagnostic.R` | OutFLANK diagnostics on all 6 comparisons. SNP IDs in CHROM:POS format. | 2026-01-12 |
+| `pcadapt_selection_scan.R` | pcadapt analysis script (needs debugging/completion). | 2026-01-13 |
+
+### Annotation & Enrichment
+
+| File | Description | Last Updated |
+|---|---|---|
+| `annotate_snps.py` | SNP-to-gene mapping from GFF3 reference | 2025-12-08 |
+| `annotate_outliers_local.py` | Full local annotation: SNP mapping, protein extraction, BLAST cascade, GO transfer | 2025-12-08 |
+| `enrich_gene_annotations.py` | Two-step NCBI query then BLAST enrichment | 2025-12-08 |
+| `enrich_from_gff.py` | Offline enrichment from GFF product names | 2025-12-08 |
+| `annotate_outliers_with_go.py` | GO term transfer from Tribolium via BLAST orthology | 2025-12-08 |
+| `go_enrichment_analysis.R` | GO enrichment with clusterProfiler using Tribolium annotations | 2025-12-08 |
+
+### Visualization
+
+| File | Description | Last Updated |
+|---|---|---|
+| `plot_diversity.R` | Per-chromosome and combined Tajima's D and pi plots | 2025-12-08 |
+| `plot_fst.r` | Windowed FST Manhattan plots and chromosome facets | 2026-01-09 |
+| `visualize_outflank_results.R` | OutFLANK histograms and Manhattan plots | 2025-12-08 |
+
+### Summary Tables
+
+| File | Description | Last Updated |
+|---|---|---|
+| `create_population_pi_table.R` | Publication-quality pi summary (excludes sex chr) | 2025-12-08 |
+| `create_population_tajima_table.R` | Publication-quality Tajima's D summary (excludes sex chr) | 2025-12-08 |
+| `create_diversity_tables.R` | Combined diversity table generation | 2025-12-08 |
+| `merge_selection_metrics.R` | Merge per-window metrics (Tajima's D, pi, FST) across chromosomes | 2025-12-08 |
+
+### Utilities & Diagnostics
+
+| File | Description | Last Updated |
+|---|---|---|
+| `calculate_outflank_concordance.R` | OutFLANK-percentile concordance (SNP-to-window mapping) | 2026-01-12 |
+| `add_fst_to_enriched_snps.R` | Adds FST values to enriched SNP annotation files | 2025-12-08 |
+| `diagnose_outflank_issue.R` | Troubleshooting for OutFLANK failures | 2025-12-06 |
+| `diagnose_zero_outliers.R` | Diagnostic for zero-outlier OutFLANK results | 2025-12-06 |
+| `create_metadata.py` | Generates population files from sample spreadsheet | 2025-11-17 |
+| `install_outflank_packages.R` | Installs OutFLANK and dependencies | 2025-12-06 |
+| `install_vcfr.R` | Installs vcfR package | 2025-12-06 |
+
+**[CLAUDE CODE: Verify all scripts exist at `scripts/` path. Flag any scripts present on disk but missing from this table, or listed here but not on disk.]**
+
+---
+
+# 3. Update Instructions
+
+When creating, moving, or deleting files:
+
+1. Update the directory tree above
+2. Update the "Last updated" date
+3. Add notes for new directories or significant files
+4. Update the scripts reference table if new scripts were created
+5. Check if new files need VCS inclusion/exclusion (see `ladybug_environment.Rmd` Section 3)
