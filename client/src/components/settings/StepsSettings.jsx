@@ -37,13 +37,12 @@ export const stepsIcon = (
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   }}>
-    <svg viewBox="0 0 24 24" width={18} height={18} fill="none"
-      stroke={TEAL} strokeWidth="1.5" strokeLinecap="round">
-      <path d="M12 7C12 5.3 10.7 4 9 4C7.3 4 6 5.3 6 7C6 8.7 7.3 10 9 10" />
-      <path d="M17 9C17 7.6 15.9 6.5 14.5 6.5C13.1 6.5 12 7.6 12 9C12 10.4 13.1 11.5 14.5 11.5" />
-      <path d="M8 17C8 15 6.5 14 5 14" strokeWidth="1.3" />
-      <path d="M14 18C14 15.8 12 14.5 10 14.5" strokeWidth="1.3" />
-      <path d="M20 17C20 15 18.5 14 17 14" strokeWidth="1.3" />
+    <svg viewBox="0 0 24 24" width={18} height={18} fill={TEAL} stroke="none" style={{ display: 'block' }}>
+      <path d="M6,17 Q5.5,19.5 8.5,19.5 Q10.5,19.5 11.2,18.3 Q11.5,17.7 12,17 Q12.5,17.7 12.8,18.3 Q13.5,19.5 15.5,19.5 Q18.5,19.5 18,17 Q18,15 16.5,12.5 Q15,10 12,9.5 Q9,10 7.5,12.5 Q6,15 6,17Z" />
+      <ellipse cx="6.0" cy="7.5" rx="2.2" ry="2.7" transform="rotate(22 6.0 7.5)" />
+      <ellipse cx="18.0" cy="7.5" rx="2.2" ry="2.7" transform="rotate(-22 18.0 7.5)" />
+      <ellipse cx="9.8" cy="4.5" rx="2.0" ry="2.6" transform="rotate(10 9.8 4.5)" />
+      <ellipse cx="14.2" cy="4.5" rx="2.0" ry="2.6" transform="rotate(-10 14.2 4.5)" />
     </svg>
   </div>
 );
