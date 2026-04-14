@@ -323,7 +323,7 @@ export default function WaterPanel() {
           <button
             onClick={() => { setOzDraft(String(bottleOz)); setEditingOz(true); }}
             style={{
-              ...mono, fontSize: 'var(--glim-text-sm)',
+              ...mono, fontSize: 'var(--glim-text-sm)', letterSpacing: '0.5px',
               color: accent, background: accentBg,
               border: `1px solid ${accentBorder}`, borderRadius: 8,
               padding: '3px 10px', cursor: 'pointer',
@@ -441,7 +441,7 @@ export default function WaterPanel() {
       {/* Footer: streak | 7-day avg */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        ...mono, fontSize: 'var(--glim-text-sm)',
+        ...mono, fontSize: 'var(--glim-text-sm)', letterSpacing: '0.5px',
         color: 'rgba(200,210,230,0.35)',
         paddingTop: 10,
       }}>
