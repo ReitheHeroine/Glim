@@ -295,7 +295,7 @@ export default function WaterPanel() {
 
       {/* Header: label + oz pill */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <span style={{ ...mono, fontSize: 'var(--glim-text-2xs)', color: 'rgba(200,210,230,0.35)', letterSpacing: '0.5px' }}>
+        <span style={{ ...mono, fontSize: 'var(--glim-text-sm)', color: 'rgba(200,210,230,0.35)', letterSpacing: '0.5px' }}>
           water
         </span>
 
@@ -323,7 +323,7 @@ export default function WaterPanel() {
           <button
             onClick={() => { setOzDraft(String(bottleOz)); setEditingOz(true); }}
             style={{
-              ...mono, fontSize: 'var(--glim-text-xs)',
+              ...mono, fontSize: 'var(--glim-text-sm)',
               color: accent, background: accentBg,
               border: `1px solid ${accentBorder}`, borderRadius: 8,
               padding: '3px 10px', cursor: 'pointer',
@@ -441,7 +441,7 @@ export default function WaterPanel() {
       {/* Footer: streak | 7-day avg */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        ...mono, fontSize: 'var(--glim-text-xs)',
+        ...mono, fontSize: 'var(--glim-text-sm)',
         color: 'rgba(200,210,230,0.35)',
         paddingTop: 10,
       }}>
