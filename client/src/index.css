@@ -11,6 +11,10 @@
   --glim-text-xl: 30px;
   --glim-text-2xl: 44px;
 
+  /* Nutrition panel row widths */
+  --glim-nutrition-label-w: 68px;
+  --glim-nutrition-value-w: 84px;
+
   /* Decorative / one-off titles */
   --glim-text-title: 19px;       /* "glim" creature name */
   --glim-text-subtitle: 15px;    /* creature subtitle text */
@@ -29,6 +33,9 @@
     --glim-text-lg: 19px;
     --glim-text-xl: 28px;
     --glim-text-2xl: 40px;
+
+    --glim-nutrition-label-w: 52px;
+    --glim-nutrition-value-w: 62px;
 
     --glim-text-title: 17px;
     --glim-text-subtitle: 13px;

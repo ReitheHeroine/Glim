@@ -333,7 +333,7 @@ function NutrientBar({ nutrient, progress, onPlus }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
+      <div style={{ width: 'var(--glim-nutrition-label-w)', textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
         {label}
       </div>
 
@@ -348,7 +348,7 @@ function NutrientBar({ nutrient, progress, onPlus }) {
         )}
       </div>
 
-      <div style={{ width: 62, fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: countColor, fontWeight: countWeight, flexShrink: 0, whiteSpace: 'nowrap' }}>
+      <div style={{ width: 'var(--glim-nutrition-value-w)', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: countColor, fontWeight: countWeight, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {countText}
       </div>
 
@@ -393,7 +393,7 @@ function InlineInputRow({ nutrient, onConfirm, onCancel }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-      <div style={{ width: 52, textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
+      <div style={{ width: 'var(--glim-nutrition-label-w)', textAlign: 'right', fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-xs)', color: 'rgba(200,210,230,0.5)', flexShrink: 0 }}>
         {label}
       </div>
       <input
