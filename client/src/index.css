@@ -2,39 +2,39 @@
 
 :root {
   /* Functional type scale - desktop (default) */
-  --glim-text-2xs: 11px;
-  --glim-text-xs: 13px;
-  --glim-text-sm: 14px;
-  --glim-text-base: 15px;
-  --glim-text-md: 17px;
-  --glim-text-lg: 19px;
-  --glim-text-xl: 28px;
-  --glim-text-2xl: 42px;
+  --glim-text-2xs: 13px;
+  --glim-text-xs: 15px;
+  --glim-text-sm: 16px;
+  --glim-text-base: 17px;
+  --glim-text-md: 19px;
+  --glim-text-lg: 21px;
+  --glim-text-xl: 30px;
+  --glim-text-2xl: 44px;
 
   /* Decorative / one-off titles */
-  --glim-text-title: 17px;       /* "glim" creature name */
-  --glim-text-subtitle: 13px;    /* creature subtitle text */
-  --glim-text-splash-title: 34px; /* splash screen "glim" */
-  --glim-text-splash-sub: 15px;  /* splash screen tagline */
-  --glim-text-hero: 42px;        /* step count hero number */
+  --glim-text-title: 19px;       /* "glim" creature name */
+  --glim-text-subtitle: 15px;    /* creature subtitle text */
+  --glim-text-splash-title: 36px; /* splash screen "glim" */
+  --glim-text-splash-sub: 17px;  /* splash screen tagline */
+  --glim-text-hero: 44px;        /* step count hero number */
 }
 
 @media (max-width: 599px) {
   :root {
-    --glim-text-2xs: 10px;
-    --glim-text-xs: 11px;
-    --glim-text-sm: 12px;
-    --glim-text-base: 14px;
-    --glim-text-md: 15px;
-    --glim-text-lg: 17px;
-    --glim-text-xl: 26px;
-    --glim-text-2xl: 38px;
+    --glim-text-2xs: 11px;
+    --glim-text-xs: 13px;
+    --glim-text-sm: 14px;
+    --glim-text-base: 15px;
+    --glim-text-md: 17px;
+    --glim-text-lg: 19px;
+    --glim-text-xl: 28px;
+    --glim-text-2xl: 40px;
 
-    --glim-text-title: 15px;
-    --glim-text-subtitle: 11px;
-    --glim-text-splash-title: 30px;
-    --glim-text-splash-sub: 14px;
-    --glim-text-hero: 38px;
+    --glim-text-title: 17px;
+    --glim-text-subtitle: 13px;
+    --glim-text-splash-title: 32px;
+    --glim-text-splash-sub: 15px;
+    --glim-text-hero: 40px;
   }
 }
 

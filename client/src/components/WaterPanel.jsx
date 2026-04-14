@@ -441,7 +441,7 @@ export default function WaterPanel() {
       {/* Footer: streak | 7-day avg */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        ...mono, fontSize: 'var(--glim-text-2xs)',
+        ...mono, fontSize: 'var(--glim-text-xs)',
         color: 'rgba(200,210,230,0.35)',
         paddingTop: 10,
       }}>
