@@ -39,7 +39,7 @@ export default function JournalPanel({ onSave }) {
           border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
           color: showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
-          fontSize: 15, transition: "all 0.2s ease",
+          fontSize: 'var(--text-md)', transition: "all 0.2s ease",
         }}
         onPointerEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
         onPointerLeave={(e) => { e.currentTarget.style.background = showJournal ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"; e.currentTarget.style.color = showJournal ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)"; }}
@@ -52,7 +52,7 @@ export default function JournalPanel({ onSave }) {
           background: "rgba(0,0,0,0.75)", backdropFilter: "blur(15px)",
           border: "1px solid rgba(255,255,255,0.12)",
           fontFamily: "'Courier New', monospace", color: "rgba(255,255,255,0.85)",
-          fontSize: 12, width: 340, maxHeight: "70vh", display: "flex", flexDirection: "column",
+          fontSize: 'var(--text-sm)', width: 340, maxHeight: "70vh", display: "flex", flexDirection: "column",
         }}>
           {/* Tab bar */}
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -60,14 +60,14 @@ export default function JournalPanel({ onSave }) {
               flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
               background: journalView === "write" ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
               border: `1px solid ${journalView === "write" ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.1)"}`,
-              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 12,
+              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 'var(--text-sm)',
               letterSpacing: "1px",
             }}>write</button>
             <button onClick={() => setJournalView("past")} style={{
               flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
               background: journalView === "past" ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
               border: `1px solid ${journalView === "past" ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.1)"}`,
-              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 12,
+              color: "rgba(255,255,255,0.85)", fontFamily: "'Courier New', monospace", fontSize: 'var(--text-sm)',
               letterSpacing: "1px",
             }}>
               past{journalEntries.filter(e => !e.deletedAt).length > 0 && ` (${journalEntries.filter(e => !e.deletedAt).length})`}
@@ -81,7 +81,7 @@ export default function JournalPanel({ onSave }) {
                 padding: "10px 12px", borderRadius: 10, marginBottom: 12,
                 background: `hsla(${hue}, ${sat}%, 50%, 0.1)`,
                 border: `1px solid hsla(${hue}, ${sat}%, 60%, 0.15)`,
-                fontSize: 12, lineHeight: 1.5, fontStyle: "italic",
+                fontSize: 'var(--text-sm)', lineHeight: 1.5, fontStyle: "italic",
                 color: `hsla(${hue}, ${sat - 10}%, 80%, 0.8)`,
               }}>
                 {journalPrompt}
@@ -89,7 +89,7 @@ export default function JournalPanel({ onSave }) {
               <button onClick={() => setJournalPrompt(pickRandom(JOURNAL_PROMPTS))}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 10,
+                  color: "rgba(255,255,255,0.35)", fontSize: 'var(--text-xs)', marginBottom: 10,
                   fontFamily: "'Courier New', monospace", padding: 0,
                   transition: "color 0.2s ease",
                 }}
@@ -104,7 +104,7 @@ export default function JournalPanel({ onSave }) {
                   width: "100%", minHeight: 100, maxHeight: 200, padding: "10px 12px",
                   borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)",
                   background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.9)",
-                  fontFamily: "'Courier New', monospace", fontSize: 16,
+                  fontFamily: "'Courier New', monospace", fontSize: 'var(--text-lg)',
                   lineHeight: 1.5, resize: "vertical", outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -112,7 +112,7 @@ export default function JournalPanel({ onSave }) {
                 onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
               />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                <span style={{ opacity: 0.3, fontSize: 11 }}>
+                <span style={{ opacity: 0.3, fontSize: 'var(--text-xs)' }}>
                   {journalText.length > 0 && `${journalText.length} chars`}
                 </span>
                 <button
@@ -123,7 +123,7 @@ export default function JournalPanel({ onSave }) {
                     background: journalText.trim() ? `hsla(${hue}, ${sat}%, 50%, 0.3)` : "rgba(255,255,255,0.05)",
                     border: `1px solid ${journalText.trim() ? `hsla(${hue}, ${sat}%, 60%, 0.4)` : "rgba(255,255,255,0.08)"}`,
                     color: journalText.trim() ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
-                    fontFamily: "'Courier New', monospace", fontSize: 12,
+                    fontFamily: "'Courier New', monospace", fontSize: 'var(--text-sm)',
                     transition: "all 0.2s ease",
                   }}
                 >save</button>
@@ -147,7 +147,7 @@ export default function JournalPanel({ onSave }) {
                     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ opacity: 0.4, fontSize: 11 }}>
+                      <span style={{ opacity: 0.4, fontSize: 'var(--text-xs)' }}>
                         {new Date(entry.date).toLocaleDateString("en-US", {
                           month: "short", day: "numeric", year: "numeric",
                           hour: "numeric", minute: "2-digit",
@@ -155,7 +155,7 @@ export default function JournalPanel({ onSave }) {
                       </span>
                       <button onClick={() => deleteJournalEntry(entry.id)} style={{
                         background: "none", border: "none", cursor: "pointer",
-                        color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "0 2px",
+                        color: "rgba(255,255,255,0.2)", fontSize: 'var(--text-base)', padding: "0 2px",
                         fontFamily: "'Courier New', monospace", transition: "color 0.2s",
                       }}
                         onPointerEnter={(e) => { e.target.style.color = "rgba(255,100,100,0.6)"; }}
@@ -164,7 +164,7 @@ export default function JournalPanel({ onSave }) {
                     </div>
                     {entry.prompt && (
                       <div style={{
-                        fontSize: 11, fontStyle: "italic", opacity: 0.4, marginBottom: 6,
+                        fontSize: 'var(--text-xs)', fontStyle: "italic", opacity: 0.4, marginBottom: 6,
                         lineHeight: 1.4,
                       }}>{entry.prompt}</div>
                     )}

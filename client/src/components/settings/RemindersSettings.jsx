@@ -32,7 +32,7 @@ function Slider({ label, value, min, max, onChange }) {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{
-        fontSize: 12, color: 'rgba(200,210,230,0.5)', marginBottom: 6,
+        fontSize: 'var(--text-sm)', color: 'rgba(200,210,230,0.5)', marginBottom: 6,
         fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px',
       }}>
         {label}
@@ -53,7 +53,7 @@ function Slider({ label, value, min, max, onChange }) {
           }}
         />
         <span style={{
-          fontSize: 14, fontWeight: 600, minWidth: 42, textAlign: 'right',
+          fontSize: 'var(--text-base)', fontWeight: 600, minWidth: 42, textAlign: 'right',
           fontVariantNumeric: 'tabular-nums', color: AMBER,
         }}>
           {value} min
@@ -72,7 +72,7 @@ export const remindersIcon = (
     width: 32, height: 32, borderRadius: 8,
     background: AMBER_DIM,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 16, flexShrink: 0,
+    fontSize: 'var(--text-lg)', flexShrink: 0,
   }}>
     <svg viewBox="0 0 24 24" width={18} height={18} fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

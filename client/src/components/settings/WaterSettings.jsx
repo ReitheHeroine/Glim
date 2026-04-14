@@ -21,7 +21,7 @@ const inputBase = {
   background: 'rgba(15,20,35,0.6)',
   border: '1px solid rgba(100,120,160,0.2)',
   borderRadius: 8, color: 'rgba(200,210,230,0.9)',
-  fontSize: 16, fontWeight: 600, textAlign: 'center',
+  fontSize: 'var(--text-lg)', fontWeight: 600, textAlign: 'center',
   outline: 'none', fontVariantNumeric: 'tabular-nums',
   transition: 'border-color 0.15s',
 };
@@ -53,7 +53,7 @@ export default function WaterSettings() {
       {/* Bottle size */}
       <div style={{ marginTop: 10 }}>
         <div style={{
-          fontSize: 12, color: 'rgba(200,210,230,0.5)', marginBottom: 6,
+          fontSize: 'var(--text-sm)', color: 'rgba(200,210,230,0.5)', marginBottom: 6,
           fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px',
         }}>
           bottle size
@@ -73,14 +73,14 @@ export default function WaterSettings() {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(100,120,160,0.2)'; }}
             style={inputBase}
           />
-          <span style={{ fontSize: 13, color: 'rgba(200,210,230,0.5)' }}>oz</span>
+          <span style={{ fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.5)' }}>oz</span>
         </div>
       </div>
 
       {/* Daily goal */}
       <div style={{ marginTop: 14 }}>
         <div style={{
-          fontSize: 12, color: 'rgba(200,210,230,0.5)', marginBottom: 6,
+          fontSize: 'var(--text-sm)', color: 'rgba(200,210,230,0.5)', marginBottom: 6,
           fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px',
         }}>
           daily goal
@@ -100,8 +100,8 @@ export default function WaterSettings() {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(100,120,160,0.2)'; }}
             style={inputBase}
           />
-          <span style={{ fontSize: 13, color: 'rgba(200,210,230,0.5)' }}>bottles</span>
-          <span style={{ fontSize: 13, color: 'rgba(200,210,230,0.35)' }}>
+          <span style={{ fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.5)' }}>bottles</span>
+          <span style={{ fontSize: 'var(--text-base)', color: 'rgba(200,210,230,0.35)' }}>
             ({totalOz} oz)
           </span>
         </div>

@@ -81,7 +81,7 @@ const displayIcon = (
     width: 32, height: 32, borderRadius: 8,
     background: 'rgba(160,120,200,0.25)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 16, flexShrink: 0,
+    fontSize: 'var(--text-lg)', flexShrink: 0,
   }}>
     <svg viewBox="0 0 24 24" width={18} height={18} fill="none"
       stroke="rgba(180,160,220,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -203,7 +203,7 @@ export default function SettingsView() {
         {/* Title */}
         <div style={{
           flex: 1, textAlign: 'center',
-          fontSize: 17, fontWeight: 600, letterSpacing: '0.3px',
+          fontSize: 'var(--text-md)', fontWeight: 600, letterSpacing: '0.3px',
           color: 'rgba(200,210,230,0.9)',
         }}>
           settings
@@ -217,7 +217,7 @@ export default function SettingsView() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: 18, lineHeight: 1, opacity: 0.7 }}>
+          <span style={{ fontSize: 'var(--text-lg)', lineHeight: 1, opacity: 0.7 }}>
             {'\u{1F43E}'}
           </span>
         </div>
@@ -258,13 +258,13 @@ export default function SettingsView() {
                 {icon}
                 <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
                   <div style={{
-                    fontSize: 15, fontWeight: 600,
+                    fontSize: 'var(--text-md)', fontWeight: 600,
                     color: 'rgba(200,210,230,0.9)', lineHeight: 1.3,
                   }}>
                     {title}
                   </div>
                   <div style={{
-                    fontSize: 12, color: 'rgba(200,210,230,0.5)',
+                    fontSize: 'var(--text-sm)', color: 'rgba(200,210,230,0.5)',
                     marginTop: 2, whiteSpace: 'nowrap',
                     overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
@@ -284,7 +284,7 @@ export default function SettingsView() {
                   <div style={{
                     padding: '16px 16px 20px',
                     borderTop: '1px solid rgba(100,120,160,0.12)',
-                    color: 'rgba(200,210,230,0.35)', fontSize: 13,
+                    color: 'rgba(200,210,230,0.35)', fontSize: 'var(--text-base)',
                     textAlign: 'center', fontStyle: 'italic',
                   }}>
                     coming soon - avg display format, theme
@@ -304,7 +304,7 @@ export default function SettingsView() {
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.2)',
               borderRadius: 10, color: 'rgba(239,68,68,0.8)',
-              fontSize: 14, fontWeight: 500, cursor: 'pointer',
+              fontSize: 'var(--text-base)', fontWeight: 500, cursor: 'pointer',
               transition: 'all 0.15s', textAlign: 'center',
               fontFamily: 'inherit',
             }}
@@ -331,7 +331,7 @@ export default function SettingsView() {
                 background: 'rgba(239,68,68,0.06)',
                 border: '1px solid rgba(239,68,68,0.12)',
                 borderRadius: 10, color: 'rgba(239,68,68,0.45)',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                fontSize: 'var(--text-base)', fontWeight: 500, cursor: 'pointer',
                 transition: 'all 0.15s', textAlign: 'center',
                 fontFamily: 'inherit',
               }}
@@ -353,7 +353,7 @@ export default function SettingsView() {
               border: '1px solid rgba(239,68,68,0.15)',
             }}>
               <p style={{
-                margin: '0 0 10px', fontSize: 12,
+                margin: '0 0 10px', fontSize: 'var(--text-sm)',
                 color: 'rgba(239,68,68,0.75)', lineHeight: 1.5,
               }}>
                 this will permanently delete your journal, water logs, step logs,
@@ -376,7 +376,7 @@ export default function SettingsView() {
                   border: '1px solid rgba(239,68,68,0.25)',
                   color: 'rgba(255,255,255,0.7)',
                   fontFamily: "'Courier New', monospace",
-                  fontSize: 16, outline: 'none',
+                  fontSize: 'var(--text-lg)', outline: 'none',
                 }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
@@ -387,7 +387,7 @@ export default function SettingsView() {
                     background: 'rgba(255,255,255,0.06)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.4)',
-                    fontFamily: 'inherit', fontSize: 13,
+                    fontFamily: 'inherit', fontSize: 'var(--text-base)',
                   }}
                 >
                   cancel
@@ -401,7 +401,7 @@ export default function SettingsView() {
                     background: canDelete ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.05)',
                     border: `1px solid ${canDelete ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.15)'}`,
                     color: canDelete ? 'rgba(239,68,68,0.9)' : 'rgba(239,68,68,0.25)',
-                    fontFamily: 'inherit', fontSize: 13,
+                    fontFamily: 'inherit', fontSize: 'var(--text-base)',
                     transition: 'all 0.15s ease',
                   }}
                 >

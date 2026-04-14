@@ -1,5 +1,43 @@
 @import "tailwindcss";
 
+:root {
+  /* Functional type scale - desktop (default) */
+  --text-2xs: 11px;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 19px;
+  --text-xl: 28px;
+  --text-2xl: 42px;
+
+  /* Decorative / one-off titles */
+  --text-title: 17px;       /* "glim" creature name */
+  --text-subtitle: 13px;    /* creature subtitle text */
+  --text-splash-title: 34px; /* splash screen "glim" */
+  --text-splash-sub: 15px;  /* splash screen tagline */
+  --text-hero: 42px;        /* step count hero number */
+}
+
+@media (max-width: 599px) {
+  :root {
+    --text-2xs: 10px;
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-base: 14px;
+    --text-md: 15px;
+    --text-lg: 17px;
+    --text-xl: 26px;
+    --text-2xl: 38px;
+
+    --text-title: 15px;
+    --text-subtitle: 11px;
+    --text-splash-title: 30px;
+    --text-splash-sub: 14px;
+    --text-hero: 38px;
+  }
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 /* Dark background on html fills the notch/status bar area on iPhone */
 html { background-color: #08081a; min-height: calc(100% + env(safe-area-inset-top)); }

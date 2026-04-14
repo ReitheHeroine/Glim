@@ -153,7 +153,7 @@ function MenuItem({ Icon, label, available, onTap }) {
       </div>
       <span style={{
         fontFamily: "'Courier New', monospace",
-        fontSize:   11,
+        fontSize:   'var(--text-xs)',
         color:      labelColor,
         textAlign:  'center',
       }}>
@@ -168,7 +168,7 @@ function SectionLabel({ children }) {
     <div style={{
       gridColumn:    '1 / -1',
       fontFamily:    "'Courier New', monospace",
-      fontSize:      10,
+      fontSize:      'var(--text-2xs)',
       textTransform: 'uppercase',
       letterSpacing: '0.08em',
       color:         'rgba(200,210,230,0.25)',
@@ -287,7 +287,7 @@ export default function MoreMenu() {
         }}>
           <span style={{
             fontFamily:  "'Courier New', monospace",
-            fontSize:    15,
+            fontSize:    'var(--text-md)',
             fontWeight:  600,
             color:       'rgba(200,210,230,0.7)',
             letterSpacing: '0.5px',
@@ -303,7 +303,7 @@ export default function MoreMenu() {
               border:         'none',
               background:     'rgba(200,210,230,0.06)',
               color:          'rgba(200,210,230,0.4)',
-              fontSize:       16,
+              fontSize:       'var(--text-lg)',
               cursor:         'pointer',
               display:        'flex',
               alignItems:     'center',

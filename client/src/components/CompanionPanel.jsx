@@ -26,7 +26,7 @@ import NutritionPanel from './NutritionPanel';
 function PanelContent({ type }) {
   const style = {
     fontFamily: "'Courier New', monospace",
-    fontSize: 12,
+    fontSize: 'var(--text-sm)',
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     padding: '32px 20px',
@@ -39,11 +39,11 @@ function PanelContent({ type }) {
   };
   return (
     <div style={style}>
-      <div style={{ fontSize: 24, marginBottom: 12, opacity: 0.3 }}>
+      <div style={{ fontSize: 'var(--text-xl)', marginBottom: 12, opacity: 0.3 }}>
         {type === 'focus' ? '⏱' : type === 'tasks' ? '✓' : '🌿'}
       </div>
       <div>{labels[type] || type}</div>
-      <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>coming soon</div>
+      <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', opacity: 0.6 }}>coming soon</div>
     </div>
   );
 }
