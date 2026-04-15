@@ -686,7 +686,7 @@ export default function DesktopPet() {
   }, [isPurring, isShaken, showMessage]);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden select-none"
+    <div className="fixed inset-0 flex flex-col overflow-x-clip overflow-y-hidden select-none"
       style={{
         fontFamily: "'Courier New', monospace",
         background: "#040408",
@@ -728,6 +728,7 @@ export default function DesktopPet() {
             ) : "none",
             cursor: isDragging ? "grabbing" : "grab",
             touchAction: "none",
+            overflow: "visible",
           }} ref={creatureRef} onPointerDown={handleCreaturePointerDown}>
             <SpeechBubble text={message} visible={showBubble} isWellness={isWellness} />
             <OwlMoth

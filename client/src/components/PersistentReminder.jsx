@@ -15,7 +15,8 @@ export default function PersistentReminder({ text, type, onDismiss }) {
   const bg = type === "move" ? "rgba(255, 180, 100, 0.15)" : "rgba(130, 180, 255, 0.15)";
   const border = type === "move" ? "rgba(255, 180, 100, 0.35)" : "rgba(130, 180, 255, 0.35)";
   return (
-    <div className="flex items-center gap-3 px-6 py-3 rounded-2xl" style={{
+    <div className="flex items-center gap-3 py-3 rounded-2xl" style={{
+      paddingLeft: 28, paddingRight: 28,
       background: bg, border: `1px solid ${border}`, backdropFilter: "blur(10px)",
       fontFamily: "'Courier New', monospace", fontSize: 'var(--glim-text-base)', color: "rgba(255,255,255,0.9)",
       animation: "reminderPulse 3s ease-in-out infinite", maxWidth: 560,
