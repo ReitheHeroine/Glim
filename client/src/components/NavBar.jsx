@@ -124,7 +124,10 @@ const NAV_ITEMS_MOBILE = [
 // ===== Component =====
 
 export default function NavBar() {
-  const { activeNav, setActiveNav, setActivePanel, setRequestClose, setShowMoreMenu } = useUIStore();
+  const {
+    activeNav, setActiveNav, setActivePanel, setRequestClose, setShowMoreMenu,
+    mode, closeFocusMode,
+  } = useUIStore();
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
   useEffect(() => {
@@ -152,7 +155,38 @@ export default function NavBar() {
     ? 'calc(11px + env(safe-area-inset-bottom, 0px))'
     : 'calc(10px + env(safe-area-inset-bottom, 0px))';
 
+  // In focus mode, the "more" slot is where focus features are accessed from,
+  // so that's the highlighted nav item. In companion mode, activeNav drives it.
+  const inFocusMode = mode === 'focus' || mode === 'transitioning';
+  const highlightedNav = inFocusMode ? 'more' : activeNav;
+
   const handleTap = (item) => {
+    // ---- In focus mode ----
+    // Home: close focus and return to companion (no panel open).
+    // Water/steps/tasks/nutrition: close focus, then open that panel after the
+    // 300ms transition completes via the onComplete callback.
+    // More: just open the more menu on top of focus mode (unchanged).
+    if (inFocusMode) {
+      if (item.id === 'home') {
+        closeFocusMode(() => {
+          setActiveNav('home');
+          setActivePanel(null);
+        });
+        return;
+      }
+      if (item.id === 'more') {
+        setShowMoreMenu(true);
+        return;
+      }
+      // Companion feature tap while in focus mode - queue the panel open.
+      closeFocusMode(() => {
+        setActiveNav(item.id);
+        setActivePanel(item.panel);
+      });
+      return;
+    }
+
+    // ---- In companion mode ----
     if (item.id === 'home') {
       setActiveNav('home');
       setActivePanel(null);
@@ -183,7 +217,7 @@ export default function NavBar() {
       borderTop: '1px solid rgba(255,255,255,0.07)',
     }}>
       {navItems.map((item) => {
-        const isActive = activeNav === item.id;
+        const isActive = highlightedNav === item.id;
         return (
           <button
             key={item.id}

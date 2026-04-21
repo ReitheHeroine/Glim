@@ -152,6 +152,19 @@
   100% { transform: rotate(0deg); }
 }
 
+/* ===== Mini-Glim (focus mode header) ===== */
+/* Subtler than the full-creature owlFloat (4s / 8px) so the small figure
+   reads as "same creature, quieter" in the header. */
+@keyframes miniGlimFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+/* Celebrate reaction: scale pulse on the root <g>. Ready for glimReact(). */
+@keyframes miniGlimCelebrate {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
 /* ===== Glows and particles ===== */
 @keyframes softPulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }
