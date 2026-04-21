@@ -31,7 +31,7 @@ import AmbientBugs from './components/AmbientBugs';
 import SpeechBubble from './components/SpeechBubble';
 import OwlMoth from './components/OwlMoth';
 import PersistentReminder from './components/PersistentReminder';
-import FocusShell from './components/FocusShell';
+import SettingsView from './components/SettingsView';
 import JournalPanel from './components/JournalPanel';
 import NavBar from './components/NavBar';
 import CompanionPanel from './components/CompanionPanel';
@@ -62,34 +62,7 @@ export default function DesktopPet() {
     reload: reloadSettings,
   } = useSettingsStore();
 
-  const {
-    journalPrompt, setJournalText, setJournalPrompt, activePanel,
-    mode, focusFeature, transitionDirection,
-  } = useUIStore();
-
-  // Crossfade between companion and focus layers. Both layers stay mounted
-  // during the 300ms transition so they can fade in opposite directions.
-  // `companionVisible` / `focusVisible` drive opacity; they are flipped via
-  // rAF one frame after the layer appears so the initial mount starts at
-  // opacity 0 (otherwise CSS transition has nothing to animate from).
-  const companionLayerMounted = mode !== 'focus';
-  const focusLayerMounted     = mode !== 'companion';
-  // Target opacities: each layer is visible when the current or destination
-  // mode is its own. 'opening' destination is focus; 'closing' destination is
-  // companion.
-  const companionTarget = mode === 'companion' ||
-    (mode === 'transitioning' && transitionDirection === 'closing');
-  const focusTarget = mode === 'focus' ||
-    (mode === 'transitioning' && transitionDirection === 'opening');
-  const [companionVisible, setCompanionVisible] = useState(true);
-  const [focusVisible, setFocusVisible]         = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      setCompanionVisible(companionTarget);
-      setFocusVisible(focusTarget);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [companionTarget, focusTarget]);
+  const { journalPrompt, setJournalText, setJournalPrompt, activePanel } = useUIStore();
 
   // ---- Responsive layout ----
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 600);
@@ -718,28 +691,6 @@ export default function DesktopPet() {
         fontFamily: "'Courier New', monospace",
         background: "#040408",
       }}>
-      {/* ===== Content area (everything above the nav bar). Companion and
-          focus layers are absolutely positioned inside it so they can
-          crossfade without disrupting the outer flex column that keeps
-          NavBar pinned at the bottom. ===== */}
-      <div style={{
-        flex:          1,
-        position:      'relative',
-        overflow:      'hidden',
-        minHeight:     0,
-      }}>
-
-      {/* ===== Companion layer (creature world) ===== */}
-      {companionLayerMounted && (
-      <div style={{
-        position:      'absolute',
-        inset:         0,
-        display:       'flex',
-        flexDirection: 'column',
-        opacity:       companionVisible ? 1 : 0,
-        transition:    'opacity 300ms ease-out',
-        pointerEvents: mode === 'companion' ? 'auto' : 'none',
-      }}>
       <Background hue={hue} sat={sat} mood={mood} isMobile={isMobile} />
 
       <div className="absolute rounded-full pointer-events-none" style={{
@@ -844,37 +795,17 @@ export default function DesktopPet() {
           {moveReminder && <PersistentReminder text={moveReminder} type="move" onDismiss={dismissMove} />}
         </div>
       </div>
-      </div>
-      )}
-      {/* ===== /Companion layer ===== */}
 
-      {/* ===== Focus layer ===== */}
-      {focusLayerMounted && (
-        <div style={{
-          position:      'absolute',
-          inset:         0,
-          opacity:       focusVisible ? 1 : 0,
-          transition:    'opacity 300ms ease-out',
-          pointerEvents: mode === 'focus' ? 'auto' : 'none',
-        }}>
-          <FocusShell feature={focusFeature} />
-        </div>
-      )}
-      {/* ===== /Focus layer ===== */}
-
-      </div>
-      {/* ===== /Content area ===== */}
-
-      {/* Nav bar - sits at the bottom of the flex column, always mounted */}
+      {/* Nav bar - sits at the bottom of the flex column */}
       <NavBar />
 
-      {/* Companion panel - slides up above the nav bar (companion mode only) */}
+      {/* Companion panel - slides up above the nav bar */}
       <CompanionPanel />
 
       {/* More menu - feature grid overlay, slides up above the nav bar */}
       <MoreMenu />
 
-      {/* Journal panel - full-screen takeover, usable in either mode */}
+      <SettingsView />
       <JournalPanel onSave={saveJournalEntry} />
     </div>
   );

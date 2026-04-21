@@ -187,7 +187,7 @@ export default function MoreMenu() {
     setShowMoreMenu,
     setActiveNav,
     setActivePanel,
-    openFocusMode,
+    setFocusView,
     navBarHeight,
   } = useUIStore();
 
@@ -227,11 +227,8 @@ export default function MoreMenu() {
 
   const openSettings = () => {
     close();
-    // Small delay so the more-menu's own close animation starts before the
-    // focus-mode crossfade begins (same pattern as openFeature above).
     setTimeout(() => {
-      setActiveNav('more');
-      openFocusMode('settings');
+      setFocusView('settings');
     }, 150);
   };
 
