@@ -14,9 +14,9 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {
-  MESSAGES, MOVE_REMINDERS, EYES_REMINDERS, MOVE_DONE_RESPONSES,
-  EYES_DONE_RESPONSES, MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS,
-  JOURNAL_NUDGES, SCIENCE_FACTS
+  MESSAGES, MOVE_REMINDERS, MOVE_WAKE_REMINDERS, EYES_REMINDERS,
+  EYES_WAKE_REMINDERS, MOVE_DONE_RESPONSES, EYES_DONE_RESPONSES,
+  MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS, JOURNAL_NUDGES, SCIENCE_FACTS
 } from './messages.js';
 import './storage.js';
 import './glim-animations.css';
@@ -418,45 +418,47 @@ export default function DesktopPet() {
   }, [showMessage, pickUnique, wellnessInterval]);
 
   // ---- Move reminder ----
+  // If Glim is asleep when the timer fires, wake him up and use the
+  // sleepier message pool. Suppressing during sleep would push the next
+  // attempt back a full interval, which can starve the reminder entirely.
   useEffect(() => {
     if (moveTimer.current) clearTimeout(moveTimer.current);
-    const schedule = () => {
-      moveTimer.current = setTimeout(() => {
-        if (!isSleepingRef.current) {
-          setMoveReminder(pickRandom(MOVE_REMINDERS));
-        } else {
-          schedule(); // try again later
-        }
-      }, moveInterval * 60000);
-    };
-    schedule();
+    moveTimer.current = setTimeout(() => {
+      const wasSleeping = isSleepingRef.current;
+      if (wasSleeping) wakeUp();
+      setMoveReminder(pickRandom(wasSleeping ? MOVE_WAKE_REMINDERS : MOVE_REMINDERS));
+    }, moveInterval * 60000);
     return () => clearTimeout(moveTimer.current);
-  }, [moveInterval]);
+  }, [moveInterval, wakeUp]);
   const dismissMove = useCallback(() => {
     wakeUp();
     setMoveReminder(null); triggerHappy(); showMessage(pickRandom(MOVE_DONE_RESPONSES));
-    moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
+    moveTimer.current = setTimeout(() => {
+      const wasSleeping = isSleepingRef.current;
+      if (wasSleeping) wakeUp();
+      setMoveReminder(pickRandom(wasSleeping ? MOVE_WAKE_REMINDERS : MOVE_REMINDERS));
+    }, moveInterval * 60000);
   }, [showMessage, triggerHappy, moveInterval, wakeUp]);
 
   // ---- Eyes reminder ----
+  // Same wake-on-fire behavior as the move reminder above.
   useEffect(() => {
     if (eyesTimer.current) clearTimeout(eyesTimer.current);
-    const schedule = () => {
-      eyesTimer.current = setTimeout(() => {
-        if (!isSleepingRef.current) {
-          setEyesReminder(pickRandom(EYES_REMINDERS));
-        } else {
-          schedule();
-        }
-      }, eyesInterval * 60000);
-    };
-    schedule();
+    eyesTimer.current = setTimeout(() => {
+      const wasSleeping = isSleepingRef.current;
+      if (wasSleeping) wakeUp();
+      setEyesReminder(pickRandom(wasSleeping ? EYES_WAKE_REMINDERS : EYES_REMINDERS));
+    }, eyesInterval * 60000);
     return () => clearTimeout(eyesTimer.current);
-  }, [eyesInterval]);
+  }, [eyesInterval, wakeUp]);
   const dismissEyes = useCallback(() => {
     wakeUp();
     setEyesReminder(null); triggerHappy(); showMessage(pickRandom(EYES_DONE_RESPONSES));
-    eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
+    eyesTimer.current = setTimeout(() => {
+      const wasSleeping = isSleepingRef.current;
+      if (wasSleeping) wakeUp();
+      setEyesReminder(pickRandom(wasSleeping ? EYES_WAKE_REMINDERS : EYES_REMINDERS));
+    }, eyesInterval * 60000);
   }, [showMessage, triggerHappy, eyesInterval, wakeUp]);
 
   // ---- Idle chatter ----
@@ -760,7 +762,11 @@ export default function DesktopPet() {
               lastInteractionRef.current = Date.now();
               clearTimeout(moveTimer.current);
               setMoveReminder(null);
-              moveTimer.current = setTimeout(() => setMoveReminder(pickRandom(MOVE_REMINDERS)), moveInterval * 60000);
+              moveTimer.current = setTimeout(() => {
+                const wasSleeping = isSleepingRef.current;
+                if (wasSleeping) wakeUp();
+                setMoveReminder(pickRandom(wasSleeping ? MOVE_WAKE_REMINDERS : MOVE_REMINDERS));
+              }, moveInterval * 60000);
               showMessage(pickRandom(["nice! timer reset.", "got it, you moved!", "noted. clock restarted."]));
             }} style={{
               background: "none", border: "none", cursor: "pointer",
@@ -776,7 +782,11 @@ export default function DesktopPet() {
               lastInteractionRef.current = Date.now();
               clearTimeout(eyesTimer.current);
               setEyesReminder(null);
-              eyesTimer.current = setTimeout(() => setEyesReminder(pickRandom(EYES_REMINDERS)), eyesInterval * 60000);
+              eyesTimer.current = setTimeout(() => {
+                const wasSleeping = isSleepingRef.current;
+                if (wasSleeping) wakeUp();
+                setEyesReminder(pickRandom(wasSleeping ? EYES_WAKE_REMINDERS : EYES_REMINDERS));
+              }, eyesInterval * 60000);
               showMessage(pickRandom(["good! eye timer reset.", "eyes rested! clock restarted.", "noted. see you in a bit."]));
             }} style={{
               background: "none", border: "none", cursor: "pointer",

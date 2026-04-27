@@ -14,9 +14,10 @@
 //   - None (static data module)
 //
 // outputs:
-//   - Exports: MESSAGES, MOVE_REMINDERS, EYES_REMINDERS, MOVE_DONE_RESPONSES,
-//              EYES_DONE_RESPONSES, MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS,
-//              JOURNAL_NUDGES, SCIENCE_FACTS
+//   - Exports: MESSAGES, MOVE_REMINDERS, MOVE_WAKE_REMINDERS, EYES_REMINDERS,
+//              EYES_WAKE_REMINDERS, MOVE_DONE_RESPONSES, EYES_DONE_RESPONSES,
+//              MINDFULNESS, DISCOVERIES, JOURNAL_PROMPTS, JOURNAL_NUDGES,
+//              SCIENCE_FACTS
 
 export const MESSAGES = {
   earlyMorning: [
@@ -451,6 +452,35 @@ export const EYES_REMINDERS = [
   "the 20-20-20 rule says look up rn. i don't make the rules. (i do.)",
   "quick! look at the farthest thing you can see! your corneas demand it!",
   "screen gremlin alert: please look at literally anything else for 20 sec.",
+];
+// Used when the move timer fires while Glim is sleeping. Glim wakes up to
+// deliver these, so the tone leans groggy/just-disturbed.
+export const MOVE_WAKE_REMINDERS = [
+  "*startles awake* hold on. how long has it been? get up - GO!",
+  "*yawns* wait. you're STILL sitting? up. now.",
+  "i was DREAMING but my brain woke me up to tell you: walk. please.",
+  "*rubs eyes* ok ok i'm up. and YOU need to be up. movement time.",
+  "had to wake up for this one. your spine called me long-distance.",
+  "interrupting my own nap to say: please go take a lap.",
+  "*blinks awake* a lot of time has passed. too much. get up!",
+  "i was perfectly asleep and i woke up because you NEED to move. that's love.",
+  "*disoriented hoot* what time -- oh. it's move time. sorry. up please.",
+  "naptime over. for both of us. go walk.",
+  "*sleepy wing flap* listen. you. legs. floor. now.",
+];
+// Used when the eyes timer fires while Glim is sleeping. Same energy as
+// MOVE_WAKE_REMINDERS but for the 20-20-20 rule.
+export const EYES_WAKE_REMINDERS = [
+  "*startles awake* your eyes are gonna staaaare-out. look away!",
+  "*yawns* hi. i woke up to remind you: 20 feet away, 20 seconds.",
+  "i had a dream you were looking out a window. make it real.",
+  "*rubs eyes* speaking of which - rest yours. far-away thing. now.",
+  "interrupting nap to tell you: blink. look up. unmelt.",
+  "had to wake up for this one. your retinas filed a complaint.",
+  "*blinks slowly awake* peek at something far. let your eyes breathe.",
+  "i was sleeping but my one job is reminding you. look away from the screen.",
+  "*disoriented* what time -- oh. screen break. now please.",
+  "wake-up call from the depths of a dream: 20-20-20 rule. go.",
 ];
 export const MOVE_DONE_RESPONSES = [
   "yay!! proud of you!! your body says thanks.", "look at you go! literally! you went!",
