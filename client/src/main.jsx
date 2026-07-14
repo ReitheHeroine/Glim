@@ -10,7 +10,7 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-const updateSW = registerSW({
+registerSW({
   onRegisteredSW(swUrl, r) {
     if (!r) return
     // Check for SW updates when app returns to foreground.

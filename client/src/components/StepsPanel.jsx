@@ -12,15 +12,13 @@
 //              "Next milestone" pill updates live. Footer shows streak and
 //              7-day average. Glim reacts on tier crossings, first-ever milestone
 //              days, streak milestones, and regular log events.
-// Inputs:      Reads from useStepsStore, useCreatureStore, useMessageStore.
-//              No props required.
+// Inputs:      Reads from useStepsStore, useMessageStore. No props required.
 // Outputs:     Steps panel content (rendered inside CompanionPanel)
 // -----------------------------------------------------------------------------
 
 import { useState, useRef, useEffect } from 'react';
 import { useStepsStore, TIERS, countForDate, dateStr } from '../stores/useStepsStore';
 import { todayStr } from '../utils/dateUtils';
-import { useCreatureStore } from '../stores/useCreatureStore';
 import { useMessageStore } from '../stores/useMessageStore';
 
 // =============================================================================

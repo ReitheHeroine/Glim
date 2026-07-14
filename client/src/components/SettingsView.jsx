@@ -102,7 +102,7 @@ const SECTIONS = [
 ];
 
 export default function SettingsView() {
-  const { focusView, setFocusView, setActivePanel } = useUIStore();
+  const { focusView, setFocusView } = useUIStore();
   const settingsStore = useSettingsStore();
   const waterStore = useWaterStore();
   const stepsStore = useStepsStore();
