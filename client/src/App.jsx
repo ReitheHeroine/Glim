@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-25
-// Last Modified: 2026-04-13
+// Last Modified: 2026-07-14
 // Purpose:     Root application component. Gates the app behind Firebase Auth.
 //              Listens for auth state changes and routes to SignIn or DesktopPet.
 //              Creates the Firestore user document on first sign-in. Starts and
@@ -26,12 +26,17 @@ import { usePokesStore } from './stores/usePokesStore';
 import { useSettingsStore } from './stores/useSettingsStore';
 import { useWaterStore } from './stores/useWaterStore';
 import { useStepsStore } from './stores/useStepsStore';
+import { useNutritionStore } from './stores/useNutritionStore';
+import { useNutritionLibraryStore } from './stores/useNutritionLibraryStore';
 import DesktopPet from './DesktopPet.jsx';
 import SignIn from './SignIn.jsx';
 import SplashScreen from './SplashScreen.jsx';
 
-// All localStorage keys owned by Glim (must match SettingsPanel's LOCAL_KEYS + glim-uid)
-const GLIM_KEYS = ['glim-water', 'glim-steps', 'glim-journal', 'glim-pokes', 'glim-settings', 'glim-sync-meta'];
+// All localStorage keys owned by Glim. Every persisted domain store's key must
+// be listed here AND its store reloaded in the UID-change block below, or a
+// user switch on a shared browser leaks the previous user's data into the new
+// account (and can push it to their Firestore).
+const GLIM_KEYS = ['glim-water', 'glim-steps', 'glim-journal', 'glim-pokes', 'glim-settings', 'glim-nutrition', 'glim-nutrition-library', 'glim-sync-meta'];
 
 // --- Create user document on first sign-in ---
 // Uses getDoc check so createdAt is only written once, not overwritten on every login.
@@ -73,6 +78,8 @@ export default function App() {
           useSettingsStore.getState().reload();
           useWaterStore.getState().reload();
           useStepsStore.getState().reload();
+          useNutritionStore.getState().reload();
+          useNutritionLibraryStore.getState().reload();
         }
         localStorage.setItem('glim-uid', currentUser.uid);
 
