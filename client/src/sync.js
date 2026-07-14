@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-26
-// Last Modified: 2026-04-07
+// Last Modified: 2026-07-14
 // Purpose:     Background sync service. Pushes localStorage data to Firestore
 //              and pulls remote changes back into localStorage so data stays
 //              in sync across devices. localStorage remains the primary
@@ -333,10 +333,6 @@ async function syncSteps(uid) {
     }
   }
 
-  if (toPush.length > 0) {
-    setSyncMeta({ stepsPushedAt: new Date().toISOString() });
-  }
-
   // --- PULL: Firestore entries not in local ---
   let snapshot;
   try {
@@ -357,6 +353,55 @@ async function syncSteps(uid) {
     local = { ...local, entries: merged };
     localStorage.setItem('glim-steps', JSON.stringify(local));
     notify(['steps']);
+  }
+
+  // Always advance pushedAt, even when there was nothing to push locally.
+  // A device that only pulled remote entries would otherwise keep lastPushedAt
+  // at epoch and re-push all pulled entries on the next cycle.
+  setSyncMeta({ stepsPushedAt: new Date().toISOString() });
+}
+
+// =============================================================================
+//  Steps config sync
+//  Strategy: last-write-wins by configUpdatedAt (same as water/nutrition config).
+//  Firestore path: users/{uid}/steps-config/current
+//  Config lives inside the same 'glim-steps' localStorage blob as the entries
+//  but syncs through its own Firestore doc, matching the water pattern.
+// =============================================================================
+
+async function syncStepsConfig(uid) {
+  let local;
+  try {
+    const raw = localStorage.getItem('glim-steps');
+    local = raw ? JSON.parse(raw) : null;
+  } catch {
+    return;
+  }
+  if (!local) return;
+
+  const localConfig = {
+    goal:            local.goal,
+    configUpdatedAt: local.configUpdatedAt ?? new Date(0).toISOString(),
+  };
+  const configRef = doc(db, 'users', uid, 'steps-config', 'current');
+
+  try {
+    const snap         = await getDoc(configRef);
+    const remoteConfig = snap.exists() ? snap.data() : null;
+    const localTime    = new Date(localConfig.configUpdatedAt);
+    const remoteTime   = remoteConfig?.configUpdatedAt ? new Date(remoteConfig.configUpdatedAt) : new Date(0);
+
+    if (!remoteConfig || localTime >= remoteTime) {
+      // Local is newer (or no remote): push
+      await setDoc(configRef, localConfig, { merge: true });
+    } else {
+      // Remote is newer: pull
+      local = { ...local, goal: remoteConfig.goal, configUpdatedAt: remoteConfig.configUpdatedAt };
+      localSet('glim-steps', local);
+      notify(['steps']);
+    }
+  } catch (e) {
+    console.warn('[glim sync] steps config sync failed:', e);
   }
 }
 
@@ -568,6 +613,7 @@ async function syncAll() {
       syncSettings(currentUid),
       syncWater(currentUid),
       syncSteps(currentUid),
+      syncStepsConfig(currentUid),
       syncNutritionLogs(currentUid),
       syncNutritionConfig(currentUid),
       syncNutritionLibrary(currentUid),
