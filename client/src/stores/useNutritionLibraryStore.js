@@ -3,7 +3,7 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-04-04
-// Last Modified: 2026-04-04
+// Last Modified: 2026-07-14
 // Purpose:     Zustand store for the personal food item library. Persists to
 //              localStorage under key 'glim-nutrition-library'. Manages a
 //              reference list of food items with per-unit nutrient values.
@@ -88,12 +88,15 @@ export const useNutritionLibraryStore = create((set, get) => ({
   },
 
   // Hides an item from the quick-add list (logs still reference it by id).
+  // updatedAt bump is required for the sync edit-propagation strategy: without
+  // it, visibility toggles never win the field-level merge and don't propagate
+  // cross-device.
   hideItem: (itemId) => {
     set(state => {
       const next = {
         ...state,
         items: state.items.map(item =>
-          item.id === itemId ? { ...item, hidden: true } : item
+          item.id === itemId ? { ...item, hidden: true, updatedAt: new Date().toISOString() } : item
         ),
       };
       saveLibrary(next);
@@ -106,7 +109,7 @@ export const useNutritionLibraryStore = create((set, get) => ({
       const next = {
         ...state,
         items: state.items.map(item =>
-          item.id === itemId ? { ...item, hidden: false } : item
+          item.id === itemId ? { ...item, hidden: false, updatedAt: new Date().toISOString() } : item
         ),
       };
       saveLibrary(next);
