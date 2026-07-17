@@ -3,14 +3,16 @@
 // Project:     Glim
 // Author:      Reina Hastings (reinahastings13@gmail.com)
 // Created:     2026-03-25
-// Last Modified: 2026-07-14
+// Last Modified: 2026-07-17
 // Purpose:     Root application component. Gates the app behind Firebase Auth.
 //              Listens for auth state changes and routes to SignIn or DesktopPet.
-//              Creates the Firestore user document on first sign-in. Starts and
-//              stops the background sync service with the auth lifecycle.
-//              On sign-in, checks if the UID changed since last session; if so,
-//              clears all localStorage data and reloads stores to prevent
-//              cross-user data contamination.
+//              Renders as soon as auth resolves; the Firestore user-document
+//              creation and the sync service both run in the background so a slow
+//              network cannot stall startup. On sign-in, checks if the UID changed
+//              since last session; if so, clears all localStorage data and reloads
+//              stores to prevent cross-user data contamination. Also requests
+//              persistent storage (eviction resistance) where the browser supports
+//              it.
 // Inputs:      Firebase auth, db from firebase.js
 // Outputs:     Renders SignIn (unauthenticated), DesktopPet (authenticated),
 //              or a blank loading screen while auth state resolves.
@@ -32,12 +34,6 @@ import DesktopPet from './DesktopPet.jsx';
 import SignIn from './SignIn.jsx';
 import SplashScreen from './SplashScreen.jsx';
 
-// All localStorage keys owned by Glim. Every persisted domain store's key must
-// be listed here AND its store reloaded in the UID-change block below, or a
-// user switch on a shared browser leaks the previous user's data into the new
-// account (and can push it to their Firestore).
-const GLIM_KEYS = ['glim-water', 'glim-steps', 'glim-journal', 'glim-pokes', 'glim-settings', 'glim-nutrition', 'glim-nutrition-library', 'glim-sync-meta'];
-
 // --- Create user document on first sign-in ---
 // Uses getDoc check so createdAt is only written once, not overwritten on every login.
 
@@ -45,6 +41,10 @@ async function ensureUserDocument(user) {
   const userRef = doc(db, 'users', user.uid);
   const snap = await getDoc(userRef);
   if (!snap.exists()) {
+    // This now runs in the background (see the auth effect), so a fast
+    // sign-in then sign-out could let it resolve after the account changed.
+    // Re-check the user is still the active one before writing.
+    if (auth.currentUser?.uid !== user.uid) return;
     await setDoc(userRef, {
       name: user.displayName,
       email: user.email,
@@ -61,18 +61,48 @@ export default function App() {
   // object    = resolved, user is signed in
   const [user, setUser] = useState(undefined);
 
+  // --- Request persistent storage (eviction resistance) ---
+  // Safari/WebKit evicts script-writable storage (localStorage/IndexedDB) after
+  // ~7 days without first-party interaction. A granted persistence request
+  // exempts the origin. This is a request the browser may deny, not a guarantee;
+  // Home-Screen install remains the strongest protection. Feature-detected and
+  // non-blocking - does nothing where the StorageManager API is unavailable.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        await ensureUserDocument(currentUser);
+    if (!navigator.storage?.persist) return;
+    (async () => {
+      try {
+        if (await navigator.storage.persisted()) {
+          console.info('[glim] storage already persisted');
+          return;
+        }
+        const granted = await navigator.storage.persist();
+        console.info(`[glim] storage persist ${granted ? 'granted' : 'denied'}`);
+      } catch (e) {
+        console.warn('[glim] storage persist request failed:', e);
+      }
+    })();
+  }, []);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
         // --- UID change detection: clear stale cross-user data ---
         // If a different user signs in on this device, the previous user's
         // localStorage data must be cleared before sync starts, otherwise
-        // it would get pushed to Firestore under the new user's UID.
+        // it would get pushed to Firestore under the new user's UID. This is
+        // pure localStorage work, so it stays synchronous and runs before both
+        // the render and startSync below.
         const storedUid = localStorage.getItem('glim-uid');
         if (storedUid && storedUid !== currentUser.uid) {
-          GLIM_KEYS.forEach(k => localStorage.removeItem(k));
+          // Remove every Glim-owned key via prefix scan, so a domain added later
+          // is cleared automatically without editing a hardcoded list (a missed
+          // key would leak the prior user's data into the new account). Keep
+          // 'glim-uid' - it is the identity marker we overwrite just below.
+          // Iterate backwards because removeItem reindexes localStorage.
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('glim-') && k !== 'glim-uid') localStorage.removeItem(k);
+          }
           useJournalStore.getState().reload();
           usePokesStore.getState().reload();
           useSettingsStore.getState().reload();
@@ -83,11 +113,18 @@ export default function App() {
         }
         localStorage.setItem('glim-uid', currentUser.uid);
 
+        // Render immediately once auth resolves. The app reads from localStorage,
+        // so it must not wait on any network round-trip. Creating the Firestore
+        // user document is fire-and-forget: gating render on it previously caused
+        // a multi-minute splash-screen hang whenever Firestore was slow to reach.
+        setUser(currentUser);
         startSync(currentUser.uid);
+        ensureUserDocument(currentUser).catch(e =>
+          console.warn('[glim] ensureUserDocument failed:', e));
       } else {
         stopSync();
+        setUser(null);
       }
-      setUser(currentUser ?? null);
     });
     return unsubscribe;
   }, []);
